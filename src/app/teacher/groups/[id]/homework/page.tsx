@@ -1,0 +1,170 @@
+'use client';
+
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import api from '@/lib/api';
+import { Homework } from '@/types';
+import { HomeworkCard } from '@/components/homework/HomeworkCard';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
+import { Plus, X } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { InputField, TextareaField } from '@/components/ui/input-field';
+
+interface FormData {
+  text: string;
+  youtubeUrl?: string;
+  dueDate?: string;
+  imageUrlsRaw?: string;
+}
+
+export default function HomeworkPage() {
+  const { id: groupId } = useParams<{ id: string }>();
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const { register, handleSubmit, reset } = useForm<FormData>();
+
+  const { data: homeworks = [], isLoading } = useQuery({
+    queryKey: ['homework', groupId],
+    queryFn: () => api.get(`/homework?groupId=${groupId}`).then((r) => r.data.data as Homework[]),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: FormData) => {
+      const imageUrls = (data.imageUrlsRaw ?? '')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      return api.post('/homework', {
+        groupId,
+        text: data.text,
+        youtubeUrl: data.youtubeUrl || undefined,
+        dueDate: data.dueDate || undefined,
+        imageUrls: imageUrls.length ? imageUrls : undefined,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['homework', groupId] });
+      toast('Домашнее задание создано');
+      setShowForm(false);
+      reset();
+    },
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast(msg || 'Ошибка', 'error');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/homework/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['homework', groupId] });
+      toast('Домашнее задание удалено');
+    },
+    onError: () => toast('Ошибка при удалении', 'error'),
+  });
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Домашние задания"
+        description="Создание и просмотр заданий для группы"
+        actions={
+          <Button variant="success" onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Создать ДЗ
+          </Button>
+        }
+      />
+
+      {showForm && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <h2 className="font-semibold text-slate-900">Новое домашнее задание</h2>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Закрыть"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Текст задания *</label>
+                <TextareaField
+                  accent="teacher"
+                  {...register('text', { required: true })}
+                  placeholder="Решить задачи 1-10 из учебника..."
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Ссылки на изображения (по одной в строке)
+                </label>
+                <TextareaField
+                  accent="teacher"
+                  rows={3}
+                  {...register('imageUrlsRaw')}
+                  placeholder="https://example.com/hw1.png"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">YouTube ссылка</label>
+                  <InputField
+                    accent="teacher"
+                    {...register('youtubeUrl')}
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Срок сдачи</label>
+                  <InputField accent="teacher" type="date" {...register('dueDate')} />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button type="submit" variant="success" loading={createMutation.isPending}>
+                  Создать
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowForm(false);
+                    reset();
+                  }}
+                >
+                  Отмена
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading && <p className="text-slate-400">Загрузка...</p>}
+      {!isLoading && homeworks.length === 0 && (
+        <p className="py-8 text-center text-slate-400">Домашних заданий пока нет</p>
+      )}
+      <div className="space-y-4">
+        {homeworks.map((hw) => (
+          <HomeworkCard
+            key={hw.id}
+            homework={hw}
+            canDelete
+            onDelete={(hid) => deleteMutation.mutate(hid)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
