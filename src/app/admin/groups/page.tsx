@@ -19,14 +19,50 @@ import {
 import { Archive, MoreVertical, Pencil, Plus } from 'lucide-react';
 import { GroupDetailPanel } from './GroupDetailPanel';
 
-type FormState = { name: string; teacherId: string; maxStudents: number };
+const DAYS = [
+  { key: 'MONDAY', label: 'Пн' },
+  { key: 'TUESDAY', label: 'Вт' },
+  { key: 'WEDNESDAY', label: 'Ср' },
+  { key: 'THURSDAY', label: 'Чт' },
+  { key: 'FRIDAY', label: 'Пт' },
+  { key: 'SATURDAY', label: 'Сб' },
+  { key: 'SUNDAY', label: 'Вс' },
+];
+
+type Schedule = { days: string[]; time: string; duration: number };
+type FormState = { name: string; teacherId: string; maxStudents: number; schedule: Schedule };
+
+const DEFAULT_SCHEDULE: Schedule = { days: ['MONDAY', 'WEDNESDAY', 'FRIDAY'], time: '09:00', duration: 90 };
+
+function DayPicker({ value, onChange }: { value: string[]; onChange: (days: string[]) => void }) {
+  const toggle = (day: string) =>
+    onChange(value.includes(day) ? value.filter((d) => d !== day) : [...value, day]);
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {DAYS.map((d) => (
+        <button
+          key={d.key}
+          type="button"
+          onClick={() => toggle(d.key)}
+          className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+            value.includes(d.key)
+              ? 'border-indigo-500 bg-indigo-500 text-white'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300'
+          }`}
+        >
+          {d.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function GroupsPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20 });
+  const [form, setForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [editForm, setEditForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20 });
+  const [editForm, setEditForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
 
   const { data: groups = [], isLoading } = useQuery({
@@ -40,16 +76,12 @@ export default function GroupsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      api.post('/groups', {
-        ...form,
-        schedule: { days: ['MONDAY', 'WEDNESDAY', 'FRIDAY'], time: '09:00', duration: 90 },
-      }),
+    mutationFn: () => api.post('/groups', { ...form }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['groups'] });
       toast('Группа создана');
       setShowForm(false);
-      setForm({ name: '', teacherId: '', maxStudents: 20 });
+      setForm({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
     },
     onError: (e: unknown) => {
       const msg =
@@ -66,6 +98,7 @@ export default function GroupsPage() {
         name: editForm.name,
         teacherId: editForm.teacherId,
         maxStudents: editForm.maxStudents,
+        schedule: editForm.schedule,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['groups'] });
@@ -92,10 +125,16 @@ export default function GroupsPage() {
 
   function openEdit(group: Group) {
     setEditingGroup(group);
+    const s = group.schedule as Partial<Schedule>;
     setEditForm({
       name: group.name,
       teacherId: group.teacher?.id ?? '',
       maxStudents: group.maxStudents,
+      schedule: {
+        days: Array.isArray(s?.days) ? s.days : DEFAULT_SCHEDULE.days,
+        time: typeof s?.time === 'string' ? s.time : DEFAULT_SCHEDULE.time,
+        duration: typeof s?.duration === 'number' ? s.duration : DEFAULT_SCHEDULE.duration,
+      },
     });
   }
 
@@ -153,6 +192,35 @@ export default function GroupsPage() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Дни недели</label>
+                <DayPicker
+                  value={editForm.schedule.days}
+                  onChange={(days) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, days } }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Время начала</label>
+                  <InputField
+                    accent="admin"
+                    type="time"
+                    value={editForm.schedule.time}
+                    onChange={(e) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, time: e.target.value } }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Длит. (мин)</label>
+                  <InputField
+                    accent="admin"
+                    type="number"
+                    value={editForm.schedule.duration}
+                    onChange={(e) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, duration: Number(e.target.value) } }))}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="flex gap-3">
               <Button
                 loading={updateMutation.isPending}
@@ -207,6 +275,35 @@ export default function GroupsPage() {
                   value={form.maxStudents}
                   onChange={(e) => setForm((f) => ({ ...f, maxStudents: Number(e.target.value) }))}
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Дни недели</label>
+                <DayPicker
+                  value={form.schedule.days}
+                  onChange={(days) => setForm((f) => ({ ...f, schedule: { ...f.schedule, days } }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Время начала</label>
+                  <InputField
+                    accent="admin"
+                    type="time"
+                    value={form.schedule.time}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule: { ...f.schedule, time: e.target.value } }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Длит. (мин)</label>
+                  <InputField
+                    accent="admin"
+                    type="number"
+                    value={form.schedule.duration}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule: { ...f.schedule, duration: Number(e.target.value) } }))}
+                  />
+                </div>
               </div>
             </div>
             <div className="flex gap-3">
