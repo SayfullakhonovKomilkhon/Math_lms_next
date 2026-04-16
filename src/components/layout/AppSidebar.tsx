@@ -16,6 +16,9 @@ import {
   Trophy,
   Calendar,
   Megaphone,
+  ChevronLeft,
+  ClipboardCheck,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,6 +36,13 @@ const ADMIN_NAV: { href: string; label: string; icon: LucideIcon }[] = [
 const TEACHER_NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/teacher/groups', label: 'Мои группы', icon: BookOpen },
   { href: '/teacher/salary', label: 'Зарплата', icon: DollarSign },
+];
+
+const GROUP_SUBNAV = [
+  { segment: 'attendance', label: 'Посещаемость', icon: ClipboardList },
+  { segment: 'grades', label: 'Оценки', icon: BarChart2 },
+  { segment: 'homework', label: 'Домашние задания', icon: Book },
+  { segment: 'topics', label: 'Темы уроков', icon: FileText },
 ];
 
 const STUDENT_NAV: { href: string; label: string; icon: LucideIcon }[] = [
@@ -85,16 +95,16 @@ const styles = {
 export function AppSidebar({ variant }: { variant: PanelVariant }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  
+
+  // Detect teacher group context: /teacher/groups/:id[/...]
+  const groupMatch = variant === 'teacher'
+    ? pathname.match(/^\/teacher\/groups\/([^/]+)(\/.*)?$/)
+    : null;
+  const activeGroupId = groupMatch?.[1] ?? null;
+
   const navItems = (() => {
-    if (variant === 'admin') {
-      return ADMIN_NAV;
-    }
-    return {
-      teacher: TEACHER_NAV,
-      student: STUDENT_NAV,
-      parent: PARENT_NAV,
-    }[variant];
+    if (variant === 'admin') return ADMIN_NAV;
+    return { teacher: TEACHER_NAV, student: STUDENT_NAV, parent: PARENT_NAV }[variant];
   })();
 
   const t = styles[variant];
@@ -151,6 +161,45 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
             </Link>
           );
         })}
+
+        {/* Teacher group sub-navigation */}
+        {activeGroupId && (
+          <div className="mt-3">
+            <div className="mb-1 flex items-center gap-1 px-3">
+              <Link
+                href="/teacher/groups"
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <ChevronLeft className="h-3 w-3" />
+                Группы
+              </Link>
+            </div>
+            <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Разделы группы
+            </p>
+            {GROUP_SUBNAV.map(({ segment, label, icon: Icon }) => {
+              const href = `/teacher/groups/${activeGroupId}/${segment}`;
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <Link
+                  key={segment}
+                  href={href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg border-l-[3px] border-transparent py-2 pl-4 pr-3 text-sm font-medium transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                    t.ring,
+                    active
+                      ? t.active
+                      : 'border-l-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                  )}
+                >
+                  <Icon className={cn('h-4 w-4 shrink-0', active ? t.iconActive : 'text-slate-400')} />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       <div className="p-3">

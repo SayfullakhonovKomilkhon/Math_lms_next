@@ -24,42 +24,20 @@ export default function TeacherGroupsPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {activeGroups.map((group) => (
-          <Card key={group.id} className="p-5 transition-shadow hover:shadow-md">
-            <div className="mb-4 flex items-start justify-between">
-              <Link href={`/teacher/groups/${group.id}`}>
-                <h3 className="text-lg font-semibold text-slate-900 transition-colors hover:text-emerald-700">
-                  {group.name}
-                </h3>
-              </Link>
-              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">
-                Активна
-              </span>
-            </div>
-
-            <div className="mb-4 space-y-2 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
+          <Link key={group.id} href={`/teacher/groups/${group.id}/attendance`}>
+            <Card className="p-5 transition-all hover:border-emerald-200 hover:shadow-md cursor-pointer">
+              <div className="mb-3 flex items-start justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">{group.name}</h3>
+                <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">
+                  Активна
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <Users className="h-4 w-4" />
                 <span>{group._count?.students ?? 0} учеников</span>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {[
-                { label: 'Посещаемость', href: 'attendance' },
-                { label: 'Оценки', href: 'grades' },
-                { label: 'Домашнее задание', href: 'homework' },
-                { label: 'Темы уроков', href: 'topics' },
-              ].map(({ label, href }) => (
-                <Link
-                  key={href}
-                  href={`/teacher/groups/${group.id}/${href}`}
-                  className="rounded-lg bg-slate-100 px-3 py-2 text-center font-medium text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </Card>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>
