@@ -152,7 +152,7 @@ export function ReceiptModal({ paymentId, isOpen, onClose, showActions, onConfir
                   Подтвердить
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="danger"
                   className="flex-1 gap-2"
                   onClick={() => setAction('reject')}
                 >
@@ -205,7 +205,7 @@ export function ReceiptModal({ paymentId, isOpen, onClose, showActions, onConfir
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant="destructive"
+                    variant="danger"
                     className="flex-1 gap-2"
                     onClick={handleSubmit}
                     disabled={submitting || reason.trim().length < 10}
