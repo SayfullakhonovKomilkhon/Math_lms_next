@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -9,7 +9,7 @@ import { Homework } from '@/types';
 import { HomeworkCard } from '@/components/homework/HomeworkCard';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InputField, TextareaField } from '@/components/ui/input-field';
@@ -18,13 +18,21 @@ interface FormData {
   text: string;
   youtubeUrl?: string;
   dueDate?: string;
-  imageUrlsRaw?: string;
+}
+
+interface UploadedImage {
+  url: string;
+  preview: string;
+  name: string;
 }
 
 export default function HomeworkPage() {
   const { id: groupId } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { register, handleSubmit, reset } = useForm<FormData>();
 
   const { data: homeworks = [], isLoading } = useQuery({
@@ -32,24 +40,55 @@ export default function HomeworkPage() {
     queryFn: () => api.get(`/homework?groupId=${groupId}`).then((r) => r.data.data as Homework[]),
   });
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    setUploading(true);
+    const uploaded: UploadedImage[] = [];
+
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await api.post('/homework/upload-image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        const url = res.data.data?.url ?? res.data.url;
+        const preview = URL.createObjectURL(file);
+        uploaded.push({ url, preview, name: file.name });
+      } catch {
+        toast(`Ошибка загрузки: ${file.name}`, 'error');
+      }
+    }
+
+    setImages((prev) => [...prev, ...uploaded]);
+    setUploading(false);
+    // reset file input so same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const createMutation = useMutation({
-    mutationFn: (data: FormData) => {
-      const imageUrls = (data.imageUrlsRaw ?? '')
-        .split('\n')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      return api.post('/homework', {
+    mutationFn: (data: FormData) =>
+      api.post('/homework', {
         groupId,
         text: data.text,
         youtubeUrl: data.youtubeUrl || undefined,
         dueDate: data.dueDate || undefined,
-        imageUrls: imageUrls.length ? imageUrls : undefined,
-      });
-    },
+        imageUrls: images.length ? images.map((img) => img.url) : undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['homework', groupId] });
       toast('Домашнее задание создано');
       setShowForm(false);
+      setImages([]);
       reset();
     },
     onError: (e: unknown) => {
@@ -70,6 +109,12 @@ export default function HomeworkPage() {
     onError: () => toast('Ошибка при удалении', 'error'),
   });
 
+  const handleClose = () => {
+    setShowForm(false);
+    setImages([]);
+    reset();
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -89,7 +134,7 @@ export default function HomeworkPage() {
             <h2 className="font-semibold text-slate-900">Новое домашнее задание</h2>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={handleClose}
               className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               aria-label="Закрыть"
             >
@@ -106,17 +151,63 @@ export default function HomeworkPage() {
                   placeholder="Решить задачи 1-10 из учебника..."
                 />
               </div>
+
+              {/* Image uploader */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Ссылки на изображения (по одной в строке)
-                </label>
-                <TextareaField
-                  accent="teacher"
-                  rows={3}
-                  {...register('imageUrlsRaw')}
-                  placeholder="https://example.com/hw1.png"
+                <label className="mb-1 block text-sm font-medium text-slate-700">Изображения</label>
+
+                {/* Previews */}
+                {images.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-3">
+                    {images.map((img, i) => (
+                      <div key={i} className="group relative">
+                        <img
+                          src={img.preview}
+                          alt={img.name}
+                          className="h-24 w-24 rounded-lg border border-slate-200 object-cover shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload button */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
                 />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 transition-colors hover:border-green-400 hover:text-green-600 disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Загрузка...
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="h-4 w-4" />
+                      {images.length > 0 ? 'Добавить ещё' : 'Выбрать изображения'}
+                    </>
+                  )}
+                </button>
+                <p className="mt-1 text-xs text-slate-400">JPG, PNG, WebP · до 10 МБ каждое</p>
               </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">YouTube ссылка</label>
@@ -131,18 +222,17 @@ export default function HomeworkPage() {
                   <InputField accent="teacher" type="date" {...register('dueDate')} />
                 </div>
               </div>
+
               <div className="flex gap-3">
-                <Button type="submit" variant="success" loading={createMutation.isPending}>
+                <Button
+                  type="submit"
+                  variant="success"
+                  loading={createMutation.isPending}
+                  disabled={uploading}
+                >
                   Создать
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowForm(false);
-                    reset();
-                  }}
-                >
+                <Button type="button" variant="secondary" onClick={handleClose}>
                   Отмена
                 </Button>
               </div>
