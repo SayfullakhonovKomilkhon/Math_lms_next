@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Group, AttendanceSummary } from '@/types';
+import { Group, AttendanceSummary, Student } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { TabsBar, TabsBarButton } from '@/components/ui/tabs-bar';
+import { toast } from '@/components/ui/toast';
 import {
   Calendar,
   Clock,
@@ -14,6 +16,10 @@ import {
   BookOpen,
   TrendingUp,
   Phone,
+  UserPlus,
+  UserMinus,
+  Search,
+  X,
 } from 'lucide-react';
 
 interface GroupStudent {
@@ -41,7 +47,6 @@ const DAY_LABELS: Record<string, string> = {
 function ScheduleInfo({ schedule }: { schedule: Record<string, unknown> }) {
   if (!schedule) return <span className="text-slate-400">—</span>;
 
-  // Format: { days: [{day, startTime, endTime}] }
   if (Array.isArray(schedule.days) && schedule.days.length > 0 && typeof schedule.days[0] === 'object') {
     return (
       <div className="space-y-1">
@@ -56,7 +61,6 @@ function ScheduleInfo({ schedule }: { schedule: Record<string, unknown> }) {
     );
   }
 
-  // Format: { days: ['MONDAY', ...], time: '09:00', duration: 90 }
   if (Array.isArray(schedule.days)) {
     const days = (schedule.days as string[]).map((d) => DAY_LABELS[d] ?? d).join(', ');
     return (
@@ -80,12 +84,22 @@ const TABS = ['Информация', 'Ученики', 'Посещаемост�
 
 export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
   const [activeTab, setActiveTab] = useState('Информация');
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [search, setSearch] = useState('');
+  const qc = useQueryClient();
 
   const { data: students = [], isLoading: studentsLoading } = useQuery({
     queryKey: ['group-students', group?.id],
     queryFn: () =>
       api.get(`/groups/${group!.id}/students`).then((r) => r.data.data as GroupStudent[]),
     enabled: !!group && activeTab === 'Ученики',
+  });
+
+  // All students for the "add" dropdown
+  const { data: allStudents = [] } = useQuery({
+    queryKey: ['students'],
+    queryFn: () => api.get('/students').then((r) => r.data.data as Student[]),
+    enabled: !!group && activeTab === 'Ученики' && showAddStudent,
   });
 
   const { data: summary = [], isLoading: summaryLoading } = useQuery({
@@ -96,6 +110,42 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
         .then((r) => r.data.data as AttendanceSummary[]),
     enabled: !!group && activeTab === 'Посещаемость',
   });
+
+  const assignMutation = useMutation({
+    mutationFn: (studentId: string) =>
+      api.patch(`/students/${studentId}/group`, { groupId: group!.id }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['group-students', group?.id] });
+      qc.invalidateQueries({ queryKey: ['groups'] });
+      toast('Ученик добавлен в группу');
+      setSearch('');
+    },
+    onError: () => toast('Ошибка при добавлении', 'error'),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (studentId: string) =>
+      api.patch(`/students/${studentId}/remove-group`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['group-students', group?.id] });
+      qc.invalidateQueries({ queryKey: ['groups'] });
+      toast('Ученик удалён из группы');
+    },
+    onError: () => toast('Ошибка при удалении', 'error'),
+  });
+
+  // Students not in this group
+  const groupStudentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
+  const availableStudents = useMemo(
+    () =>
+      allStudents.filter(
+        (s) =>
+          s.isActive &&
+          !groupStudentIds.has(s.id) &&
+          s.fullName.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [allStudents, groupStudentIds, search],
+  );
 
   return (
     <Sheet open={!!group} onOpenChange={(open) => !open && onClose()}>
@@ -175,7 +225,75 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
               )}
 
               {activeTab === 'Ученики' && (
-                <div>
+                <div className="space-y-4">
+                  {/* Add student button */}
+                  {group.isActive && (
+                    <div>
+                      {!showAddStudent ? (
+                        <Button
+                          size="sm"
+                          accent="admin"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => setShowAddStudent(true)}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Добавить ученика
+                        </Button>
+                      ) : (
+                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-slate-700">Добавить ученика в группу</p>
+                            <button
+                              onClick={() => { setShowAddStudent(false); setSearch(''); }}
+                              className="rounded p-1 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                            <input
+                              type="text"
+                              placeholder="Поиск по имени..."
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                            />
+                          </div>
+                          {availableStudents.length === 0 ? (
+                            <p className="text-center text-sm text-slate-400 py-2">
+                              {search ? 'Ничего не найдено' : 'Все активные ученики уже в группе'}
+                            </p>
+                          ) : (
+                            <ul className="max-h-48 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-100 bg-white">
+                              {availableStudents.map((s) => (
+                                <li key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium text-slate-900">{s.fullName}</p>
+                                    {s.group && (
+                                      <p className="text-xs text-slate-400">Сейчас: {(s.group as { name: string }).name}</p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    accent="admin"
+                                    className="shrink-0"
+                                    disabled={assignMutation.isPending}
+                                    onClick={() => assignMutation.mutate(s.id)}
+                                  >
+                                    Добавить
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Student list */}
                   {studentsLoading ? (
                     <p className="text-sm text-slate-400">Загрузка...</p>
                   ) : students.length === 0 ? (
@@ -188,9 +306,7 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
                             {s.fullName.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-slate-900">
-                              {s.fullName}
-                            </p>
+                            <p className="truncate text-sm font-medium text-slate-900">{s.fullName}</p>
                             {s.phone && (
                               <p className="flex items-center gap-1 text-xs text-slate-500">
                                 <Phone className="h-3 w-3" />
@@ -198,10 +314,20 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
                               </p>
                             )}
                           </div>
-                          <div className="shrink-0 text-right">
+                          <div className="flex shrink-0 items-center gap-2">
                             <Badge variant={s.isActive ? 'green' : 'gray'} className="text-xs">
                               {s.isActive ? 'Активен' : 'Неактивен'}
                             </Badge>
+                            {group.isActive && (
+                              <button
+                                onClick={() => removeMutation.mutate(s.id)}
+                                disabled={removeMutation.isPending}
+                                title="Удалить из группы"
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                              >
+                                <UserMinus className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </li>
                       ))}
@@ -234,7 +360,6 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
                               {s.percentage}%
                             </span>
                           </div>
-                          {/* Progress bar */}
                           <div className="mb-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
                               className={`h-full rounded-full transition-all ${
@@ -260,7 +385,6 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
               )}
             </div>
 
-            {/* Footer stats */}
             {activeTab === 'Посещаемость' && summary.length > 0 && (
               <div className="border-t border-slate-100 px-6 py-4">
                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
