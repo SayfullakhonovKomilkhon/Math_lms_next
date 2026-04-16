@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { ApiResponse, PaymentSummary, ParentProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTableRow } from '@/components/ui/data-table';
+import { Badge } from '@/components/ui/badge';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { PaymentBanner } from '@/components/payments/PaymentBanner';
 import { CreditCard, Upload, Check, AlertCircle, ExternalLink, FileText, Info } from 'lucide-react';
@@ -12,6 +13,9 @@ import { useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/components/ui/toast';
+import { CardSkeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function ParentPaymentPage() {
   const queryClient = useQueryClient();
@@ -19,12 +23,12 @@ export default function ParentPaymentPage() {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: profileRes } = useQuery({
+  const { data: profileRes, isError: profileError, refetch: refetchProfile } = useQuery({
     queryKey: ['parent-profile'],
     queryFn: () => api.get<ApiResponse<ParentProfile>>('/parents/me').then(res => res.data),
   });
 
-  const { data: paymentRes, isLoading } = useQuery({
+  const { data: paymentRes, isLoading, isError, refetch } = useQuery({
     queryKey: ['parent-child-payment'],
     queryFn: () => api.get<ApiResponse<PaymentSummary>>('/parents/me/child/payments').then(res => res.data),
   });
@@ -59,7 +63,28 @@ export default function ParentPaymentPage() {
   };
 
   if (isLoading) {
-    return <div className="flex h-[400px] items-center justify-center">Загрузка...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <TableSkeleton rows={5} cols={5} />
+      </div>
+    );
+  }
+
+  if (profileError || isError) {
+    return (
+      <ErrorState
+        message="Не удалось загрузить страницу оплаты"
+        description="История платежей или профиль ребёнка временно недоступны."
+        onRetry={() => {
+          void refetchProfile();
+          void refetch();
+        }}
+      />
+    );
   }
 
   const payment = paymentRes?.data;
@@ -182,24 +207,26 @@ export default function ParentPaymentPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <DataTable>
-            <table className="w-full text-sm">
-              <DataTableHead className="bg-slate-50/50">
-                <DataTableHeaderCell>Дата</DataTableHeaderCell>
-                <DataTableHeaderCell>Сумма</DataTableHeaderCell>
-                <DataTableHeaderCell>Статус</DataTableHeaderCell>
-                <DataTableHeaderCell>Чек</DataTableHeaderCell>
-                <DataTableHeaderCell>Заметки</DataTableHeaderCell>
-              </DataTableHead>
-              <tbody>
-                {history.length === 0 ? (
-                  <DataTableRow>
-                    <DataTableCell colSpan={5} className="py-12 text-center text-slate-400 italic">
-                      У вас пока нет истории платежей в системе
-                    </DataTableCell>
-                  </DataTableRow>
-                ) : (
-                  history.map((item) => (
+          {history.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                icon="💳"
+                message="У вас пока нет истории платежей"
+                description="Когда чеки будут загружены или подтверждены, история появится здесь."
+              />
+            </div>
+          ) : (
+            <DataTable>
+              <table className="w-full text-sm">
+                <DataTableHead className="bg-slate-50/50">
+                  <DataTableHeaderCell>Дата</DataTableHeaderCell>
+                  <DataTableHeaderCell>Сумма</DataTableHeaderCell>
+                  <DataTableHeaderCell>Статус</DataTableHeaderCell>
+                  <DataTableHeaderCell>Чек</DataTableHeaderCell>
+                  <DataTableHeaderCell>Заметки</DataTableHeaderCell>
+                </DataTableHead>
+                <tbody>
+                  {history.map((item) => (
                     <DataTableRow key={item.id} className="hover:bg-slate-50/30 transition-colors">
                       <DataTableCell className="text-slate-500 font-medium">
                         {format(new Date(item.createdAt), 'd MMMM yyyy, HH:mm', { locale: ru })}
@@ -226,17 +253,13 @@ export default function ParentPaymentPage() {
                         {item.rejectReason || (item.status === 'CONFIRMED' ? <span className="text-green-600 not-italic">Принято ✓</span> : '—')}
                       </DataTableCell>
                     </DataTableRow>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </DataTable>
+                  ))}
+                </tbody>
+              </table>
+            </DataTable>
+          )}
         </CardContent>
       </Card>
     </div>
   );
-}
-
-function Badge({ children, className, variant }: any) {
-    return <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${className}`}>{children}</div>
 }

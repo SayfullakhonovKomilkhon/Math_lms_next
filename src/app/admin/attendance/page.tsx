@@ -17,17 +17,29 @@ import {
   DataTableRow,
   DataTableCell,
 } from '@/components/ui/data-table';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 
 export default function AdminAttendancePage() {
   const [groupId, setGroupId] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
-  const { data: groups = [] } = useQuery({
+  const {
+    data: groups = [],
+    isError: groupsError,
+    refetch: refetchGroups,
+  } = useQuery({
     queryKey: ['groups'],
     queryFn: () => api.get('/groups').then((r) => r.data.data as Group[]),
   });
 
-  const { data: records = [], isLoading } = useQuery({
+  const {
+    data: records = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['admin-attendance', groupId, date],
     queryFn: () =>
       api
@@ -62,10 +74,36 @@ export default function AdminAttendancePage() {
         </CardContent>
       </Card>
 
-      {!groupId ? (
-        <p className="text-slate-400">Выберите группу</p>
+      {groupsError ? (
+        <ErrorState
+          message="Не удалось загрузить группы"
+          description="Список групп недоступен, поэтому журнал посещаемости пока нельзя открыть."
+          onRetry={() => {
+            void refetchGroups();
+          }}
+        />
+      ) : !groupId ? (
+        <EmptyState
+          icon="✅"
+          message="Выберите группу"
+          description="После выбора группы и даты здесь появится журнал посещаемости."
+        />
       ) : isLoading ? (
-        <p className="text-slate-400">Загрузка...</p>
+        <TableSkeleton rows={8} cols={4} />
+      ) : isError ? (
+        <ErrorState
+          message="Не удалось загрузить посещаемость"
+          description="Проверьте дату или попробуйте выполнить запрос снова."
+          onRetry={() => {
+            void refetch();
+          }}
+        />
+      ) : records.length === 0 ? (
+        <EmptyState
+          icon="📅"
+          message="Нет записей за выбранный день"
+          description="Смените дату или группу, чтобы посмотреть журнал."
+        />
       ) : (
         <DataTable>
           <table className="w-full min-w-[640px] text-sm">
@@ -76,13 +114,6 @@ export default function AdminAttendancePage() {
               <DataTableHeaderCell>Дата</DataTableHeaderCell>
             </DataTableHead>
             <tbody>
-              {records.length === 0 && (
-                <DataTableRow>
-                  <DataTableCell colSpan={4} className="py-8 text-center text-slate-400">
-                    Нет записей за выбранный день
-                  </DataTableCell>
-                </DataTableRow>
-              )}
               {records.map((r) => (
                 <DataTableRow key={r.id}>
                   <DataTableCell className="font-medium text-slate-900">

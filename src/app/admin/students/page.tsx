@@ -28,6 +28,11 @@ import {
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 export default function StudentsPage() {
   const router = useRouter();
@@ -36,21 +41,35 @@ export default function StudentsPage() {
   const [groupFilter, setGroupFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [page, setPage] = useState(1);
+  const [pendingDeactivate, setPendingDeactivate] = useState<Student | null>(null);
   const PER_PAGE = 20;
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: studentsData, isLoading } = useQuery({
+  const {
+    data: studentsData,
+    isLoading,
+    isError: studentsError,
+    refetch: refetchStudents,
+  } = useQuery({
     queryKey: ['students'],
     queryFn: () => api.get('/students').then((r) => r.data.data as Student[]),
   });
 
-  const { data: groupsData } = useQuery({
+  const {
+    data: groupsData,
+    isError: groupsError,
+    refetch: refetchGroups,
+  } = useQuery({
     queryKey: ['groups'],
     queryFn: () => api.get('/groups').then((r) => r.data.data as Group[]),
   });
 
-  const { data: debtorsData } = useQuery({
+  const {
+    data: debtorsData,
+    isError: debtorsError,
+    refetch: refetchDebtors,
+  } = useQuery({
     queryKey: ['debtors'],
     queryFn: () => api.get('/payments/debtors').then((r) => r.data.data as Debtor[]),
   });
@@ -59,6 +78,7 @@ export default function StudentsPage() {
     mutationFn: (id: string) => api.patch(`/students/${id}/deactivate`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['students'] });
+      setPendingDeactivate(null);
       toast('Ученик деактивирован');
     },
     onError: () => toast('Ошибка при деактивации', 'error'),
@@ -84,6 +104,7 @@ export default function StudentsPage() {
   const total = filtered.length;
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.ceil(total / PER_PAGE);
+  const hasQueryError = studentsError || groupsError || debtorsError;
 
   return (
     <div className="space-y-6">
@@ -148,98 +169,147 @@ export default function StudentsPage() {
         </CardContent>
       </Card>
 
-      <DataTable>
-        <table className="w-full min-w-[800px] text-sm">
-          <DataTableHead>
-            <DataTableHeaderCell>Ученик</DataTableHeaderCell>
-            <DataTableHeaderCell>Группа</DataTableHeaderCell>
-            <DataTableHeaderCell>Телефон</DataTableHeaderCell>
-            <DataTableHeaderCell>Оплата/мес</DataTableHeaderCell>
-            <DataTableHeaderCell>Оплата (мес.)</DataTableHeaderCell>
-            <DataTableHeaderCell>Дата поступления</DataTableHeaderCell>
-            <DataTableHeaderCell>Статус</DataTableHeaderCell>
-            <DataTableHeaderCell>Действия</DataTableHeaderCell>
-          </DataTableHead>
-          <tbody>
-            {isLoading && (
-              <DataTableRow>
-                <DataTableCell colSpan={8} className="py-10 text-center text-slate-400">
-                  Загрузка...
-                </DataTableCell>
-              </DataTableRow>
-            )}
-            {!isLoading && paginated.length === 0 && (
-              <DataTableRow>
-                <DataTableCell colSpan={8} className="py-10 text-center text-slate-400">
-                  Ученики не найдены
-                </DataTableCell>
-              </DataTableRow>
-            )}
-            {paginated.map((student) => (
-              <DataTableRow key={student.id}>
-                <DataTableCell>
-                  <div className="font-medium text-slate-900">{student.fullName}</div>
-                  <div className="text-xs text-slate-500">{student.user?.email}</div>
-                </DataTableCell>
-                <DataTableCell>{student.group?.name ?? '—'}</DataTableCell>
-                <DataTableCell>{student.phone ?? '—'}</DataTableCell>
-                <DataTableCell>{formatCurrency(Number(student.monthlyFee))}</DataTableCell>
-                <DataTableCell>
-                  {student.isActive ? (
-                    debtorIds.has(student.id) ? (
-                      <Badge variant="red">Не оплачен</Badge>
+      {isLoading ? (
+        <TableSkeleton rows={10} cols={8} />
+      ) : hasQueryError ? (
+        <ErrorState
+          message="Не удалось загрузить список учеников"
+          description="Часть данных для таблицы не загрузилась. Попробуйте снова."
+          onRetry={() => {
+            void refetchStudents();
+            void refetchGroups();
+            void refetchDebtors();
+          }}
+        />
+      ) : paginated.length === 0 ? (
+        <EmptyState
+          icon="🎓"
+          message={students.length === 0 ? 'Учеников пока нет' : 'Ученики не найдены'}
+          description={
+            students.length === 0
+              ? 'Добавьте первого ученика, чтобы начать вести группы и оплату.'
+              : 'Измените поиск или фильтры, чтобы увидеть нужных учеников.'
+          }
+          action={students.length === 0 ? { label: 'Добавить ученика', href: '/admin/students/new' } : undefined}
+        />
+      ) : (
+        <ResponsiveTable
+          data={paginated}
+          renderDesktop={(items) => (
+            <DataTable>
+              <table className="w-full min-w-[800px] text-sm">
+            <DataTableHead>
+              <DataTableHeaderCell>Ученик</DataTableHeaderCell>
+              <DataTableHeaderCell>Группа</DataTableHeaderCell>
+              <DataTableHeaderCell>Телефон</DataTableHeaderCell>
+              <DataTableHeaderCell>Оплата/мес</DataTableHeaderCell>
+              <DataTableHeaderCell>Оплата (мес.)</DataTableHeaderCell>
+              <DataTableHeaderCell>Дата поступления</DataTableHeaderCell>
+              <DataTableHeaderCell>Статус</DataTableHeaderCell>
+              <DataTableHeaderCell>Действия</DataTableHeaderCell>
+            </DataTableHead>
+            <tbody>
+              {items.map((student) => (
+                <DataTableRow key={student.id}>
+                  <DataTableCell>
+                    <div className="font-medium text-slate-900">{student.fullName}</div>
+                    <div className="text-xs text-slate-500">{student.user?.email}</div>
+                  </DataTableCell>
+                  <DataTableCell>{student.group?.name ?? '—'}</DataTableCell>
+                  <DataTableCell>{student.phone ?? '—'}</DataTableCell>
+                  <DataTableCell>{formatCurrency(Number(student.monthlyFee))}</DataTableCell>
+                  <DataTableCell>
+                    {student.isActive ? (
+                      debtorIds.has(student.id) ? (
+                        <Badge variant="red">Не оплачен</Badge>
+                      ) : (
+                        <Badge variant="green">Оплачен</Badge>
+                      )
                     ) : (
-                      <Badge variant="green">Оплачен</Badge>
-                    )
-                  ) : (
-                    <Badge variant="gray">—</Badge>
-                  )}
-                </DataTableCell>
-                <DataTableCell>{formatDate(student.enrolledAt)}</DataTableCell>
-                <DataTableCell>
-                  <Badge variant={student.isActive ? 'green' : 'gray'}>
-                    {student.isActive ? 'Активен' : 'Неактивен'}
-                  </Badge>
-                </DataTableCell>
-                <DataTableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        accent="admin"
-                        aria-label="Действия со строкой ученика"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" accent="admin" className="min-w-[220px]">
-                      <IconMenuItem
-                        accent="admin"
-                        icon={User}
-                        label="Профиль"
-                        description="Карточка ученика"
-                        iconClassName="border-indigo-200 bg-indigo-50 text-indigo-700"
-                        onSelect={() => router.push(`/admin/students/${student.id}`)}
-                      />
-                      {student.isActive && (
+                      <Badge variant="gray">—</Badge>
+                    )}
+                  </DataTableCell>
+                  <DataTableCell>{formatDate(student.enrolledAt)}</DataTableCell>
+                  <DataTableCell>
+                    <Badge variant={student.isActive ? 'green' : 'gray'}>
+                      {student.isActive ? 'Активен' : 'Неактивен'}
+                    </Badge>
+                  </DataTableCell>
+                  <DataTableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          accent="admin"
+                          aria-label="Действия со строкой ученика"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" accent="admin" className="min-w-[220px]">
                         <IconMenuItem
                           accent="admin"
-                          icon={UserX}
-                          label="Деактивировать"
-                          description="Отключить доступ"
-                          destructive
-                          onSelect={() => deactivateMutation.mutate(student.id)}
+                          icon={User}
+                          label="Профиль"
+                          description="Карточка ученика"
+                          iconClassName="border-indigo-200 bg-indigo-50 text-indigo-700"
+                          onSelect={() => router.push(`/admin/students/${student.id}`)}
                         />
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </DataTableCell>
-              </DataTableRow>
-            ))}
-          </tbody>
-        </table>
-      </DataTable>
+                        {student.isActive && (
+                          <IconMenuItem
+                            accent="admin"
+                            icon={UserX}
+                            label="Деактивировать"
+                            description="Отключить доступ"
+                            destructive
+                            onSelect={() => setPendingDeactivate(student)}
+                          />
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </DataTableCell>
+                </DataTableRow>
+              ))}
+            </tbody>
+              </table>
+            </DataTable>
+          )}
+          renderMobileCard={(student) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-900">{student.fullName}</p>
+                  <p className="text-sm text-slate-500">{student.group?.name ?? 'Без группы'}</p>
+                </div>
+                <Badge variant={student.isActive ? 'green' : 'gray'}>
+                  {student.isActive ? 'Активен' : 'Неактивен'}
+                </Badge>
+              </div>
+              <div className="space-y-1 text-sm text-slate-600">
+                <p>{student.phone ?? 'Телефон не указан'}</p>
+                <p>{formatCurrency(Number(student.monthlyFee))}</p>
+                <p>{debtorIds.has(student.id) ? 'Не оплачен' : 'Оплачен'}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" className="flex-1" onClick={() => router.push(`/admin/students/${student.id}`)}>
+                  Профиль
+                </Button>
+                {student.isActive ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setPendingDeactivate(student)}
+                  >
+                    Деактивировать
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          )}
+        />
+      )}
 
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
@@ -259,6 +329,21 @@ export default function StudentsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDeactivate !== null}
+        title="Деактивировать ученика?"
+        description="Ученик потеряет доступ к системе, но останется в базе и во всех отчётах."
+        confirmLabel="Деактивировать"
+        variant="danger"
+        confirmLoading={deactivateMutation.isPending}
+        onCancel={() => setPendingDeactivate(null)}
+        onConfirm={() => {
+          if (pendingDeactivate) {
+            deactivateMutation.mutate(pendingDeactivate.id);
+          }
+        }}
+      />
     </div>
   );
 }

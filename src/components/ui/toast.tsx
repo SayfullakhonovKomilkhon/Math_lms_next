@@ -1,25 +1,26 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { Toaster, toast as sonnerToast } from 'sonner';
 
 type ToastType = 'success' | 'error' | 'info';
 type ToastOptions = {
   title?: string;
   description?: string;
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'destructive' | 'warning';
 };
 
-interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-}
-
-let addToastFn: ((message: string, type?: ToastType) => void) | null = null;
-
 export function toast(message: string, type: ToastType = 'success') {
-  addToastFn?.(message, type);
+  if (type === 'error') {
+    sonnerToast.error(message);
+    return;
+  }
+
+  if (type === 'info') {
+    sonnerToast.info(message);
+    return;
+  }
+
+  sonnerToast.success(message);
 }
 
 export function useToast() {
@@ -30,43 +31,24 @@ export function useToast() {
         return;
       }
 
-      const message = [input.title, input.description].filter(Boolean).join(' ');
-      toast(message || 'Уведомление', input.variant === 'destructive' ? 'error' : 'success');
+      const title = input.title || 'Уведомление';
+      const description = input.description;
+
+      if (input.variant === 'destructive') {
+        sonnerToast.error(title, { description });
+        return;
+      }
+
+      if (input.variant === 'warning') {
+        sonnerToast.warning(title, { description });
+        return;
+      }
+
+      sonnerToast.success(title, { description });
     },
   };
 }
 
 export function ToastContainer() {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const addToast = useCallback((message: string, type: ToastType = 'success') => {
-    const id = Math.random().toString(36).slice(2);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
-  }, []);
-
-  useEffect(() => {
-    addToastFn = addToast;
-    return () => { addToastFn = null; };
-  }, [addToast]);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={cn(
-            'px-4 py-3 rounded-lg shadow-lg text-white text-sm max-w-sm animate-in slide-in-from-right',
-            t.type === 'success' && 'bg-green-600',
-            t.type === 'error' && 'bg-red-600',
-            t.type === 'info' && 'bg-blue-600',
-          )}
-        >
-          {t.message}
-        </div>
-      ))}
-    </div>
-  );
+  return <Toaster richColors position="bottom-right" closeButton />;
 }

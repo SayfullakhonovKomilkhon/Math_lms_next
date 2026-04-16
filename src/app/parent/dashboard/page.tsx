@@ -5,24 +5,34 @@ import api from '@/lib/api';
 import { ApiResponse, ParentProfile, PaymentSummary, GradeRecord, AttendanceRecord } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Users, 
-  Calendar, 
-  BarChart, 
-  CreditCard, 
-  CheckCircle2, 
+import {
+  User,
+  Users,
+  Calendar,
+  BarChart,
+  CreditCard,
+  CheckCircle2,
   AlertCircle,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Trophy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { CardSkeleton, ProfileSkeleton } from '@/components/ui/Skeleton';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
+
+interface AchievementGridEntry {
+  unlocked?: boolean;
+  icon?: string;
+  title?: string;
+}
 
 export default function ParentDashboard() {
-  const { data: profileRes, isLoading: profileLoading } = useQuery({
+  const { data: profileRes, isLoading: profileLoading, isError: profileError, refetch } = useQuery({
     queryKey: ['parent-profile'],
     queryFn: () => api.get<ApiResponse<ParentProfile>>('/parents/me').then(res => res.data),
   });
@@ -37,15 +47,55 @@ export default function ParentDashboard() {
     queryFn: () => api.get<ApiResponse<GradeRecord[]>>('/parents/me/child/grades').then(res => res.data),
   });
 
+  const childId = profileRes?.data?.child?.id;
+  const { data: achievementsRes } = useQuery({
+    queryKey: ['child-achievements', childId],
+    queryFn: () => api.get(`/achievements/student/${childId}`).then((r) => r.data.data),
+    enabled: !!childId,
+    staleTime: 1000 * 60 * 10,
+  });
+
   if (profileLoading) {
-    return <div className="flex h-[400px] items-center justify-center">Загрузка данных...</div>;
+    return (
+      <div className="space-y-6">
+        <ProfileSkeleton />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <ErrorState
+        message="Не удалось загрузить панель родителя"
+        description="Данные о ребёнке временно недоступны."
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
   }
 
   const profile = profileRes?.data;
   const payment = paymentRes?.data;
   const grades = (gradesRes?.data || []).slice(0, 3);
+  const latestAchievement =
+    (achievementsRes?.monthGrid as AchievementGridEntry[] | undefined)?.find((entry) => entry.unlocked) ??
+    null;
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <EmptyState
+        icon="👨‍👩‍👧"
+        message="Профиль родителя пока недоступен"
+        description="Попробуйте войти снова или обратитесь к администратору."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -174,6 +224,26 @@ export default function ParentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Latest Achievement */}
+      {latestAchievement && (
+        <Link href="/parent/achievements">
+          <Card className="cursor-pointer border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-xl">
+                {latestAchievement.icon}
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-amber-600">
+                  🏆 {profile?.child?.fullName} получил новое достижение
+                </p>
+                <p className="font-semibold text-slate-900">{latestAchievement.title}</p>
+              </div>
+              <Trophy className="h-5 w-5 text-amber-500" />
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       {/* Announcements */}
       <div className="mt-8">

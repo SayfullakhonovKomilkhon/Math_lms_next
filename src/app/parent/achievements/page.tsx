@@ -1,72 +1,105 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, Star, Shield, Zap, Lock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Trophy } from 'lucide-react';
+import api from '@/lib/api';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { AchievementMonthGrid } from '@/components/achievements/AchievementMonthGrid';
+import { SpecialAchievements } from '@/components/achievements/SpecialAchievements';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ParentAchievementsPage() {
+  const { user } = useAuth();
+
+  // Get parent's child ID first
+  const { data: parentData } = useQuery({
+    queryKey: ['parent-profile'],
+    queryFn: () => api.get('/parents/me').then((r) => r.data.data),
+    enabled: !!user,
+  });
+
+  const childId = parentData?.studentId;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['child-achievements', childId],
+    queryFn: () => api.get(`/achievements/student/${childId}`).then((r) => r.data.data),
+    enabled: !!childId,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  if (isLoading) {
+    return <p className="py-10 text-center text-slate-400">Загрузка...</p>;
+  }
+
+  if (!data) {
+    return <p className="py-10 text-center text-slate-400">Нет данных</p>;
+  }
+
+  const { student, monthGrid, specialAchievements, stats } = data;
+
+  const shareText = `🏆 ${student.fullName} получил ${stats.totalAchievements} достижений в MathCenter! 🥇${stats.goldCount} 🥈${stats.silverCount} 🥉${stats.bronzeCount}`;
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
-          <Trophy className="h-8 w-8 text-amber-500" />
-          Достижения ребенка
-        </h1>
-        <p className="text-slate-500 mt-1 ml-11">
-          Награды и академические успехи вашего ребенка в MathCenter
-        </p>
-      </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
+              <Trophy className="h-6 w-6 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Достижения</p>
+              <p className="font-bold text-slate-900">{student.fullName}</p>
+              {student.groupName && (
+                <p className="text-sm text-slate-500">{student.groupName}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex gap-4 text-center">
+              <div>
+                <p className="text-xl font-bold text-yellow-500">🥇 {stats.goldCount}</p>
+                <p className="text-xs text-slate-400">Золото</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-slate-400">🥈 {stats.silverCount}</p>
+                <p className="text-xs text-slate-400">Серебро</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-amber-700">🥉 {stats.bronzeCount}</p>
+                <p className="text-xs text-slate-400">Бронза</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(shareText)}
+              className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100"
+            >
+              Поделиться
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AchievementCard 
-          icon={<Star className="h-8 w-8 text-amber-500" />} 
-          title="Первые шаги" 
-          description="Ребенок успешно выполнил первое домашнее задание" 
-          unlocked={true}
-          date="12.03.2024"
-        />
-        <AchievementCard 
-          icon={<Zap className="h-8 w-8 text-yellow-500" />} 
-          title="Пунктуальность" 
-          description="10 посещений подряд без опозданий" 
-          unlocked={true}
-          date="05.04.2024"
-        />
-        <AchievementCard 
-          icon={<Shield className="h-8 w-8 text-blue-500" />} 
-          title="Мастер тригонометрии" 
-          description="Идеальный результат за контрольную работу" 
-          unlocked={false}
-        />
-      </div>
+      {/* Monthly grid */}
+      <Card>
+        <CardHeader>
+          <h2 className="font-semibold text-slate-900">Ежемесячные достижения</h2>
+        </CardHeader>
+        <CardContent>
+          <AchievementMonthGrid monthGrid={monthGrid} />
+        </CardContent>
+      </Card>
 
-      <div className="bg-slate-900 text-white rounded-3xl p-10 overflow-hidden relative shadow-2xl">
-        <div className="relative z-10 space-y-4 max-w-lg">
-          <h2 className="text-2xl font-black">Система мотивации</h2>
-          <p className="text-slate-300">
-            Мы поощряем успехи наших учеников. За каждое достижение ребенок получает виртуальные баллы, которые в будущем можно будет обменять на полезные призы.
-          </p>
-        </div>
-        <Lock className="absolute right-[-20px] bottom-[-20px] h-64 w-64 text-white/5 -rotate-12" />
-      </div>
+      {/* Special achievements */}
+      <Card>
+        <CardHeader>
+          <h2 className="font-semibold text-slate-900">Особые достижения</h2>
+        </CardHeader>
+        <CardContent>
+          <SpecialAchievements achievements={specialAchievements} />
+        </CardContent>
+      </Card>
     </div>
-  );
-}
-
-function AchievementCard({ icon, title, description, unlocked, date }: any) {
-  return (
-    <Card className={`overflow-hidden transition-all duration-300 ${unlocked ? 'border-amber-200 shadow-md scale-100' : 'opacity-40 grayscale blur-[1px]'}`}>
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <div className={`p-4 rounded-2xl ${unlocked ? 'bg-amber-50' : 'bg-slate-100'}`}>
-            {icon}
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-900">{title}</h3>
-            <p className="text-sm text-slate-500 mt-1 leading-snug">{description}</p>
-            {date && <p className="text-[10px] uppercase tracking-widest font-bold text-amber-600 mt-3">{date}</p>}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

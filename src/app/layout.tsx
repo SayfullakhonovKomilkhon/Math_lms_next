@@ -7,8 +7,15 @@ import { ToastContainer } from '@/components/ui/toast';
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 
 export const metadata: Metadata = {
-  title: 'MathCenter CRM',
+  title: {
+    default: 'MathCenter CRM',
+    template: '%s | MathCenter CRM',
+  },
   description: 'Система управления учебным центром по математике',
+  icons: {
+    icon: '/icon',
+    apple: '/apple-icon',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

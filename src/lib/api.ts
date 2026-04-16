@@ -11,7 +11,7 @@ function redirectToLogin(): void {
   if (typeof window === 'undefined' || redirectingToLogin) return;
   redirectingToLogin = true;
   clearClientSession();
-  window.location.href = '/login';
+  window.location.href = '/login?reason=session-expired';
 }
 
 api.interceptors.request.use((config) => {

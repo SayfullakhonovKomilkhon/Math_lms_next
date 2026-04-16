@@ -15,9 +15,7 @@ import {
   BarChart2,
   Trophy,
   Calendar,
-  LayoutDashboard,
   Megaphone,
-  UserCog,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -27,16 +25,6 @@ export type PanelVariant = 'admin' | 'teacher' | 'student' | 'parent';
 
 const ADMIN_NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin/students', label: 'Ученики', icon: Users },
-  { href: '/admin/groups', label: 'Группы', icon: BookOpen },
-  { href: '/admin/payments', label: 'Оплаты', icon: CreditCard },
-  { href: '/admin/attendance', label: 'Посещаемость', icon: ClipboardList },
-];
-
-/** Только SUPER_ADMIN: создание учителей в API разрешено только этой роли. */
-const SUPER_ADMIN_NAV: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '/admin/overview', label: 'Обзор', icon: LayoutDashboard },
-  { href: '/admin/students', label: 'Ученики', icon: Users },
-  { href: '/admin/teachers', label: 'Учителя', icon: UserCog },
   { href: '/admin/groups', label: 'Группы', icon: BookOpen },
   { href: '/admin/payments', label: 'Оплаты', icon: CreditCard },
   { href: '/admin/attendance', label: 'Посещаемость', icon: ClipboardList },
@@ -100,7 +88,7 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
   
   const navItems = (() => {
     if (variant === 'admin') {
-      return user?.role === 'SUPER_ADMIN' ? SUPER_ADMIN_NAV : ADMIN_NAV;
+      return ADMIN_NAV;
     }
     return {
       teacher: TEACHER_NAV,
@@ -118,7 +106,7 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
   }[variant];
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200/90 bg-white shadow-sm">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200/90 bg-white shadow-sm md:flex">
       <div
         className={cn(
           'px-5 py-6 text-white shadow-inner',

@@ -1,0 +1,6 @@
+export const PROFILE_STALE_TIME = Number.POSITIVE_INFINITY;
+export const SCHEDULE_STALE_TIME = 1000 * 60 * 60;
+export const NOTIFICATIONS_STALE_TIME = 1000 * 30;
+export const ACADEMIC_STALE_TIME = 1000 * 60 * 5;
+export const ANALYTICS_STALE_TIME = 1000 * 60 * 15;
+

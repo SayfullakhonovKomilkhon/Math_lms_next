@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ApiResponse, Homework } from '@/types';
@@ -15,18 +16,37 @@ import {
   Play
 } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { CardSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function StudentHomeworkPage() {
-  const { data: homeworksRes, isLoading } = useQuery({
+  const { data: homeworksRes, isLoading, isError, refetch } = useQuery({
     queryKey: ['student-homework-all'],
     queryFn: () => api.get<ApiResponse<Homework[]>>('/homework/my').then(res => res.data),
   });
 
   if (isLoading) {
-    return <div className="flex h-[400px] items-center justify-center">Загрузка...</div>;
+    return (
+      <div className="space-y-6">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorState
+        message="Не удалось загрузить домашние задания"
+        description="Попробуйте обновить страницу или повторить запрос позже."
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
   }
 
   const homeworks = homeworksRes?.data || [];
@@ -75,11 +95,14 @@ export default function StudentHomeworkPage() {
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {latestHw.imageUrls.map((url, i) => (
-                    <img 
-                      key={i} 
-                      src={url} 
-                      alt="Homework material" 
-                      className="rounded-xl border border-slate-200 hover:border-orange-300 transition-colors shadow-sm cursor-zoom-in"
+                    <Image
+                      key={i}
+                      src={url}
+                      alt="Homework material"
+                      width={800}
+                      height={600}
+                      unoptimized
+                      className="h-auto rounded-xl border border-slate-200 shadow-sm transition-colors hover:border-orange-300"
                       onClick={() => window.open(url, '_blank')}
                     />
                   ))}
@@ -89,10 +112,11 @@ export default function StudentHomeworkPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-slate-50 border-dashed border-2 py-12 flex flex-col items-center">
-          <BookOpen className="h-12 w-12 text-slate-300 mb-4" />
-          <p className="text-slate-500 italic">На данный момент домашних заданий нет</p>
-        </Card>
+        <EmptyState
+          icon="📚"
+          message="Домашних заданий пока нет"
+          description="Когда преподаватель добавит новое задание, оно появится здесь."
+        />
       )}
 
       {historyHw.length > 0 && (
@@ -148,11 +172,14 @@ function HistoryItem({ hw }: { hw: Homework }) {
           {hw.imageUrls && hw.imageUrls.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
               {hw.imageUrls.map((url, i) => (
-                <img 
-                  key={i} 
-                  src={url} 
-                  alt="HW" 
-                  className="rounded-lg border bg-white aspect-video object-cover cursor-pointer hover:shadow-md transition-shadow"
+                <Image
+                  key={i}
+                  src={url}
+                  alt="HW"
+                  width={400}
+                  height={225}
+                  unoptimized
+                  className="aspect-video rounded-lg border bg-white object-cover transition-shadow hover:shadow-md"
                   onClick={() => window.open(url, '_blank')}
                 />
               ))}

@@ -5,24 +5,42 @@ import api from '@/lib/api';
 import { ApiResponse, StudentProfile, PaymentSummary, Homework, GroupSchedule } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BookOpen, 
-  User, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
+import {
+  BookOpen,
+  User,
+  Calendar,
+  CheckCircle2,
+  Clock,
   ArrowRight,
   TrendingUp,
-  Percent
+  Percent,
+  Trophy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { PaymentBanner } from '@/components/payments/PaymentBanner';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { CardSkeleton, ProfileSkeleton, StatsSkeleton } from '@/components/ui/Skeleton';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
+
+interface StudentScheduleResponse {
+  schedule?: GroupSchedule[];
+  nextTopic?: {
+    topic?: string;
+    date: string;
+  };
+}
+
+interface AchievementGridEntry {
+  unlocked?: boolean;
+  icon?: string;
+  title?: string;
+}
 
 export default function StudentDashboard() {
-  const { data: profileRes, isLoading: profileLoading } = useQuery({
+  const { data: profileRes, isLoading: profileLoading, isError: profileError, refetch } = useQuery({
     queryKey: ['student-profile'],
     queryFn: () => api.get<ApiResponse<StudentProfile>>('/students/me').then(res => res.data),
   });
@@ -39,19 +57,57 @@ export default function StudentDashboard() {
 
   const { data: scheduleRes } = useQuery({
     queryKey: ['student-schedule'],
-    queryFn: () => api.get<ApiResponse<any>>('/schedule/my').then(res => res.data),
+    queryFn: () => api.get<ApiResponse<StudentScheduleResponse>>('/schedule/my').then(res => res.data),
+  });
+
+  const { data: achievementsRes } = useQuery({
+    queryKey: ['my-achievements'],
+    queryFn: () => api.get('/achievements/my').then((r) => r.data.data),
+    staleTime: 1000 * 60 * 10,
   });
 
   if (profileLoading) {
-    return <div className="flex h-[400px] items-center justify-center">Загрузка...</div>;
+    return (
+      <div className="space-y-6">
+        <ProfileSkeleton />
+        <StatsSkeleton />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <ErrorState
+        message="Не удалось загрузить панель ученика"
+        description="Профиль или связанная информация временно недоступны."
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
   }
 
   const profile = profileRes?.data;
   const payment = paymentRes?.data;
   const homework = homeworkRes?.data;
   const schedule = scheduleRes?.data;
+  const latestAchievement =
+    (achievementsRes?.monthGrid as AchievementGridEntry[] | undefined)?.find((entry) => entry.unlocked) ??
+    null;
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <EmptyState
+        icon="🎓"
+        message="Профиль ученика пока недоступен"
+        description="Попробуйте войти снова или обратитесь к администратору."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -183,6 +239,24 @@ export default function StudentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Latest Achievement */}
+      {latestAchievement && (
+        <Link href="/student/achievements">
+          <Card className="cursor-pointer border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-xl">
+                {latestAchievement.icon}
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-amber-600">Последнее достижение</p>
+                <p className="font-semibold text-slate-900">{latestAchievement.title}</p>
+              </div>
+              <Trophy className="h-5 w-5 text-amber-500" />
+            </CardContent>
+          </Card>
+        </Link>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { ROLE_HOME_PATHS } from '@/lib/auth-routing';
 import { useAuthStore } from '@/store/auth.store';
 
 export function useAuth() {
@@ -10,14 +11,7 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     await storeLogin(email, password);
     const role = useAuthStore.getState().user?.role;
-    const redirectMap: Record<string, string> = {
-      ADMIN: '/admin/students',
-      SUPER_ADMIN: '/admin/overview',
-      TEACHER: '/teacher/groups',
-      STUDENT: '/student/dashboard',
-      PARENT: '/parent/dashboard',
-    };
-    router.push(redirectMap[role ?? ''] || '/login');
+    router.push((role && ROLE_HOME_PATHS[role]) || '/login');
   };
 
   const logout = () => {

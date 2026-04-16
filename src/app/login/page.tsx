@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
@@ -18,8 +19,15 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'select' | 'staff' | 'student'>('select');
+
+  useEffect(() => {
+    if (searchParams.get('reason') === 'session-expired') {
+      toast('Сессия истекла. Войдите снова.', 'info');
+    }
+  }, [searchParams]);
 
   const {
     register,

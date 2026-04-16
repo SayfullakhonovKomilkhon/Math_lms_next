@@ -11,6 +11,9 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SelectField } from '@/components/ui/input-field';
 import { TabsBar, TabsBarButton } from '@/components/ui/tabs-bar';
+import { CardSkeleton } from '@/components/ui/Skeleton';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const TABS = [
   { key: 'PENDING', label: 'Чеки на проверке' },
@@ -24,12 +27,22 @@ export default function PaymentsPage() {
   const [uploadStudentId, setUploadStudentId] = useState('');
   const qc = useQueryClient();
 
-  const { data: students = [] } = useQuery({
+  const {
+    data: students = [],
+    isLoading: studentsLoading,
+    isError: studentsError,
+    refetch: refetchStudents,
+  } = useQuery({
     queryKey: ['students'],
     queryFn: () => api.get('/students').then((r) => r.data.data as Student[]),
   });
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['payments', tab],
     queryFn: () => {
       const params = tab === 'PENDING' ? '?status=PENDING' : '';
@@ -65,31 +78,45 @@ export default function PaymentsPage() {
           <h2 className="font-semibold text-slate-900">Загрузить чек за ученика</h2>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="mb-1 block text-xs text-slate-500">Ученик</label>
-            <SelectField
-              accent="admin"
-              value={uploadStudentId}
-              onChange={(e) => setUploadStudentId(e.target.value)}
-              className="max-w-md"
-            >
-              <option value="">Выберите ученика</option>
-              {students
-                .filter((s) => s.isActive)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.fullName}
-                  </option>
-                ))}
-            </SelectField>
-          </div>
-          {uploadStudentId ? (
-            <ReceiptUploader
-              studentId={uploadStudentId}
-              onUploaded={() => qc.invalidateQueries({ queryKey: ['payments'] })}
+          {studentsLoading ? (
+            <CardSkeleton />
+          ) : studentsError ? (
+            <ErrorState
+              message="Не удалось загрузить список учеников"
+              description="Без списка учеников нельзя выбрать, за кого загружать чек."
+              onRetry={() => {
+                void refetchStudents();
+              }}
             />
           ) : (
-            <p className="text-sm text-slate-500">Сначала выберите ученика</p>
+            <>
+              <div>
+                <label className="mb-1 block text-xs text-slate-500">Ученик</label>
+                <SelectField
+                  accent="admin"
+                  value={uploadStudentId}
+                  onChange={(e) => setUploadStudentId(e.target.value)}
+                  className="max-w-md"
+                >
+                  <option value="">Выберите ученика</option>
+                  {students
+                    .filter((s) => s.isActive)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.fullName}
+                      </option>
+                    ))}
+                </SelectField>
+              </div>
+              {uploadStudentId ? (
+                <ReceiptUploader
+                  studentId={uploadStudentId}
+                  onUploaded={() => qc.invalidateQueries({ queryKey: ['payments'] })}
+                />
+              ) : (
+                <p className="text-sm text-slate-500">Сначала выберите ученика</p>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -103,7 +130,25 @@ export default function PaymentsPage() {
       </TabsBar>
 
       {isLoading ? (
-        <p className="py-8 text-center text-slate-400">Загрузка...</p>
+        <CardSkeleton />
+      ) : isError ? (
+        <ErrorState
+          message="Не удалось загрузить оплаты"
+          description="Список чеков и история оплат временно недоступны."
+          onRetry={() => {
+            void refetch();
+          }}
+        />
+      ) : (data ?? []).length === 0 ? (
+        <EmptyState
+          icon={tab === 'PENDING' ? '🧾' : '💳'}
+          message={tab === 'PENDING' ? 'Чеков на проверке пока нет' : 'История оплат пуста'}
+          description={
+            tab === 'PENDING'
+              ? 'Новые чеки появятся здесь, когда родители или администраторы загрузят оплату.'
+              : 'Когда в системе появятся платежи, они будут показаны в этом разделе.'
+          }
+        />
       ) : (
         <PaymentsList
           payments={data ?? []}
