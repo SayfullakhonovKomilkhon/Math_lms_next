@@ -73,17 +73,15 @@ export function AttendanceTable({
   const handleSave = () => onSave(rows);
 
   const summary = {
-    present: rows.filter((r) => r.status === 'PRESENT').length,
-    late: rows.filter((r) => r.status === 'LATE').length,
+    present: rows.filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length,
     absent: rows.filter((r) => r.status === 'ABSENT').length,
   };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 text-sm">
-        <span className="font-medium text-emerald-800">✓ Присутствует: {summary.present}</span>
-        <span className="font-medium text-amber-800">⏰ Опоздал: {summary.late}</span>
-        <span className="font-medium text-red-800">✗ Отсутствует: {summary.absent}</span>
+        <span className="font-medium text-emerald-800">✓ Был на уроке: {summary.present}</span>
+        <span className="font-medium text-red-800">✗ Не был на уроке: {summary.absent}</span>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200/90">
