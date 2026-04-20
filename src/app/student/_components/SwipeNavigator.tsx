@@ -28,8 +28,7 @@ export function SwipeNavigator({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (idx === -1) return;
-    const main = document.getElementById('student-scroll-root');
-    if (!main) return;
+    if (typeof window === 'undefined') return;
 
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -57,11 +56,11 @@ export function SwipeNavigator({ children }: { children: React.ReactNode }) {
       }
     };
 
-    main.addEventListener('touchstart', onStart, { passive: true });
-    main.addEventListener('touchend', onEnd, { passive: true });
+    window.addEventListener('touchstart', onStart, { passive: true });
+    window.addEventListener('touchend', onEnd, { passive: true });
     return () => {
-      main.removeEventListener('touchstart', onStart);
-      main.removeEventListener('touchend', onEnd);
+      window.removeEventListener('touchstart', onStart);
+      window.removeEventListener('touchend', onEnd);
     };
   }, [idx, router]);
 

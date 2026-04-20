@@ -75,7 +75,6 @@
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: contain;
 }
 
 /* Scope-reset: inside the student app, neutralize the global light tailwind body styles */

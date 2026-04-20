@@ -22,11 +22,16 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (reduced) return;
+    if (typeof window === 'undefined') return;
+
     const main = document.getElementById('student-scroll-root');
-    if (!main) return;
+    const getScrollTop = () => {
+      if (main && main.scrollTop > 0) return main.scrollTop;
+      return window.scrollY || document.documentElement.scrollTop || 0;
+    };
 
     const onStart = (e: TouchEvent) => {
-      if (main.scrollTop > 0) return;
+      if (getScrollTop() > 0) return;
       const t = e.touches[0];
       if (!t) return;
       startY.current = t.clientY;
@@ -36,7 +41,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       const t = e.touches[0];
       if (!t) return;
       const delta = t.clientY - startY.current;
-      if (delta > 0 && main.scrollTop <= 0) {
+      if (delta > 0 && getScrollTop() <= 0) {
         setDy(Math.min(MAX_DY, delta * 0.55));
       }
     };
@@ -59,15 +64,16 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       }
     };
 
-    main.addEventListener('touchstart', onStart, { passive: true });
-    main.addEventListener('touchmove', onMove, { passive: true });
-    main.addEventListener('touchend', onEnd, { passive: true });
-    main.addEventListener('touchcancel', onEnd, { passive: true });
+    const target: EventTarget = window;
+    target.addEventListener('touchstart', onStart as EventListener, { passive: true });
+    target.addEventListener('touchmove', onMove as EventListener, { passive: true });
+    target.addEventListener('touchend', onEnd as EventListener, { passive: true });
+    target.addEventListener('touchcancel', onEnd as EventListener, { passive: true });
     return () => {
-      main.removeEventListener('touchstart', onStart);
-      main.removeEventListener('touchmove', onMove);
-      main.removeEventListener('touchend', onEnd);
-      main.removeEventListener('touchcancel', onEnd);
+      target.removeEventListener('touchstart', onStart as EventListener);
+      target.removeEventListener('touchmove', onMove as EventListener);
+      target.removeEventListener('touchend', onEnd as EventListener);
+      target.removeEventListener('touchcancel', onEnd as EventListener);
     };
   }, [dy, qc, reduced]);
 
