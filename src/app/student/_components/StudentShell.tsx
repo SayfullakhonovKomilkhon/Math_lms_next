@@ -3,6 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useStudentSummary } from '../_lib/useStudentSummary';
+import { useMyAchievements } from '../_lib/useMyAchievements';
+import { deriveChampionship } from '../_lib/useChampionship';
 import { TopBar } from './TopBar';
 import { BottomNav } from './BottomNav';
 import { SideDock } from './SideDock';
@@ -16,6 +18,8 @@ type NotifCountResponse = { data: { unread: number } };
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const { summary } = useStudentSummary();
+  const { medals } = useMyAchievements();
+  const champion = deriveChampionship(medals, summary.gender);
   const { data: unreadData } = useQuery<NotifCountResponse>({
     queryKey: ['notif-count'],
     queryFn: () => api.get('/notifications/unread-count').then((r) => r.data),
@@ -31,7 +35,14 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
         <ParticleField />
       </div>
 
-      <SideDock unreadCount={unread} />
+      <SideDock
+        unreadCount={unread}
+        champion={champion.isChampion}
+        studentName={summary.fullName}
+        studentInitials={summary.initials}
+        studentGroup={summary.groupName}
+        championTitle={champion.title?.title}
+      />
 
       <div className={styles.mainCol} id="student-scroll-root">
         <TopBar
@@ -39,6 +50,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           initials={summary.initials}
           unreadCount={unread}
           streak={summary.streak}
+          champion={champion.isChampion}
         />
         <SwipeNavigator>
           <PullToRefresh>

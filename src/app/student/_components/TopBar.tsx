@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
+import { StudentAvatar } from './StudentAvatar';
 import styles from './TopBar.module.css';
 
 type TopBarProps = {
@@ -9,17 +10,24 @@ type TopBarProps = {
   initials: string;
   unreadCount?: number;
   streak?: number;
+  champion?: boolean;
 };
 
-export function TopBar({ firstName, initials, unreadCount = 0, streak }: TopBarProps) {
+export function TopBar({
+  firstName,
+  initials,
+  unreadCount = 0,
+  streak,
+  champion = false,
+}: TopBarProps) {
   return (
     <header className={styles.bar}>
       <Link href="/student/profile" className={styles.identity} aria-label="Профиль">
-        <span className={styles.avatar} aria-hidden>
-          {initials}
-        </span>
+        <StudentAvatar initials={initials} size={40} champion={champion} />
         <span className={styles.text}>
-          <span className={styles.hello}>Привет</span>
+          <span className={styles.hello}>
+            {champion ? 'Чемпион месяца' : 'Привет'}
+          </span>
           <span className={styles.name}>{firstName}</span>
         </span>
       </Link>

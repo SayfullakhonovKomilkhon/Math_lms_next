@@ -20,6 +20,7 @@ type StudentSummary = {
   title: string;
   titleEmoji: string;
   streak: number;
+  gender: 'male' | 'female';
 };
 
 function toInitials(name: string): string {
@@ -82,6 +83,7 @@ export function useStudentSummary(): {
         title: level >= 10 ? 'Легенда' : level >= 6 ? 'Умный боец' : 'Юный исследователь',
         titleEmoji: level >= 10 ? '🏆' : level >= 6 ? '⚡' : '🌱',
         streak: Math.min(30, Math.round((data.attendanceStats?.percentage ?? 0) / 8)),
+        gender: data.gender === 'FEMALE' ? 'female' : 'male',
       },
       loading: false,
       isMock: false,
@@ -105,6 +107,7 @@ export function useStudentSummary(): {
       title: mockStudent.title,
       titleEmoji: mockStudent.titleEmoji,
       streak: mockStudent.streak,
+      gender: mockStudent.gender,
     },
     loading: isLoading,
     isMock: isError || !isLoading,

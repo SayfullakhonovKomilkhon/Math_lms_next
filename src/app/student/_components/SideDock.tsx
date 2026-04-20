@@ -14,6 +14,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { StudentAvatar } from './StudentAvatar';
 import styles from './SideDock.module.css';
 
 const MAIN = [
@@ -32,9 +33,21 @@ const SECONDARY = [
 
 type SideDockProps = {
   unreadCount?: number;
+  champion?: boolean;
+  studentName?: string;
+  studentInitials?: string;
+  studentGroup?: string;
+  championTitle?: string;
 };
 
-export function SideDock({ unreadCount = 0 }: SideDockProps) {
+export function SideDock({
+  unreadCount = 0,
+  champion = false,
+  studentName,
+  studentInitials,
+  studentGroup,
+  championTitle,
+}: SideDockProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -50,6 +63,32 @@ export function SideDock({ unreadCount = 0 }: SideDockProps) {
           <div className={styles.brandSub}>Панель ученика</div>
         </div>
       </div>
+
+      {studentName ? (
+        <div
+          className={`${styles.meCard} ${champion ? styles.meCardChampion : ''}`}
+        >
+          <StudentAvatar
+            initials={studentInitials ?? '·'}
+            size={44}
+            champion={champion}
+          />
+          <div className={styles.meText}>
+            <div className={styles.meName}>{studentName}</div>
+            {studentGroup ? (
+              <div className={styles.meGroup}>{studentGroup}</div>
+            ) : null}
+            {champion ? (
+              <>
+                <span className={styles.meBadge}>🥇 Лучший в группе</span>
+                {championTitle ? (
+                  <div className={styles.meTitle}>«{championTitle}»</div>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <nav className={styles.nav}>
         {MAIN.map(({ href, label, icon: Icon }) => (

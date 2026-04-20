@@ -1,103 +1,46 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Award, Sparkles, Trophy, Users } from 'lucide-react';
-import api from '@/lib/api';
+import { Award, Sparkles, Trophy, Users, Wand2 } from 'lucide-react';
 import { PageTitle } from '../_components/PageTitle';
 import { SectionHeading } from '../_components/Card';
+import { ChampionBanner } from '../_components/ChampionBanner';
 import {
-  HexMedalGrid,
-  type HexMedal,
-} from '../_components/HexMedalGrid';
+  MonthAchievementGrid,
+  type MonthMedal,
+} from '../_components/MonthAchievementCard';
 import { Podium, type PodiumEntry } from '../_components/Podium';
 import {
   SpecialAchievementCard,
-  type SpecialAchievement,
+  type SpecialState,
 } from '../_components/SpecialAchievementCard';
-import { AchievementUnlockModal } from '../_components/AchievementUnlockModal';
+import {
+  AchievementDetailModal,
+  type AchievementDetail,
+} from '../_components/AchievementDetailModal';
+import {
+  AchievementCelebration,
+  type CelebrationInput,
+} from '../_components/AchievementCelebration';
 import { SButton } from '../_components/SButton';
 import { useStudentSummary } from '../_lib/useStudentSummary';
-import {
-  mockLeaderboard,
-  mockMonthGrid,
-  mockSpecials,
-} from '../_lib/mockData';
+import { useMyAchievements } from '../_lib/useMyAchievements';
+import { deriveChampionship } from '../_lib/useChampionship';
+import { MONTHS } from '../_lib/achievementsCatalog';
+import { mockLeaderboard } from '../_lib/mockData';
 import styles from './achievements.module.css';
-
-interface AchievementsData {
-  student?: { id: string; fullName: string; groupName: string | null };
-  monthGrid?: HexMedal[];
-  specialAchievements?: SpecialAchievement[];
-  stats?: {
-    goldCount: number;
-    silverCount: number;
-    bronzeCount: number;
-    totalAchievements: number;
-  };
-}
-
-type UnlockDetail = {
-  icon: string;
-  title: string;
-  description?: string;
-  label?: string;
-};
 
 export default function StudentAchievementsPage() {
   const { summary } = useStudentSummary();
-  const { data } = useQuery<AchievementsData | null>({
-    queryKey: ['my-achievements'],
-    queryFn: () => api.get('/achievements/my').then((r) => r.data.data ?? null),
-    staleTime: 1000 * 60 * 10,
-    retry: 0,
-  });
+  const { medals, specials, studentName: apiName, groupName: apiGroup } =
+    useMyAchievements();
 
-  const [unlockOpen, setUnlockOpen] = useState(false);
-  const [detail, setDetail] = useState<UnlockDetail | null>(null);
+  const studentName = apiName ?? summary.fullName;
+  const studentGroup = apiGroup ?? summary.groupName;
+  const champion = deriveChampionship(medals, summary.gender);
 
-  // PREVIEW: force-unlock every monthly medal and special achievement so we
-  // can review the visual design regardless of what the backend returns.
-  // Remove this override once the real achievement flow is ready.
-  const rawMedals: HexMedal[] = data?.monthGrid?.length ? data.monthGrid : mockMonthGrid;
-  const PREVIEW_PLACES: (1 | 2 | 3)[] = [1, 2, 1, 3, 2, 1, 2, 3, 1, 2, 3, 1];
-  const medals: HexMedal[] = rawMedals.map((m, i) => {
-    const place = (m.place ?? PREVIEW_PLACES[i] ?? 2) as 1 | 2 | 3;
-    return {
-      ...m,
-      unlocked: true,
-      place,
-      title:
-        m.title ??
-        (place === 1
-          ? 'Лучший месяца'
-          : place === 2
-            ? 'Серебряный призёр'
-            : 'Бронзовый призёр'),
-      icon: m.icon ?? (place === 1 ? '🥇' : place === 2 ? '🥈' : '🥉'),
-      description:
-        m.description ??
-        `Топ-${place} среди учеников группы по итогам месяца.`,
-    };
-  });
-
-  const rawSpecials: SpecialAchievement[] =
-    data?.specialAchievements?.length ? data.specialAchievements : mockSpecials;
-  const specials: SpecialAchievement[] = rawSpecials.map((s) => ({
-    ...s,
-    unlocked: true,
-    unlockedAt: s.unlockedAt ?? new Date().toISOString(),
-  }));
-
-  const goldCount = medals.filter((m) => m.place === 1).length;
-  const silverCount = medals.filter((m) => m.place === 2).length;
-  const bronzeCount = medals.filter((m) => m.place === 3).length;
-  const stats = {
-    goldCount,
-    silverCount,
-    bronzeCount,
-    totalAchievements: goldCount + silverCount + bronzeCount + specials.length,
-  };
+  const [detail, setDetail] = useState<AchievementDetail | null>(null);
+  const [celebrate, setCelebrate] = useState<CelebrationInput | null>(null);
 
   const podiumEntries: PodiumEntry[] = mockLeaderboard.slice(0, 3).map((m) => ({
     id: m.id,
@@ -107,46 +50,33 @@ export default function StudentAchievementsPage() {
     isMe: m.isMe,
   }));
 
-  const studentName = data?.student?.fullName ?? summary.fullName;
-  const studentGroup = data?.student?.groupName ?? summary.groupName;
+  const goldCount = medals.filter((m) => m.unlocked && m.place === 1).length;
+  const silverCount = medals.filter((m) => m.unlocked && m.place === 2).length;
+  const bronzeCount = medals.filter((m) => m.unlocked && m.place === 3).length;
 
-  const openMedalDetail = (m: HexMedal) => {
-    if (!m.unlocked) {
-      setDetail({
-        icon: '🔒',
-        title: `${m.monthName} — закрыто`,
-        description: 'Попади в топ-3 группы в этом месяце, чтобы получить медаль.',
-        label: 'Достижение заблокировано',
-      });
-    } else {
-      setDetail({
-        icon: m.icon ?? '🏅',
-        title: m.title ?? 'Достижение',
-        description: m.description ?? 'Отличная работа! Так держать!',
-        label: m.monthName,
-      });
-    }
-    setUnlockOpen(true);
+  const openMedalDetail = (m: MonthMedal) => {
+    if (!m.unlocked || !m.place) return;
+    setDetail({
+      kind: 'monthly',
+      month: m.month,
+      place: m.place,
+      unlockedAt: m.unlockedAt,
+      year: m.year,
+    });
   };
 
-  const openSpecial = (s: SpecialAchievement) => {
+  const openSpecial = (s: SpecialState) => {
+    if (!s.unlocked) return;
     setDetail({
-      icon: s.icon,
-      title: s.unlocked ? s.title : `${s.title} — закрыто`,
-      description: s.unlocked ? s.description : s.condition,
-      label: s.unlocked ? 'Особое достижение' : 'Цель впереди',
+      kind: 'special',
+      key: s.key,
+      unlockedAt: s.unlockedAt,
     });
-    setUnlockOpen(true);
   };
 
-  const triggerDemoUnlock = () => {
-    setDetail({
-      icon: '🏆',
-      title: 'Умный боец',
-      description: 'Отличная серия! Ты на пути к следующему уровню.',
-      label: 'Новое достижение',
-    });
-    setUnlockOpen(true);
+  const demoCelebration = () => {
+    const month = new Date().getMonth() + 1;
+    setCelebrate({ month, place: 1 });
   };
 
   return (
@@ -158,6 +88,12 @@ export default function StudentAchievementsPage() {
         gradient
       />
 
+      {champion.isChampion ? (
+        <div style={{ marginBottom: 18 }}>
+          <ChampionBanner state={champion} />
+        </div>
+      ) : null}
+
       <section className={styles.hero}>
         <div className={styles.heroIcon}>🏅</div>
         <div className={styles.heroText}>
@@ -165,13 +101,13 @@ export default function StudentAchievementsPage() {
           <div className={styles.heroGroup}>{studentGroup ?? '—'}</div>
           <div className={styles.medalsRow}>
             <span className={styles.medalStat}>
-              🥇 {stats.goldCount} <small>золото</small>
+              🥇 {goldCount} <small>золото</small>
             </span>
             <span className={styles.medalStat}>
-              🥈 {stats.silverCount} <small>серебро</small>
+              🥈 {silverCount} <small>серебро</small>
             </span>
             <span className={styles.medalStat}>
-              🥉 {stats.bronzeCount} <small>бронза</small>
+              🥉 {bronzeCount} <small>бронза</small>
             </span>
           </div>
         </div>
@@ -194,9 +130,13 @@ export default function StudentAchievementsPage() {
 
       <div className={styles.section}>
         <SectionHeading icon={<Award size={14} />} label="Медали по месяцам" />
-        <HexMedalGrid medals={medals} onSelect={openMedalDetail} />
+        <MonthAchievementGrid
+          medals={medals}
+          gender={summary.gender}
+          onSelect={openMedalDetail}
+        />
         <p className={styles.hint}>
-          Нажми на медаль, чтобы узнать подробнее. Удерживай на телефоне, чтобы открыть детали.
+          Нажми на карточку, чтобы увидеть подробности и поделиться победой.
         </p>
       </div>
 
@@ -204,20 +144,55 @@ export default function StudentAchievementsPage() {
         <SectionHeading icon={<Sparkles size={14} />} label="Особые достижения" />
         <div className={styles.specialGrid}>
           {specials.map((s) => (
-            <SpecialAchievementCard key={s.key} achievement={s} onClick={openSpecial} />
+            <SpecialAchievementCard
+              key={s.key}
+              state={s}
+              gender={summary.gender}
+              onSelect={openSpecial}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <SectionHeading
+          icon={<Wand2 size={14} />}
+          label="Анимации вручения"
+        />
+        <p className={styles.hint}>
+          У каждого месяца — своя анимация. Нажми кнопку, чтобы посмотреть, как
+          открываются медали.
+        </p>
+        <div className={styles.celebRow}>
+          {MONTHS.map((m) => (
+            <SButton
+              key={m.month}
+              variant="ghost"
+              size="sm"
+              onClick={() => setCelebrate({ month: m.month, place: 1 })}
+            >
+              {m.emoji} {m.short}
+            </SButton>
           ))}
         </div>
         <div className={styles.demoBtn}>
-          <SButton variant="gold" onClick={triggerDemoUnlock}>
-            ✨ Посмотреть анимацию получения
+          <SButton variant="gold" onClick={demoCelebration}>
+            ✨ Эпичное вручение прямо сейчас
           </SButton>
         </div>
       </div>
 
-      <AchievementUnlockModal
-        open={unlockOpen}
+      <AchievementDetailModal
         detail={detail}
-        onClose={() => setUnlockOpen(false)}
+        gender={summary.gender}
+        groupName={studentGroup}
+        onClose={() => setDetail(null)}
+      />
+
+      <AchievementCelebration
+        input={celebrate}
+        gender={summary.gender}
+        onClose={() => setCelebrate(null)}
       />
     </div>
   );

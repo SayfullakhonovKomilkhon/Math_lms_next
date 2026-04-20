@@ -1,0 +1,61 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffd27a 0%, #f5b544 55%, #ef8e38 100%);
+  color: var(--s-brand-wool);
+  letter-spacing: -0.02em;
+  box-shadow: 0 10px 22px rgba(239, 142, 56, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  position: relative;
+  isolation: isolate;
+}
+
+.champion {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde047 40%, #d97706 100%);
+  color: #1c1917;
+  box-shadow:
+    0 0 0 2px #D97706,
+    0 0 0 4px rgba(253, 224, 71, 0.7),
+    0 0 22px rgba(217, 119, 6, 0.55),
+    0 12px 24px rgba(217, 119, 6, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.crown {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -42%;
+  font-size: 52%;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(217, 119, 6, 0.5));
+  pointer-events: none;
+  animation: sCrownSway 2.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes sCrownSway {
+  0%, 100% {
+    transform: translateX(-50%) rotate(-6deg);
+  }
+  50% {
+    transform: translateX(-50%) rotate(6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crown {
+    animation: none;
+  }
+}

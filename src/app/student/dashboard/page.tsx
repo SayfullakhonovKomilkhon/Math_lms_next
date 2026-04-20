@@ -17,7 +17,10 @@ import { Hero } from '../_components/Hero';
 import { XPBar } from '../_components/XPBar';
 import { StatCard } from '../_components/StatCard';
 import { GlassCard, SectionHeading } from '../_components/Card';
+import { ChampionBanner } from '../_components/ChampionBanner';
 import { useStudentSummary } from '../_lib/useStudentSummary';
+import { useMyAchievements } from '../_lib/useMyAchievements';
+import { deriveChampionship } from '../_lib/useChampionship';
 import {
   mockLatestHomework,
   mockNextTopic,
@@ -62,6 +65,8 @@ function formatDate(d: string) {
 
 export default function StudentDashboard() {
   const { summary } = useStudentSummary();
+  const { medals } = useMyAchievements();
+  const champion = deriveChampionship(medals, summary.gender);
 
   const { data: paymentRes } = useQuery({
     queryKey: ['student-payment'],
@@ -88,18 +93,16 @@ export default function StudentDashboard() {
     retry: 0,
   });
 
-  const { data: achievementsRes } = useQuery<{ monthGrid?: AchievementEntry[] } | null>({
-    queryKey: ['my-achievements'],
-    queryFn: () =>
-      api.get('/achievements/my').then((r) => r.data.data ?? null),
-    retry: 0,
-  });
-
-  const latestAchievement =
-    achievementsRes?.monthGrid?.find((e) => e.unlocked) ?? {
-      icon: '🥇',
-      title: 'Лучший месяца',
-    };
+  const latestAchievement: AchievementEntry = champion.title
+    ? {
+        unlocked: true,
+        icon: champion.title.icon,
+        title: champion.title.title,
+      }
+    : {
+        icon: '🥇',
+        title: 'Лучший месяца',
+      };
 
   const hwToShow = homework ?? {
     id: mockLatestHomework.id,
@@ -128,6 +131,12 @@ export default function StudentDashboard() {
         groupName={summary.groupName}
         teacherName={summary.teacherName}
       />
+
+      {champion.isChampion ? (
+        <div className={styles.section} style={{ marginBottom: 12 }}>
+          <ChampionBanner state={champion} />
+        </div>
+      ) : null}
 
       <div className={styles.section}>
         <div className={styles.xpCard}>

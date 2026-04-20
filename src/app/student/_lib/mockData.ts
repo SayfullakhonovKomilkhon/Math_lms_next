@@ -3,6 +3,8 @@
  * Uses authentic Uzbek names so the UI looks alive in demo mode.
  */
 
+import type { SpecialKey } from './achievementsCatalog';
+
 export type MockAchievement = {
   month: number;
   monthName: string;
@@ -16,14 +18,9 @@ export type MockAchievement = {
 };
 
 export type MockSpecial = {
-  key: string;
-  title: string;
-  icon: string;
-  description: string;
-  condition: string;
+  key: SpecialKey;
   unlocked: boolean;
   unlockedAt?: string;
-  accent: 'purple' | 'pink' | 'gold' | 'blue' | 'red';
 };
 
 export const mockStudent = {
@@ -31,6 +28,7 @@ export const mockStudent = {
   fullName: 'Диёрбек Усмонов',
   firstName: 'Диёрбек',
   phone: '+998 90 123 45 67',
+  gender: 'male' as 'male' | 'female',
   level: 7,
   xp: 1280,
   xpNeeded: 1800,
@@ -101,62 +99,13 @@ export const mockMonthGrid: MockAchievement[] = MONTH_NAMES_RU.map((name, i) => 
 });
 
 export const mockSpecials: MockSpecial[] = [
-  {
-    key: 'iron_attendance',
-    title: 'Железная посещаемость',
-    icon: '🔥',
-    description: '30 дней подряд без пропусков.',
-    condition: 'Посещай все занятия без пропусков 30 дней.',
-    unlocked: true,
-    unlockedAt: new Date('2026-03-12').toISOString(),
-    accent: 'red',
-  },
-  {
-    key: 'perfect_100',
-    title: '100 из 100',
-    icon: '✨',
-    description: 'Получил максимум на контрольной.',
-    condition: 'Заработай максимальный балл на контрольной работе.',
-    unlocked: true,
-    unlockedAt: new Date('2026-02-28').toISOString(),
-    accent: 'gold',
-  },
-  {
-    key: 'three_in_a_row',
-    title: 'Три месяца подряд',
-    icon: '⚡',
-    description: 'Топ-3 три месяца подряд.',
-    condition: 'Удержись в топ-3 группы три месяца подряд.',
-    unlocked: true,
-    accent: 'purple',
-  },
-  {
-    key: 'fast_start',
-    title: 'На старт!',
-    icon: '🚀',
-    description: 'Первое выполненное ДЗ.',
-    condition: 'Сдай первое домашнее задание вовремя.',
-    unlocked: true,
-    accent: 'blue',
-  },
-  {
-    key: 'marathon',
-    title: 'Марафонец',
-    icon: '🏃',
-    description: '100 решённых задач.',
-    condition: 'Реши 100 задач в системе.',
-    unlocked: false,
-    accent: 'purple',
-  },
-  {
-    key: 'sharp_mind',
-    title: 'Острый ум',
-    icon: '🧠',
-    description: '5 контрольных на 95%+.',
-    condition: 'Напиши пять контрольных на 95% и выше.',
-    unlocked: false,
-    accent: 'pink',
-  },
+  { key: 'first_step', unlocked: true, unlockedAt: new Date('2025-09-05').toISOString() },
+  { key: 'iron_attendance', unlocked: true, unlockedAt: new Date('2026-01-31').toISOString() },
+  { key: 'perfect_100', unlocked: true, unlockedAt: new Date('2026-02-28').toISOString() },
+  { key: 'three_months', unlocked: true, unlockedAt: new Date('2026-03-30').toISOString() },
+  { key: 'quiet_hero', unlocked: true, unlockedAt: new Date('2026-04-10').toISOString() },
+  { key: 'year_legend', unlocked: false },
+  { key: 'no_miss', unlocked: false },
 ];
 
 export const mockLeaderboard = [

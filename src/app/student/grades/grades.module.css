@@ -129,6 +129,48 @@
   );
   border-color: rgba(38, 80, 187, 0.42);
   box-shadow: 0 12px 28px rgba(38, 80, 187, 0.18);
+  border-left: 3px solid #3B82F6;
+}
+
+/* Leader rows get a podium-tier background even when they are not "me". */
+.row.rowGold {
+  background: linear-gradient(145deg, #FFFBEB 0%, #FEF3C7 100%);
+  border-color: #D97706;
+  border-left: 3px solid #D97706;
+  box-shadow: 0 10px 24px rgba(217, 119, 6, 0.2);
+}
+
+.row.rowSilver {
+  background: linear-gradient(145deg, #F8FAFC 0%, #E2E8F0 100%);
+  border-color: #94A3B8;
+  border-left: 3px solid #94A3B8;
+  box-shadow: 0 8px 20px rgba(100, 116, 139, 0.16);
+}
+
+.row.rowBronze {
+  background: linear-gradient(145deg, #FBF5F0 0%, #FDE1C7 100%);
+  border-color: #EA8C4A;
+  border-left: 3px solid #EA8C4A;
+  box-shadow: 0 8px 20px rgba(234, 140, 74, 0.18);
+}
+
+/* When the viewer is in the podium, keep the "me" highlight but still
+   show the tier color via the left border. */
+.row.me.rowGold {
+  border-left-color: #D97706;
+}
+.row.me.rowSilver {
+  border-left-color: #94A3B8;
+}
+.row.me.rowBronze {
+  border-left-color: #EA8C4A;
+}
+
+.crownInline {
+  display: inline-flex;
+  font-size: 14px;
+  margin-right: 4px;
+  filter: drop-shadow(0 2px 3px rgba(217, 119, 6, 0.5));
 }
 
 .rank {

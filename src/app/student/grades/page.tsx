@@ -149,20 +149,46 @@ export default function StudentGradesPage() {
           </div>
 
           <SectionHeading icon={<Award size={14} />} label="Полный рейтинг" />
-          <ul className={styles.leaderList} style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul
+            className={styles.leaderList}
+            style={{ listStyle: 'none', padding: 0, margin: 0 }}
+          >
             {ratingList.map((r) => {
               const rankCls =
-                r.place === 1 ? styles.top1 : r.place === 2 ? styles.top2 : r.place === 3 ? styles.top3 : '';
+                r.place === 1
+                  ? styles.top1
+                  : r.place === 2
+                    ? styles.top2
+                    : r.place === 3
+                      ? styles.top3
+                      : '';
+              const tierCls =
+                r.place === 1
+                  ? styles.rowGold
+                  : r.place === 2
+                    ? styles.rowSilver
+                    : r.place === 3
+                      ? styles.rowBronze
+                      : '';
               const ch = r.change ?? 0;
               const chCls = ch > 0 ? '' : ch === 0 ? styles.zero : styles.down;
+              const medal =
+                r.place === 1 ? '🥇' : r.place === 2 ? '🥈' : r.place === 3 ? '🥉' : '';
               return (
                 <li
                   key={r.id}
-                  className={`${styles.row} ${r.isMe ? styles.me : ''}`}
+                  className={`${styles.row} ${tierCls} ${r.isMe ? styles.me : ''}`}
                 >
-                  <span className={`${styles.rank} ${rankCls}`}>{r.place}</span>
+                  <span className={`${styles.rank} ${rankCls}`}>
+                    {medal || r.place}
+                  </span>
                   <span className={styles.avatar}>{initials(r.fullName)}</span>
                   <span className={styles.rowName}>
+                    {r.place === 1 ? (
+                      <span className={styles.crownInline} aria-hidden>
+                        👑
+                      </span>
+                    ) : null}
                     {r.fullName}
                     {r.isMe ? ' · ВЫ' : ''}
                   </span>
