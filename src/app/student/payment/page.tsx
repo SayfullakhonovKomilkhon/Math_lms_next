@@ -1,188 +1,164 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { CreditCard, Info, Wallet } from 'lucide-react';
 import api from '@/lib/api';
-import { ApiResponse, PaymentSummary } from '@/types';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTableRow } from '@/components/ui/data-table';
-import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
-import { PaymentBanner } from '@/components/payments/PaymentBanner';
-import { CreditCard, Wallet, Calendar, Info, FileText, ExternalLink } from 'lucide-react';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import type { ApiResponse, PaymentSummary } from '@/types';
+import { PageTitle } from '../_components/PageTitle';
+import { SectionHeading } from '../_components/Card';
+import styles from './payment.module.css';
+
+const STATUS_COPY: Record<string, { label: string; icon: string; cls: string }> = {
+  PAID: { label: 'Оплата за месяц внесена', icon: '✅', cls: 'paid' },
+  PENDING: { label: 'Платёж на проверке у администратора', icon: '⏳', cls: 'pending' },
+  UNPAID: { label: 'Необходимо оплатить обучение', icon: '⚠️', cls: 'unpaid' },
+};
+
+const PAYMENT_STATUS_BADGES: Record<string, string> = {
+  CONFIRMED: 'paid',
+  PENDING: 'pending',
+  REJECTED: 'rejected',
+  PAID: 'paid',
+  UNPAID: 'unpaid',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  CONFIRMED: 'Оплачено',
+  PENDING: 'На проверке',
+  REJECTED: 'Отклонено',
+};
+
+function formatMoney(n?: number) {
+  if (typeof n !== 'number') return '—';
+  return n.toLocaleString('ru-RU') + ' сум';
+}
 
 export default function StudentPaymentPage() {
-  const { data: paymentRes, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ['student-payment-page'],
-    queryFn: () => api.get<ApiResponse<PaymentSummary>>('/payments/my').then(res => res.data),
+    queryFn: () =>
+      api.get<ApiResponse<PaymentSummary>>('/payments/my').then((r) => r.data.data),
+    retry: 0,
   });
 
-  if (isLoading) {
-    return <div className="flex h-[400px] items-center justify-center">Загрузка...</div>;
-  }
-
-  const payment = paymentRes?.data;
-  const history = payment?.history || [];
+  const current = data?.currentMonth;
+  const statusKey = current?.status ?? 'UNPAID';
+  const copy = STATUS_COPY[statusKey] ?? STATUS_COPY.UNPAID;
+  const nextPay = current?.nextPaymentDate
+    ? new Date(current.nextPaymentDate).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+      })
+    : '—';
+  const days = current?.daysUntilPayment;
+  const history = data?.history ?? [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
-          <CreditCard className="h-8 w-8 text-blue-600" />
-          Оплата обучения
-        </h1>
-        <p className="text-slate-500 mt-1 ml-11">
-          Информация о платежах и история транзакций
-        </p>
-      </div>
-
-      <PaymentBanner 
-        daysUntilPayment={payment?.currentMonth.daysUntilPayment ?? null} 
-        status={payment?.currentMonth.status ?? 'UNPAID'} 
+    <div>
+      <PageTitle
+        kicker="Оплата"
+        title="Обучение"
+        description="Здесь — сумма, методы и история платежей."
+        gradient
       />
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Status Card */}
-        <Card className="lg:col-span-1 shadow-sm border-slate-200">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-blue-600" />
-              Текущий статус
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-6">
-            <div className="flex justify-between items-center p-4 bg-white border rounded-xl shadow-sm">
-              <span className="text-slate-500 font-medium">К оплате (мес):</span>
-              <span className="text-xl font-black text-slate-900">{payment?.currentMonth.amount} сум</span>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Следующая дата оплаты:</span>
-                <span className="font-bold text-slate-900">
-                  {payment?.currentMonth.nextPaymentDate ? format(new Date(payment.currentMonth.nextPaymentDate), 'd MMMM', { locale: ru }) : 'Не указана'}
-                </span>
+      <div className={`${styles.banner} ${styles[copy.cls]}`}>
+        <div className={styles.bannerRow}>
+          <div className={styles.bannerIcon}>{copy.icon}</div>
+          <div className={styles.bannerBody}>
+            <div className={styles.bannerLabel}>Текущий статус</div>
+            <div className={styles.bannerValue}>{copy.label}</div>
+            {typeof days === 'number' ? (
+              <div className={styles.bannerSub}>
+                {days > 0
+                  ? `Оплатить до ${nextPay} (ещё ${days} дн.)`
+                  : days === 0
+                    ? `Сегодня последний день для оплаты`
+                    : `Оплата просрочена на ${Math.abs(days)} дн.`}
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Статус месяца:</span>
-                <PaymentStatusBadge status={payment?.currentMonth.status || 'UNPAID'} />
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-              <div className="flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 shrink-0" />
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  Пожалуйста, производите оплату до указанной даты. После оплаты чек необходимо отправить администратору или загрузить через кабинет родителя.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment Methods */}
-        <Card className="lg:col-span-2 shadow-sm border-slate-200">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Info className="h-5 w-5 text-blue-600" />
-              Как оплатить?
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-800 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">1</div>
-                  Через платежные системы
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                    <span className="font-medium">Payme / Click / Apelsin</span>
-                    <Badge variant="secondary">В поиске: MathCenter</Badge>
-                  </div>
-                  <p className="text-xs text-slate-500 p-2">
-                    В поле "ID ученика" укажите ваш номер телефона или уточните у администратора.
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-800 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">2</div>
-                  Банковские реквизиты
-                </h4>
-                <div className="p-4 border rounded-xl bg-slate-50 text-xs font-mono space-y-2">
-                  <p><span className="text-slate-400">Р/С:</span> 2020 8000 1054 2200 0001</p>
-                  <p><span className="text-slate-400">БАНК:</span> ЧАКБ "Универсал банк"</p>
-                  <p><span className="text-slate-400">МФО:</span> 01084</p>
-                  <p><span className="text-slate-400">ИНН:</span> 308765432</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      {/* History */}
-      <Card className="shadow-sm border-slate-200 overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-slate-600" />
-            История транзакций
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <DataTable>
-            <table className="w-full text-sm">
-              <DataTableHead className="bg-slate-50/50">
-                <DataTableHeaderCell>Дата</DataTableHeaderCell>
-                <DataTableHeaderCell>Сумма</DataTableHeaderCell>
-                <DataTableHeaderCell>Статус</DataTableHeaderCell>
-                <DataTableHeaderCell>Чек</DataTableHeaderCell>
-                <DataTableHeaderCell>Комментарий</DataTableHeaderCell>
-              </DataTableHead>
-              <tbody>
-                {history.length === 0 ? (
-                  <DataTableRow>
-                    <DataTableCell colSpan={5} className="py-12 text-center text-slate-400 italic">
-                      У вас пока нет истории платежей в системе
-                    </DataTableCell>
-                  </DataTableRow>
-                ) : (
-                  history.map((item) => (
-                    <DataTableRow key={item.id}>
-                      <DataTableCell className="text-slate-500 font-medium">
-                        {format(new Date(item.createdAt), 'd MMMM yyyy, HH:mm', { locale: ru })}
-                      </DataTableCell>
-                      <DataTableCell className="font-bold text-slate-900">
-                        {item.amount} сум
-                      </DataTableCell>
-                      <DataTableCell>
-                        <PaymentStatusBadge status={item.status} />
-                      </DataTableCell>
-                      <DataTableCell>
-                        {item.receiptUrl ? (
-                          <a 
-                            href={item.receiptUrl} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium transition-colors"
-                          >
-                            Посмотреть <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ) : '—'}
-                      </DataTableCell>
-                      <DataTableCell className="text-slate-500 italic">
-                        {item.rejectReason || '—'}
-                      </DataTableCell>
-                    </DataTableRow>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </DataTable>
-        </CardContent>
-      </Card>
+      <div className={styles.amount}>
+        <div className={styles.amountLabel}>К оплате в этом месяце</div>
+        <div className={styles.amountValue}>{formatMoney(current?.amount)}</div>
+        <div className={styles.amountSub}>Следующий платёж: {nextPay}</div>
+      </div>
+
+      <SectionHeading icon={<Wallet size={14} />} label="Как оплатить" />
+      <div className={styles.payways}>
+        <div className={styles.payWay}>
+          <div className={styles.payWayIcon}>💳</div>
+          <div className={styles.payWayName}>Payme</div>
+          <div className={styles.payWayHint}>Поиск «MathCenter»</div>
+        </div>
+        <div className={styles.payWay}>
+          <div className={styles.payWayIcon}>🟢</div>
+          <div className={styles.payWayName}>Click</div>
+          <div className={styles.payWayHint}>Поиск «MathCenter»</div>
+        </div>
+        <div className={styles.payWay}>
+          <div className={styles.payWayIcon}>🧡</div>
+          <div className={styles.payWayName}>Apelsin</div>
+          <div className={styles.payWayHint}>Поиск «MathCenter»</div>
+        </div>
+        <div className={styles.payWay}>
+          <div className={styles.payWayIcon}>🏦</div>
+          <div className={styles.payWayName}>Банк</div>
+          <div className={styles.payWayHint}>Реквизиты ниже</div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <SectionHeading icon={<Info size={14} />} label="Банковские реквизиты" />
+        <div className={styles.bank}>
+          <div>
+            <span>Р/С:</span> 2020 8000 1054 2200 0001
+          </div>
+          <div>
+            <span>Банк:</span> ЧАКБ «Универсал банк»
+          </div>
+          <div>
+            <span>МФО:</span> 01084
+          </div>
+          <div>
+            <span>ИНН:</span> 308765432
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <SectionHeading icon={<CreditCard size={14} />} label="История платежей" />
+        <div className={styles.historyList}>
+          {history.length === 0 ? (
+            <div style={{ padding: '24px', color: 'var(--s-text-secondary)', textAlign: 'center', fontSize: 13 }}>
+              История платежей пока пуста
+            </div>
+          ) : (
+            history.map((p) => {
+              const badgeCls = PAYMENT_STATUS_BADGES[p.status] ?? 'pending';
+              const badgeLabel = PAYMENT_STATUS_LABELS[p.status] ?? p.status;
+              return (
+                <div key={p.id} className={styles.historyRow}>
+                  <div>
+                    <div className={styles.historyAmount}>{formatMoney(p.amount)}</div>
+                    <div className={styles.historyDate}>
+                      {new Date(p.createdAt).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                  <span className={`${styles.badge} ${styles[badgeCls]}`}>{badgeLabel}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }

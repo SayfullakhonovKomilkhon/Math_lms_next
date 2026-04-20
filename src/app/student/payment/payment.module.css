@@ -1,0 +1,192 @@
+.banner {
+  padding: 20px;
+  border-radius: var(--s-radius-lg);
+  border: 1px solid;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner.paid {
+  background: linear-gradient(145deg, rgba(74, 222, 128, 0.16), rgba(74, 222, 128, 0.04));
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.banner.pending {
+  background: linear-gradient(145deg, rgba(253, 230, 138, 0.16), rgba(253, 230, 138, 0.04));
+  border-color: rgba(253, 230, 138, 0.4);
+}
+
+.banner.unpaid {
+  background: linear-gradient(145deg, rgba(255, 95, 109, 0.2), rgba(255, 95, 109, 0.06));
+  border-color: rgba(255, 95, 109, 0.4);
+  box-shadow: 0 16px 44px rgba(255, 95, 109, 0.18);
+}
+
+.bannerRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bannerIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bannerBody {
+  flex: 1;
+}
+
+.bannerLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--s-text-secondary);
+}
+
+.bannerValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--s-text-primary);
+  margin-top: 2px;
+}
+
+.bannerSub {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  margin-top: 2px;
+}
+
+.amount {
+  padding: 20px;
+  border-radius: var(--s-radius-lg);
+  background: var(--s-gradient-card);
+  border: 1px solid var(--s-border-subtle);
+  text-align: center;
+  box-shadow: var(--s-shadow-card);
+}
+
+.amountLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-text-secondary);
+}
+
+.amountValue {
+  margin: 6px 0;
+  font-size: 38px;
+  font-weight: 800;
+  background: var(--s-gradient-gold);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 215, 0, 0.4));
+}
+
+.amountSub {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+}
+
+.payways {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.payWay {
+  padding: 16px 12px;
+  border-radius: var(--s-radius);
+  background: var(--s-gradient-card);
+  border: 1px solid var(--s-border-subtle);
+  text-align: center;
+  box-shadow: var(--s-shadow-card);
+  transition: all 0.2s var(--s-ease-soft);
+}
+
+.payWay:hover {
+  border-color: rgba(155, 92, 255, 0.45);
+  transform: translateY(-3px);
+}
+
+.payWayIcon {
+  font-size: 28px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 12px rgba(155, 92, 255, 0.4));
+}
+
+.payWayName {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.payWayHint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--s-text-secondary);
+}
+
+.bank {
+  padding: 16px;
+  border-radius: var(--s-radius);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--s-border-subtle);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--s-text-primary);
+  line-height: 1.7;
+}
+
+.bank span {
+  color: var(--s-text-secondary);
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-radius: var(--s-radius);
+  background: var(--s-gradient-card);
+  border: 1px solid var(--s-border-subtle);
+  gap: 12px;
+}
+
+.historyDate {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+}
+
+.historyAmount {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.badge.paid { background: rgba(74, 222, 128, 0.18); color: #86efac; }
+.badge.pending { background: rgba(253, 230, 138, 0.18); color: #fde68a; }
+.badge.rejected { background: rgba(255, 95, 109, 0.18); color: #ff97a0; }

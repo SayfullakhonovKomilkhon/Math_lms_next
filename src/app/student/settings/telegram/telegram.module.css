@@ -1,0 +1,111 @@
+.linked {
+  padding: 18px;
+  border-radius: var(--s-radius-lg);
+  background: linear-gradient(145deg, rgba(74, 222, 128, 0.16), rgba(74, 222, 128, 0.04));
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.linkedIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(74, 222, 128, 0.25);
+  color: #86efac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.linkedBody {
+  flex: 1;
+}
+
+.linkedTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.linkedSub {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  margin-top: 2px;
+}
+
+.card {
+  padding: 20px;
+  border-radius: var(--s-radius-lg);
+  background: var(--s-gradient-card);
+  border: 1px solid var(--s-border-subtle);
+  box-shadow: var(--s-shadow-card);
+  margin-bottom: 18px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.desc {
+  font-size: 13px;
+  color: var(--s-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.code {
+  padding: 22px 18px;
+  border-radius: var(--s-radius);
+  background:
+    linear-gradient(145deg, rgba(77, 192, 255, 0.12), rgba(77, 192, 255, 0.02));
+  border: 2px dashed rgba(77, 192, 255, 0.45);
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.codeLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-accent-blue);
+}
+
+.codeValue {
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 36px;
+  letter-spacing: 0.2em;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(77, 192, 255, 0.6);
+}
+
+.codeExpire {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--s-text-secondary);
+}
+
+.steps {
+  padding: 14px;
+  border-radius: var(--s-radius);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--s-border-subtle);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--s-text-primary);
+}
+
+.steps strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--s-accent-blue);
+  font-weight: 800;
+}

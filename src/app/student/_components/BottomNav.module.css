@@ -1,0 +1,129 @@
+.wrap {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 40;
+  padding: 8px 12px calc(var(--s-safe-bottom) + 8px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav {
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  width: 100%;
+  max-width: var(--s-content-max);
+  gap: 4px;
+  padding: 8px;
+  background: rgba(17, 17, 32, 0.78);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid var(--s-border-subtle);
+  border-radius: var(--s-radius-pill);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.item {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px 4px 6px;
+  border-radius: var(--s-radius-pill);
+  color: var(--s-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  transition: color 0.2s var(--s-ease-soft),
+    transform 0.2s var(--s-ease-soft);
+}
+
+.item:active {
+  transform: scale(0.94);
+}
+
+.item svg {
+  transition: transform 0.25s var(--s-ease-spring);
+}
+
+.active {
+  color: var(--s-text-primary);
+}
+
+.active .iconWrap {
+  background: linear-gradient(145deg, rgba(155, 92, 255, 0.25), rgba(255, 60, 172, 0.18));
+  box-shadow: var(--s-neon-glow-purple);
+}
+
+.active svg {
+  filter: drop-shadow(0 0 6px var(--s-accent-purple));
+  transform: translateY(-1px);
+}
+
+.iconWrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s var(--s-ease-soft);
+}
+
+.label {
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--s-accent-pink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(255, 60, 172, 0.8);
+  border: 2px solid rgba(17, 17, 32, 1);
+}
+
+.indicator {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--s-accent-purple);
+  box-shadow: var(--s-neon-glow-purple);
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.25s var(--s-ease-soft);
+}
+
+.active .indicator {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  /* Keep BottomNav as the main nav on mobile; hide it entirely on desktop
+     because the app uses a side nav on >= 768px (see StudentShell). */
+  .wrap {
+    display: none;
+  }
+}

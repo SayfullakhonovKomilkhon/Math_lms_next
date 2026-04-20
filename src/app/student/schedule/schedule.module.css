@@ -1,0 +1,148 @@
+.section {
+  margin-top: 22px;
+}
+
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.dayCard {
+  padding: 14px;
+  border-radius: var(--s-radius);
+  background: var(--s-gradient-card);
+  border: 1px solid var(--s-border-subtle);
+  box-shadow: var(--s-shadow-card);
+  transition: all 0.2s var(--s-ease-soft);
+}
+
+.dayCard:hover {
+  border-color: rgba(77, 192, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(77, 192, 255, 0.35),
+    0 20px 40px rgba(0, 0, 0, 0.5);
+  transform: translateY(-3px);
+}
+
+.dayLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--s-accent-blue);
+}
+
+.dayTime {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 4px;
+  color: var(--s-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dayEnd {
+  font-size: 11px;
+  color: var(--s-text-secondary);
+  margin-top: 2px;
+}
+
+.nextLessonCard {
+  padding: 18px;
+  border-radius: var(--s-radius-lg);
+  background: linear-gradient(
+    145deg,
+    rgba(77, 192, 255, 0.16),
+    rgba(155, 92, 255, 0.08) 100%
+  );
+  border: 1px solid rgba(77, 192, 255, 0.35);
+  box-shadow: 0 18px 50px rgba(77, 192, 255, 0.16);
+}
+
+.nextLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-accent-blue);
+}
+
+.nextTopic {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 6px 0;
+  line-height: 1.25;
+  color: var(--s-text-primary);
+}
+
+.nextDate {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+}
+
+.centerCard {
+  padding: 18px;
+  border-radius: var(--s-radius-lg);
+  background: linear-gradient(145deg, rgba(155, 92, 255, 0.18), rgba(0, 0, 0, 0.2));
+  border: 1px solid rgba(155, 92, 255, 0.4);
+  box-shadow: var(--s-neon-glow-purple);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.centerTitle {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.centerMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--s-text-secondary);
+  font-size: 12px;
+}
+
+.teacherRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--s-border-subtle);
+}
+
+.teacherAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--s-gradient-purple-pink);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.teacherName {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.teacherPhone {
+  font-size: 11px;
+  color: var(--s-text-secondary);
+}
+
+.info {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: var(--s-radius);
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.28);
+  font-size: 12px;
+  color: #ffe57a;
+  line-height: 1.55;
+}

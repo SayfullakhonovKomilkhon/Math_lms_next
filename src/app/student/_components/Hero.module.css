@@ -1,0 +1,82 @@
+.hero {
+  position: relative;
+  padding: 24px 4px 8px;
+}
+
+.greet {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--s-text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: clamp(32px, 9vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  background: var(--s-gradient-title);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShift 6s ease-in-out infinite;
+  min-height: 1em;
+  word-break: break-word;
+}
+
+.caret {
+  display: inline-block;
+  width: 3px;
+  height: 0.9em;
+  margin-left: 4px;
+  background: var(--s-accent-pink);
+  box-shadow: 0 0 10px var(--s-accent-pink);
+  transform: translateY(4px);
+  animation: blink 1s steps(2, end) infinite;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: var(--s-radius-pill);
+  background: rgba(155, 92, 255, 0.14);
+  border: 1px solid rgba(155, 92, 255, 0.45);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  animation: sPulseGlow 2.4s ease-in-out infinite;
+}
+
+.badgeEmoji {
+  font-size: 14px;
+  filter: drop-shadow(0 0 6px rgba(155, 92, 255, 0.8));
+}
+
+.sub {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--s-text-secondary);
+  line-height: 1.45;
+}
+
+.sub strong {
+  color: var(--s-text-primary);
+  font-weight: 700;
+}
+
+@keyframes titleShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}

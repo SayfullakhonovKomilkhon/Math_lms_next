@@ -1,0 +1,52 @@
+.root {
+  position: relative;
+  min-height: 100dvh;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.bgLayer {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: var(--s-gradient-hero);
+}
+
+.bgParticles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.canvasWrap {
+  max-width: var(--s-content-max);
+  margin: 0 auto;
+  padding: 0 var(--s-edge) calc(96px + var(--s-safe-bottom));
+  position: relative;
+  z-index: 1;
+}
+
+.pageEnter {
+  animation: sFadeUp 0.35s var(--s-ease-soft) both;
+}
+
+@media (min-width: 768px) {
+  .root {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+  }
+
+  .canvasWrap {
+    padding-bottom: 64px;
+    padding-top: 12px;
+    max-width: 520px;
+  }
+
+  .mainCol {
+    position: relative;
+    overflow-y: auto;
+    height: 100dvh;
+  }
+}

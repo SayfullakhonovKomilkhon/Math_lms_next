@@ -1,0 +1,157 @@
+.dock {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .dock {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 24px;
+    background: linear-gradient(180deg, #0b0b19 0%, #08080f 100%);
+    border-right: 1px solid var(--s-border-subtle);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brandLogo {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--s-gradient-purple-pink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: var(--s-neon-glow-purple);
+  }
+
+  .brandName {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    background: var(--s-gradient-title);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .brandSub {
+    font-size: 11px;
+    color: var(--s-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--s-radius);
+    color: var(--s-text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s var(--s-ease-soft);
+    position: relative;
+  }
+
+  .link:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--s-text-primary);
+  }
+
+  .active {
+    color: #fff;
+    background: linear-gradient(
+      135deg,
+      rgba(155, 92, 255, 0.22),
+      rgba(255, 60, 172, 0.14)
+    );
+    box-shadow: inset 0 0 0 1px rgba(155, 92, 255, 0.45),
+      0 8px 28px rgba(155, 92, 255, 0.25);
+  }
+
+  .active::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--s-gradient-purple-pink);
+    box-shadow: var(--s-neon-glow-purple);
+  }
+
+  .badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--s-accent-pink);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 60, 172, 0.5);
+  }
+
+  .footer {
+    padding: 14px;
+    border: 1px solid var(--s-border-subtle);
+    border-radius: var(--s-radius);
+    background: var(--s-gradient-card);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .footerName {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .footerEmail {
+    font-size: 11px;
+    color: var(--s-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .logoutBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--s-border-subtle);
+    color: var(--s-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s var(--s-ease-soft);
+  }
+
+  .logoutBtn:hover {
+    background: rgba(255, 95, 109, 0.14);
+    border-color: rgba(255, 95, 109, 0.4);
+    color: #ff8a96;
+  }
+}

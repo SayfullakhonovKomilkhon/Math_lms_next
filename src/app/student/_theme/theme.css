@@ -1,0 +1,162 @@
+/* ============================================================
+   STUDENT PANEL — DESIGN TOKENS & RESET
+   Loaded ONLY by /student layout. Does NOT affect other panels.
+   Scoped via the .studentApp class (applied on the shell root).
+   ============================================================ */
+
+.studentApp {
+  /* Palette */
+  --s-bg-primary: #08080f;
+  --s-bg-card: #111120;
+  --s-bg-card-hover: #1a1a2e;
+  --s-bg-elevated: #16162a;
+  --s-accent-purple: #9b5cff;
+  --s-accent-pink: #ff3cac;
+  --s-accent-gold: #ffd700;
+  --s-accent-gold-light: #fff3a3;
+  --s-accent-red: #ff5f6d;
+  --s-accent-blue: #4dc0ff;
+  --s-accent-green: #4ade80;
+
+  /* Glows */
+  --s-neon-glow-purple: 0 0 20px #9b5cff, 0 0 40px rgba(155, 92, 255, 0.25);
+  --s-neon-glow-pink: 0 0 20px #ff3cac, 0 0 40px rgba(255, 60, 172, 0.25);
+  --s-neon-glow-gold: 0 0 20px #ffd700, 0 0 60px rgba(255, 215, 0, 0.25);
+  --s-neon-glow-red: 0 0 18px #ff5f6d, 0 0 46px rgba(255, 95, 109, 0.25);
+  --s-neon-glow-blue: 0 0 18px #4dc0ff, 0 0 46px rgba(77, 192, 255, 0.25);
+
+  /* Text */
+  --s-text-primary: #ffffff;
+  --s-text-secondary: #8b8ba8;
+  --s-text-muted: #5a5a72;
+
+  /* Surfaces / borders */
+  --s-border-subtle: rgba(255, 255, 255, 0.08);
+  --s-border-strong: rgba(255, 255, 255, 0.16);
+  --s-border-glow: rgba(155, 92, 255, 0.45);
+
+  /* Gradients */
+  --s-gradient-hero: linear-gradient(135deg, #08080f 0%, #1a0533 50%, #08080f 100%);
+  --s-gradient-card: linear-gradient(145deg, #111120, #1a1a35);
+  --s-gradient-card-hover: linear-gradient(145deg, #18182c, #23234a);
+  --s-gradient-title: linear-gradient(90deg, #9b5cff, #ff3cac, #ffd700);
+  --s-gradient-gold: linear-gradient(135deg, #ffd700 0%, #fff3a3 50%, #ffd700 100%);
+  --s-gradient-purple-pink: linear-gradient(135deg, #9b5cff 0%, #ff3cac 100%);
+
+  /* Layout */
+  --s-content-max: 480px;
+  --s-edge: 16px;
+  --s-radius-sm: 10px;
+  --s-radius: 16px;
+  --s-radius-lg: 22px;
+  --s-radius-pill: 999px;
+
+  /* Elevation */
+  --s-shadow-card: 0 18px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--s-border-subtle);
+  --s-shadow-card-hover: 0 26px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(155, 92, 255, 0.5);
+
+  /* Typography */
+  --s-font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+
+  /* Safe areas */
+  --s-safe-top: env(safe-area-inset-top, 0px);
+  --s-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Motion */
+  --s-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --s-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: dark;
+  color: var(--s-text-primary);
+  font-family: var(--s-font-sans);
+  background: var(--s-bg-primary);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+/* Scope-reset: inside the student app, neutralize the global light tailwind body styles */
+.studentApp,
+.studentApp * {
+  box-sizing: border-box;
+}
+
+.studentApp button {
+  font-family: inherit;
+}
+
+.studentApp a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================================
+   Shared keyframes
+   ============================================================ */
+@keyframes sFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes sPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(155, 92, 255, 0.55),
+      0 0 32px rgba(155, 92, 255, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(155, 92, 255, 0.9),
+      0 0 60px rgba(255, 60, 172, 0.4);
+  }
+}
+
+@keyframes sShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes sFadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes sScaleIn {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sRotateRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes sBounceOnce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  60% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sShakeKey {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studentApp *,
+  .studentApp *::before,
+  .studentApp *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

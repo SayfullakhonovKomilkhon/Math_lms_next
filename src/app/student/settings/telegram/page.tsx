@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, CheckCircle2, Link2Off } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, Link2Off, MessageCircle } from 'lucide-react';
 import api from '@/lib/api';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
-import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/components/ui/toast';
+import { PageTitle } from '../../_components/PageTitle';
+import { SButton } from '../../_components/SButton';
+import styles from './telegram.module.css';
 
 interface CodeResponse {
   code: string;
@@ -20,10 +20,11 @@ export default function TelegramSettingsPage() {
   const qc = useQueryClient();
   const [codeData, setCodeData] = useState<CodeResponse | null>(null);
 
-  const isLinked = !!(user as any)?.telegramChatId;
+  const isLinked = !!(user as unknown as { telegramChatId?: string })?.telegramChatId;
 
   const generateCode = useMutation({
-    mutationFn: () => api.post('/telegram/generate-code').then((r) => r.data.data as CodeResponse),
+    mutationFn: () =>
+      api.post('/telegram/generate-code').then((r) => r.data.data as CodeResponse),
     onSuccess: (data) => setCodeData(data),
     onError: () => toast('Ошибка генерации кода', 'error'),
   });
@@ -40,87 +41,78 @@ export default function TelegramSettingsPage() {
   const botUsername = codeData?.botUsername ?? 'mathcenter_bot';
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Telegram уведомления"
-        description="Получайте важные уведомления в Telegram"
+    <div>
+      <PageTitle
+        kicker="Настройки"
+        title="Telegram"
+        description="Получай оповещения об оплате, ДЗ и достижениях прямо в Telegram."
+        gradient
       />
 
       {isLinked ? (
-        <Card>
-          <CardContent className="flex items-center justify-between p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900">Telegram подключён</p>
-                <p className="text-sm text-slate-500">Вы будете получать уведомления в Telegram</p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              onClick={() => unlink.mutate()}
-              loading={unlink.isPending}
-              className="text-red-500 hover:text-red-600"
-            >
-              <Link2Off className="mr-1.5 h-4 w-4" />
-              Отвязать
-            </Button>
-          </CardContent>
-        </Card>
+        <div className={styles.linked}>
+          <div className={styles.linkedIcon}>
+            <CheckCircle2 size={22} />
+          </div>
+          <div className={styles.linkedBody}>
+            <div className={styles.linkedTitle}>Telegram подключён</div>
+            <div className={styles.linkedSub}>Уведомления уже приходят в ваш Telegram</div>
+          </div>
+          <SButton
+            size="sm"
+            variant="danger"
+            disabled={unlink.isPending}
+            onClick={() => unlink.mutate()}
+          >
+            <Link2Off size={14} /> Отвязать
+          </SButton>
+        </div>
       ) : (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-blue-500" />
-              <h2 className="font-semibold text-slate-900">Подключить Telegram</h2>
-            </div>
-            <p className="text-sm text-slate-500">
-              Получайте уведомления об оплате, ДЗ и достижениях прямо в Telegram
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {!codeData ? (
-              <Button
-                onClick={() => generateCode.mutate()}
-                loading={generateCode.isPending}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Сгенерировать код привязки
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                {/* Code display */}
-                <div className="rounded-xl border-2 border-dashed border-blue-200 bg-blue-50 p-5 text-center">
-                  <p className="mb-1 text-sm text-blue-600">Ваш код привязки</p>
-                  <p className="font-mono text-4xl font-bold tracking-widest text-blue-900">
-                    {codeData.code}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">Действителен 10 минут</p>
-                </div>
+        <div className={styles.card}>
+          <div className={styles.head}>
+            <MessageCircle size={20} />
+            Подключить Telegram
+          </div>
+          <p className={styles.desc}>
+            Нажми на кнопку ниже, чтобы получить одноразовый код. Затем открой Telegram-бот и
+            введи команду привязки.
+          </p>
 
-                {/* Instructions */}
-                <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700 space-y-2">
-                  <p className="font-semibold text-slate-800">Инструкция:</p>
-                  <p>1. Найдите бота <span className="font-mono font-semibold text-blue-600">@{botUsername}</span> в Telegram</p>
-                  <p>2. Напишите ему <span className="font-mono font-semibold">/start</span></p>
-                  <p>3. Введите команду: <span className="font-mono font-semibold">/link {codeData.code}</span></p>
-                </div>
-
-                <Button
-                  variant="secondary"
-                  onClick={() => generateCode.mutate()}
-                  loading={generateCode.isPending}
+          {!codeData ? (
+            <SButton
+              onClick={() => generateCode.mutate()}
+              disabled={generateCode.isPending}
+            >
+              <MessageCircle size={16} />
+              {generateCode.isPending ? 'Генерация…' : 'Сгенерировать код'}
+            </SButton>
+          ) : (
+            <>
+              <div className={styles.code}>
+                <div className={styles.codeLabel}>Ваш код привязки</div>
+                <div className={styles.codeValue}>{codeData.code}</div>
+                <div className={styles.codeExpire}>Действителен 10 минут</div>
+              </div>
+              <div className={styles.steps}>
+                1. Найдите бота <strong>@{botUsername}</strong>
+                <br />
+                2. Отправьте <strong>/start</strong>
+                <br />
+                3. Введите команду: <strong>/link {codeData.code}</strong>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <SButton
                   size="sm"
+                  variant="ghost"
+                  onClick={() => generateCode.mutate()}
+                  disabled={generateCode.isPending}
                 >
                   Получить новый код
-                </Button>
+                </SButton>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

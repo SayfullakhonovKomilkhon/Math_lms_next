@@ -1,0 +1,35 @@
+.wrap {
+  position: relative;
+}
+
+.indicator {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--s-safe-top) + 60px);
+  z-index: 50;
+  transform: translate(-50%, -120%);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: radial-gradient(circle at 30% 30%, #ffd700, #9b5cff);
+  box-shadow: var(--s-neon-glow-gold);
+  pointer-events: none;
+  transition: transform 0.25s var(--s-ease-soft), opacity 0.2s linear;
+  opacity: 0;
+}
+
+.indicator.visible {
+  opacity: 1;
+}
+
+.indicator.refreshing {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, 0) rotate(360deg); }
+}

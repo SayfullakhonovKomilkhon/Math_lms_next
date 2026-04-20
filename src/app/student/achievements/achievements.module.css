@@ -1,0 +1,120 @@
+.hero {
+  padding: 18px 18px 16px;
+  border-radius: var(--s-radius-lg);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 215, 0, 0.18),
+    rgba(155, 92, 255, 0.14) 60%,
+    rgba(8, 8, 15, 0.5) 100%
+  );
+  border: 1px solid rgba(255, 215, 0, 0.32);
+  box-shadow: 0 18px 50px rgba(255, 215, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.heroIcon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: radial-gradient(circle at 30% 30%, #fff3a3, #ffd700);
+  box-shadow: var(--s-neon-glow-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  flex-shrink: 0;
+}
+
+.heroText {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroName {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heroGroup {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  margin-top: 3px;
+}
+
+.medalsRow {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.medalStat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--s-text-primary);
+}
+
+.medalStat small {
+  color: var(--s-text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.section {
+  margin-top: 26px;
+}
+
+.podiumWrap {
+  border-radius: var(--s-radius-lg);
+  background: linear-gradient(145deg, #14142a, #0a0a18);
+  border: 1px solid var(--s-border-subtle);
+  box-shadow: var(--s-shadow-card);
+  overflow: hidden;
+  padding-bottom: 4px;
+}
+
+.podiumWrap h3 {
+  margin: 16px 0 0;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--s-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.specialGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 540px) {
+  .specialGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.hint {
+  margin: 10px 2px 16px;
+  font-size: 12px;
+  color: var(--s-text-muted);
+  line-height: 1.5;
+}
+
+.demoBtn {
+  margin-top: 10px;
+  max-width: 260px;
+}

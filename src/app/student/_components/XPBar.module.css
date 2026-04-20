@@ -1,0 +1,94 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.levelBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.levelLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--s-text-secondary);
+  text-transform: uppercase;
+}
+
+.level {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--s-gradient-gold);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 215, 0, 0.35));
+  letter-spacing: -0.02em;
+}
+
+.xp {
+  font-size: 12px;
+  color: var(--s-text-secondary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp strong {
+  color: var(--s-text-primary);
+  font-weight: 800;
+}
+
+.track {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--s-border-subtle);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--progress, 0%);
+  background: linear-gradient(90deg, #9b5cff 0%, #ff3cac 60%, #ffd700 100%);
+  background-size: 200% 100%;
+  border-radius: inherit;
+  box-shadow: 0 0 18px rgba(255, 60, 172, 0.7);
+  transition: width 1.2s var(--s-ease-soft);
+  animation: flow 3s linear infinite;
+}
+
+.tip {
+  position: absolute;
+  top: 50%;
+  left: var(--progress, 0%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff3a3;
+  box-shadow: 0 0 14px #ffd700, 0 0 28px rgba(255, 215, 0, 0.6);
+  transform: translate(-50%, -50%);
+  animation: pulseTip 1.4s ease-in-out infinite;
+}
+
+@keyframes flow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulseTip {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 22px #ffd700, 0 0 40px rgba(255, 215, 0, 0.7); }
+}
