@@ -1,14 +1,16 @@
 .current {
-  padding: 18px;
+  padding: 20px;
   border-radius: var(--s-radius-lg);
   background: linear-gradient(
     145deg,
-    rgba(155, 92, 255, 0.14),
-    rgba(77, 192, 255, 0.08) 100%
+    rgba(38, 80, 187, 0.1),
+    rgba(16, 129, 116, 0.08) 100%
   );
-  border: 1px solid rgba(155, 92, 255, 0.32);
-  box-shadow: 0 18px 46px rgba(155, 92, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(38, 80, 187, 0.24);
+  box-shadow: var(--s-shadow-hero),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
 }
 
 .head {
@@ -29,13 +31,13 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: rgba(77, 192, 255, 0.16);
-  color: #90d6ff;
+  background: rgba(38, 80, 187, 0.14);
+  color: var(--s-brand-blue);
 }
 
 .pill.late {
-  background: rgba(255, 95, 109, 0.2);
-  color: #ffb0b6;
+  background: rgba(226, 88, 88, 0.14);
+  color: #b53a3a;
   animation: sPulseGlow 2s ease-in-out infinite;
 }
 
@@ -64,7 +66,7 @@
   border-radius: 14px;
   object-fit: cover;
   border: 1px solid var(--s-border-subtle);
-  background: #16162a;
+  background: #eef0fa;
   cursor: zoom-in;
 }
 
@@ -74,7 +76,7 @@
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--s-border-subtle);
-  background: #000;
+  background: #0a0f29;
 }
 
 .video iframe {
@@ -93,15 +95,18 @@
 .historyItem {
   padding: 14px;
   background: var(--s-gradient-card);
-  border: 1px solid var(--s-border-subtle);
+  border: 1px solid var(--s-card-outline);
   border-radius: var(--s-radius);
   box-shadow: var(--s-shadow-card);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
   cursor: pointer;
   transition: all 0.2s var(--s-ease-soft);
 }
 
 .historyItem:hover {
-  border-color: rgba(155, 92, 255, 0.4);
+  border-color: rgba(38, 80, 187, 0.35);
+  box-shadow: var(--s-shadow-card-hover);
   transform: translateY(-2px);
 }
 

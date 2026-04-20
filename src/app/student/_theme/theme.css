@@ -1,83 +1,173 @@
 /* ============================================================
    STUDENT PANEL — DESIGN TOKENS & RESET
+   Adapted from the Education App UI Figma design system.
    Loaded ONLY by /student layout. Does NOT affect other panels.
    Scoped via the .studentApp class (applied on the shell root).
    ============================================================ */
 
 .studentApp {
-  /* Palette */
-  --s-bg-primary: #08080f;
-  --s-bg-card: #111120;
-  --s-bg-card-hover: #1a1a2e;
-  --s-bg-elevated: #16162a;
-  --s-accent-purple: #9b5cff;
-  --s-accent-pink: #ff3cac;
-  --s-accent-gold: #ffd700;
-  --s-accent-gold-light: #fff3a3;
-  --s-accent-red: #ff5f6d;
-  --s-accent-blue: #4dc0ff;
-  --s-accent-green: #4ade80;
+  /* -----------------------------------------------------------
+     BRAND PALETTE (from Figma "Brand Palette")
+     ----------------------------------------------------------- */
+  --s-brand-clay: #ef8e38;
+  --s-brand-blue: #2650bb;
+  --s-brand-teal: #108174;
+  --s-brand-wool: #372f57;
+  --s-brand-cream: #fff8f0;
 
-  /* Glows */
-  --s-neon-glow-purple: 0 0 20px #9b5cff, 0 0 40px rgba(155, 92, 255, 0.25);
-  --s-neon-glow-pink: 0 0 20px #ff3cac, 0 0 40px rgba(255, 60, 172, 0.25);
-  --s-neon-glow-gold: 0 0 20px #ffd700, 0 0 60px rgba(255, 215, 0, 0.25);
-  --s-neon-glow-red: 0 0 18px #ff5f6d, 0 0 46px rgba(255, 95, 109, 0.25);
-  --s-neon-glow-blue: 0 0 18px #4dc0ff, 0 0 46px rgba(77, 192, 255, 0.25);
+  /* Derived accent aliases kept for legacy class names.
+     The "purple/pink/gold" names no longer mean neon — they map to
+     the Figma brand hues so existing component styles just retint. */
+  --s-accent-purple: #372f57;       /* Matte Wool — primary */
+  --s-accent-pink: #ef8e38;         /* Clay — warm accent */
+  --s-accent-gold: #f5b544;         /* Warm gold for achievements */
+  --s-accent-gold-light: #ffd27a;
+  --s-accent-red: #e25858;
+  --s-accent-blue: #2650bb;         /* Hey Blue */
+  --s-accent-green: #00c371;        /* Figma Success */
+  --s-accent-teal: #108174;         /* Gray Skyline */
 
-  /* Text */
-  --s-text-primary: #ffffff;
-  --s-text-secondary: #8b8ba8;
-  --s-text-muted: #5a5a72;
+  /* -----------------------------------------------------------
+     SURFACES
+     ----------------------------------------------------------- */
+  --s-bg-primary: #f8f8ff;          /* Ghost white */
+  --s-bg-soft: #fff8f0;             /* Faint Yellow — secondary surface */
+  --s-bg-card: rgba(255, 255, 255, 0.7);
+  --s-bg-card-hover: rgba(255, 255, 255, 0.88);
+  --s-bg-elevated: #ffffff;
+  --s-bg-tabbar: rgba(255, 255, 255, 0.72);
+  --s-bg-overlay: rgba(248, 248, 255, 0.72);
 
-  /* Surfaces / borders */
-  --s-border-subtle: rgba(255, 255, 255, 0.08);
-  --s-border-strong: rgba(255, 255, 255, 0.16);
-  --s-border-glow: rgba(155, 92, 255, 0.45);
+  /* -----------------------------------------------------------
+     TEXT (Foreground w/ opacity — Figma pattern)
+     ----------------------------------------------------------- */
+  --s-text-primary: #0a0f29;        /* Near-black with slight navy tint */
+  --s-text-secondary: rgba(10, 15, 41, 0.58);
+  --s-text-muted: rgba(10, 15, 41, 0.32);
+  --s-text-faint: rgba(10, 15, 41, 0.14);
+  --s-text-on-accent: #ffffff;
 
-  /* Gradients */
-  --s-gradient-hero: linear-gradient(135deg, #08080f 0%, #1a0533 50%, #08080f 100%);
-  --s-gradient-card: linear-gradient(145deg, #111120, #1a1a35);
-  --s-gradient-card-hover: linear-gradient(145deg, #18182c, #23234a);
-  --s-gradient-title: linear-gradient(90deg, #9b5cff, #ff3cac, #ffd700);
-  --s-gradient-gold: linear-gradient(135deg, #ffd700 0%, #fff3a3 50%, #ffd700 100%);
-  --s-gradient-purple-pink: linear-gradient(135deg, #9b5cff 0%, #ff3cac 100%);
+  /* -----------------------------------------------------------
+     BORDERS
+     ----------------------------------------------------------- */
+  --s-border-subtle: rgba(55, 47, 87, 0.08);
+  --s-border-strong: rgba(55, 47, 87, 0.16);
+  --s-border-glow: rgba(38, 80, 187, 0.35);
+  --s-card-outline: rgba(255, 255, 255, 0.65);
 
-  /* Layout */
+  /* -----------------------------------------------------------
+     ELEVATION / SHADOWS
+     Soft, cool, purple-tinted drops instead of the old neon glows.
+     ----------------------------------------------------------- */
+  --s-shadow-card: 0 4px 18px rgba(55, 47, 87, 0.08),
+    0 1px 3px rgba(55, 47, 87, 0.04);
+  --s-shadow-card-hover: 0 18px 44px rgba(55, 47, 87, 0.14),
+    0 4px 10px rgba(55, 47, 87, 0.06);
+  --s-shadow-tabbar: 0 -6px 50px rgba(55, 47, 87, 0.22),
+    0 -1px 0 rgba(255, 255, 255, 0.6) inset;
+  --s-shadow-sheet: 0 -24px 60px rgba(55, 47, 87, 0.25),
+    0 -1px 0 rgba(255, 255, 255, 0.6) inset;
+  --s-shadow-hero: 0 30px 80px rgba(38, 80, 187, 0.12);
+
+  /* Soft "glow" replacements — now subtle accent halos, not neon. */
+  --s-neon-glow-purple: 0 10px 28px rgba(55, 47, 87, 0.22);
+  --s-neon-glow-pink: 0 10px 28px rgba(239, 142, 56, 0.28);
+  --s-neon-glow-gold: 0 12px 32px rgba(245, 181, 68, 0.32);
+  --s-neon-glow-red: 0 10px 28px rgba(226, 88, 88, 0.24);
+  --s-neon-glow-blue: 0 10px 28px rgba(38, 80, 187, 0.26);
+  --s-neon-glow-teal: 0 10px 28px rgba(16, 129, 116, 0.24);
+
+  /* -----------------------------------------------------------
+     GRADIENTS
+     ----------------------------------------------------------- */
+  --s-gradient-hero: linear-gradient(
+    180deg,
+    #fff8f0 0%,
+    #f8f8ff 55%,
+    #f8f8ff 100%
+  );
+  --s-gradient-card: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.68) 100%
+  );
+  --s-gradient-card-hover: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 255, 255, 0.82) 100%
+  );
+  --s-gradient-title: linear-gradient(
+    135deg,
+    #2650bb 0%,
+    #108174 55%,
+    #ef8e38 100%
+  );
+  --s-gradient-gold: linear-gradient(
+    135deg,
+    #f5b544 0%,
+    #ffd27a 55%,
+    #ef8e38 100%
+  );
+  --s-gradient-purple-pink: linear-gradient(
+    135deg,
+    #372f57 0%,
+    #ef8e38 100%
+  );
+  --s-gradient-clay: linear-gradient(135deg, #ef8e38 0%, #ff6f59 100%);
+  --s-gradient-teal: linear-gradient(135deg, #108174 0%, #24b091 100%);
+  --s-gradient-blue: linear-gradient(135deg, #2650bb 0%, #6b8cff 100%);
+  --s-gradient-wool: linear-gradient(135deg, #372f57 0%, #6446a7 100%);
+
+  /* -----------------------------------------------------------
+     LAYOUT
+     ----------------------------------------------------------- */
   --s-content-max: 480px;
   --s-edge: 16px;
-  --s-radius-sm: 10px;
-  --s-radius: 16px;
-  --s-radius-lg: 22px;
+  --s-radius-sm: 12px;
+  --s-radius: 20px;
+  --s-radius-lg: 28px;
   --s-radius-pill: 999px;
 
-  /* Elevation */
-  --s-shadow-card: 0 18px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--s-border-subtle);
-  --s-shadow-card-hover: 0 26px 60px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(155, 92, 255, 0.5);
-
-  /* Typography */
-  --s-font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system,
+  /* -----------------------------------------------------------
+     TYPOGRAPHY (Cabinet Grotesk display / Epilogue body)
+     These are commercial fonts — we keep tight letter-spacing but
+     fall back to Geist (already loaded by the root layout) + system.
+     ----------------------------------------------------------- */
+  --s-font-display: "Cabinet Grotesk", "Epilogue", var(--font-geist),
+    ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --s-font-body: "Epilogue", var(--font-geist), ui-sans-serif, -apple-system,
     "Segoe UI", Roboto, sans-serif;
+  --s-font-sans: var(--s-font-body);
+  --s-ls-display: -0.03em;
+  --s-ls-kicker: 0.12em;
 
-  /* Safe areas */
+  /* -----------------------------------------------------------
+     BLUR (Frosted Glass + Tab Bar)
+     ----------------------------------------------------------- */
+  --s-blur-glass: blur(22px) saturate(160%);
+  --s-blur-tabbar: blur(40px) saturate(180%);
+
+  /* -----------------------------------------------------------
+     SAFE AREAS
+     ----------------------------------------------------------- */
   --s-safe-top: env(safe-area-inset-top, 0px);
   --s-safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Motion */
+  /* -----------------------------------------------------------
+     MOTION
+     ----------------------------------------------------------- */
   --s-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --s-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
-  color-scheme: dark;
+  color-scheme: light;
   color: var(--s-text-primary);
-  font-family: var(--s-font-sans);
+  font-family: var(--s-font-body);
   background: var(--s-bg-primary);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Scope-reset: inside the student app, neutralize the global light tailwind body styles */
 .studentApp,
 .studentApp * {
   box-sizing: border-box;
@@ -85,6 +175,7 @@
 
 .studentApp button {
   font-family: inherit;
+  color: inherit;
 }
 
 .studentApp a {
@@ -102,12 +193,12 @@
 
 @keyframes sPulseGlow {
   0%, 100% {
-    box-shadow: 0 0 14px rgba(155, 92, 255, 0.55),
-      0 0 32px rgba(155, 92, 255, 0.35);
+    box-shadow: 0 8px 24px rgba(55, 47, 87, 0.16),
+      0 0 0 1px rgba(55, 47, 87, 0.08);
   }
   50% {
-    box-shadow: 0 0 26px rgba(155, 92, 255, 0.9),
-      0 0 60px rgba(255, 60, 172, 0.4);
+    box-shadow: 0 14px 36px rgba(239, 142, 56, 0.32),
+      0 0 0 1px rgba(239, 142, 56, 0.35);
   }
 }
 

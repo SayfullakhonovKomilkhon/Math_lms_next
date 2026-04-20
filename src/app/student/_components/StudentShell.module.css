@@ -8,7 +8,23 @@
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: var(--s-gradient-hero);
+  background:
+    radial-gradient(
+      600px 600px at 8% 10%,
+      rgba(239, 142, 56, 0.18),
+      transparent 65%
+    ),
+    radial-gradient(
+      700px 700px at 92% 18%,
+      rgba(38, 80, 187, 0.14),
+      transparent 65%
+    ),
+    radial-gradient(
+      720px 720px at 50% 95%,
+      rgba(16, 129, 116, 0.12),
+      transparent 65%
+    ),
+    var(--s-gradient-hero);
   pointer-events: none;
 }
 

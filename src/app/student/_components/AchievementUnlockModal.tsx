@@ -19,7 +19,7 @@ type Props = {
   onClose: () => void;
 };
 
-const COLORS = ['#FFD700', '#FF3CAC', '#9B5CFF', '#4DC0FF', '#FFF3A3', '#4ADE80'];
+const COLORS = ['#F5B544', '#EF8E38', '#2650BB', '#108174', '#FFD27A', '#372F57'];
 
 /**
  * Full-screen bottom-sheet style modal that plays the achievement-unlock

@@ -11,7 +11,7 @@
     flex-direction: column;
     padding: 24px 20px;
     gap: 24px;
-    background: linear-gradient(180deg, #0b0b19 0%, #08080f 100%);
+    background: linear-gradient(180deg, #fff8f0 0%, #f8f8ff 100%);
     border-right: 1px solid var(--s-border-subtle);
   }
 
@@ -72,19 +72,19 @@
   }
 
   .link:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.7);
     color: var(--s-text-primary);
   }
 
   .active {
-    color: #fff;
+    color: var(--s-brand-wool);
     background: linear-gradient(
       135deg,
-      rgba(155, 92, 255, 0.22),
-      rgba(255, 60, 172, 0.14)
+      rgba(38, 80, 187, 0.12),
+      rgba(239, 142, 56, 0.1)
     );
-    box-shadow: inset 0 0 0 1px rgba(155, 92, 255, 0.45),
-      0 8px 28px rgba(155, 92, 255, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(38, 80, 187, 0.28),
+      0 8px 24px rgba(38, 80, 187, 0.15);
   }
 
   .active::before {
@@ -95,8 +95,7 @@
     bottom: 10px;
     width: 3px;
     border-radius: 2px;
-    background: var(--s-gradient-purple-pink);
-    box-shadow: var(--s-neon-glow-purple);
+    background: var(--s-gradient-title);
   }
 
   .badge {
@@ -105,9 +104,9 @@
     font-weight: 800;
     padding: 2px 8px;
     border-radius: 999px;
-    background: var(--s-accent-pink);
+    background: var(--s-brand-clay);
     color: #fff;
-    box-shadow: 0 0 10px rgba(255, 60, 172, 0.5);
+    box-shadow: 0 4px 10px rgba(239, 142, 56, 0.4);
   }
 
   .footer {
@@ -140,7 +139,7 @@
     gap: 8px;
     padding: 10px 12px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.7);
     border: 1px solid var(--s-border-subtle);
     color: var(--s-text-primary);
     font-size: 13px;
@@ -150,8 +149,8 @@
   }
 
   .logoutBtn:hover {
-    background: rgba(255, 95, 109, 0.14);
-    border-color: rgba(255, 95, 109, 0.4);
-    color: #ff8a96;
+    background: rgba(226, 88, 88, 0.1);
+    border-color: rgba(226, 88, 88, 0.4);
+    color: #b53a3a;
   }
 }

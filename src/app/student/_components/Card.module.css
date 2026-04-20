@@ -3,8 +3,10 @@
   padding: 18px;
   border-radius: var(--s-radius);
   background: var(--s-gradient-card);
-  border: 1px solid var(--s-border-subtle);
+  border: 1px solid var(--s-card-outline);
   box-shadow: var(--s-shadow-card);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
   overflow: hidden;
   transition: transform 0.3s var(--s-ease-soft),
     box-shadow 0.3s var(--s-ease-soft),
@@ -18,10 +20,10 @@
   inset: 0;
   background: linear-gradient(
     130deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    transparent 30%,
+    rgba(255, 255, 255, 0.55) 0%,
+    transparent 40%,
     transparent 70%,
-    rgba(255, 255, 255, 0.02) 100%
+    rgba(255, 248, 240, 0.25) 100%
   );
   pointer-events: none;
 }
@@ -62,10 +64,10 @@
   justify-content: center;
   background: linear-gradient(
     135deg,
-    rgba(155, 92, 255, 0.22),
-    rgba(255, 60, 172, 0.14)
+    rgba(38, 80, 187, 0.18),
+    rgba(239, 142, 56, 0.16)
   );
-  color: var(--s-accent-purple);
+  color: var(--s-brand-blue);
 }
 
 .headingBar {

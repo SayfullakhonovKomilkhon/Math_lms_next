@@ -18,9 +18,7 @@
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.45), transparent 50%),
-    radial-gradient(1px 1px at 70% 60%, rgba(255, 215, 0, 0.4), transparent 50%),
-    radial-gradient(1px 1px at 40% 80%, rgba(155, 92, 255, 0.5), transparent 50%),
-    radial-gradient(1px 1px at 85% 20%, rgba(255, 60, 172, 0.45), transparent 50%),
-    radial-gradient(2px 2px at 50% 50%, rgba(255, 255, 255, 0.3), transparent 50%);
+    radial-gradient(420px 420px at 12% 18%, rgba(239, 142, 56, 0.18), transparent 60%),
+    radial-gradient(460px 460px at 88% 28%, rgba(38, 80, 187, 0.14), transparent 60%),
+    radial-gradient(520px 520px at 50% 92%, rgba(16, 129, 116, 0.12), transparent 60%);
 }

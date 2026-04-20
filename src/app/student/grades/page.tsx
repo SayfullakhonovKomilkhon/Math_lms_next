@@ -136,8 +136,12 @@ export default function StudentGradesPage() {
           <div
             style={{
               borderRadius: 'var(--s-radius-lg)',
-              background: 'linear-gradient(145deg, #14142a, #0a0a18)',
-              border: '1px solid var(--s-border-subtle)',
+              background:
+                'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,248,240,0.85))',
+              border: '1px solid var(--s-card-outline)',
+              boxShadow: 'var(--s-shadow-card)',
+              backdropFilter: 'var(--s-blur-glass)',
+              WebkitBackdropFilter: 'var(--s-blur-glass)',
               overflow: 'hidden',
             }}
           >

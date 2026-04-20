@@ -33,21 +33,21 @@
 
 .primary {
   background: var(--s-gradient-purple-pink);
-  box-shadow: 0 12px 36px rgba(155, 92, 255, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 30px rgba(55, 47, 87, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .primary:hover:not(:disabled) {
-  box-shadow: 0 18px 48px rgba(255, 60, 172, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  filter: brightness(1.06);
+  box-shadow: 0 18px 40px rgba(239, 142, 56, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  filter: brightness(1.05);
 }
 
 .gold {
   background: var(--s-gradient-gold);
-  color: #3a2a00;
-  box-shadow: 0 12px 36px rgba(255, 215, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  color: var(--s-brand-wool);
+  box-shadow: 0 12px 30px rgba(245, 181, 68, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .gold::before {
@@ -57,7 +57,7 @@
   background: linear-gradient(
     100deg,
     transparent 20%,
-    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0.5) 50%,
     transparent 80%
   );
   background-size: 200% 100%;
@@ -66,19 +66,21 @@
 }
 
 .ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--s-border-subtle);
   color: var(--s-text-primary);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
 }
 
 .ghost:hover:not(:disabled) {
-  background: rgba(155, 92, 255, 0.14);
-  border-color: rgba(155, 92, 255, 0.5);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(38, 80, 187, 0.35);
 }
 
 .danger {
-  background: linear-gradient(135deg, #ff5f6d, #ff3cac);
-  box-shadow: 0 12px 36px rgba(255, 95, 109, 0.4);
+  background: linear-gradient(135deg, #e25858, #ef8e38);
+  box-shadow: 0 12px 30px rgba(226, 88, 88, 0.35);
 }
 
 .sm {

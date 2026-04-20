@@ -3,8 +3,10 @@
   padding: 16px;
   border-radius: var(--s-radius);
   background: var(--s-gradient-card);
-  border: 1px solid var(--s-border-subtle);
+  border: 1px solid var(--s-card-outline);
   box-shadow: var(--s-shadow-card);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
   overflow: hidden;
   transition: transform 0.3s var(--s-ease-soft), box-shadow 0.3s var(--s-ease-soft);
   will-change: transform;
@@ -15,31 +17,31 @@
   position: absolute;
   right: -30px;
   top: -30px;
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0.35;
+  filter: blur(48px);
+  opacity: 0.32;
   pointer-events: none;
-  background: var(--accentColor, var(--s-accent-purple));
+  background: var(--accentColor, var(--s-brand-blue));
 }
 
 .stat:hover {
   transform: translateY(-8px);
-  box-shadow: 0 26px 50px rgba(0, 0, 0, 0.5),
-    0 0 0 1px var(--accentColor, var(--s-accent-purple));
+  box-shadow: var(--s-shadow-card-hover),
+    0 0 0 1px color-mix(in oklab, var(--accentColor, var(--s-brand-blue)) 32%, transparent);
 }
 
 .icon {
   width: 36px;
   height: 36px;
   border-radius: 11px;
-  background: color-mix(in oklab, var(--accentColor, var(--s-accent-purple)) 18%, transparent);
-  color: var(--accentColor, var(--s-accent-purple));
+  background: color-mix(in oklab, var(--accentColor, var(--s-brand-blue)) 14%, white);
+  color: var(--accentColor, var(--s-brand-blue));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accentColor, var(--s-accent-purple)) 32%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accentColor, var(--s-brand-blue)) 22%, transparent);
 }
 
 .label {
@@ -53,14 +55,16 @@
 
 .value {
   margin-top: 4px;
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--s-ls-display);
   color: var(--s-text-primary);
+  font-family: var(--s-font-display);
+  line-height: 1;
 }
 
 .sub {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: 11px;
   color: var(--s-text-muted);
 }
@@ -73,12 +77,12 @@
   padding: 2px 6px;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 700;
-  background: rgba(74, 222, 128, 0.16);
-  color: #86efac;
+  font-weight: 800;
+  background: rgba(0, 195, 113, 0.14);
+  color: #098c56;
 }
 
 .trend.down {
-  background: rgba(255, 95, 109, 0.14);
-  color: #ff97a0;
+  background: rgba(226, 88, 88, 0.14);
+  color: #b53a3a;
 }

@@ -23,25 +23,28 @@
   box-shadow: var(--s-neon-glow-purple);
   font-size: 48px;
   font-weight: 800;
+  font-family: var(--s-font-display);
+  letter-spacing: var(--s-ls-display);
   color: #fff;
   animation: pop 0.6s var(--s-ease-spring) both;
 }
 
 .name {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
+  font-family: var(--s-font-display);
+  letter-spacing: var(--s-ls-display);
   background: var(--s-gradient-title);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: 0.02em;
 }
 
 .bar {
   width: 140px;
   height: 4px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(55, 47, 87, 0.1);
   overflow: hidden;
   position: relative;
 }

@@ -24,7 +24,7 @@ type ParticleFieldProps = {
  * Reduces density on mobile automatically and falls back to a static
  * radial-gradient image when the user prefers reduced motion.
  */
-export function ParticleField({ density = 0.00009, className }: ParticleFieldProps) {
+export function ParticleField({ density = 0.00002, className }: ParticleFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const reduced = useReducedMotion();
 
@@ -47,15 +47,19 @@ export function ParticleField({ density = 0.00009, className }: ParticleFieldPro
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const targetCount = Math.max(24, Math.floor(w * h * density));
-      particles = Array.from({ length: targetCount }).map(() => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: Math.random() * 1.6 + 0.4,
-        speed: Math.random() * 0.25 + 0.05,
-        drift: (Math.random() - 0.5) * 0.12,
-        hue: Math.random() < 0.5 ? 275 : Math.random() < 0.5 ? 325 : 50,
-        phase: Math.random() * Math.PI * 2,
-      }));
+      particles = Array.from({ length: targetCount }).map(() => {
+        const pick = Math.random();
+        const hue = pick < 0.4 ? 28 : pick < 0.75 ? 225 : 170; // Clay / Blue / Teal
+        return {
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 9 + 4,
+          speed: Math.random() * 0.18 + 0.04,
+          drift: (Math.random() - 0.5) * 0.08,
+          hue,
+          phase: Math.random() * Math.PI * 2,
+        };
+      });
     };
 
     const tick = () => {
@@ -66,21 +70,18 @@ export function ParticleField({ density = 0.00009, className }: ParticleFieldPro
       for (const p of particles) {
         p.y += p.speed;
         p.x += p.drift;
-        p.phase += 0.02;
-        if (p.y > h + 2) p.y = -2;
-        if (p.x < -2) p.x = w + 2;
-        if (p.x > w + 2) p.x = -2;
-        const twinkle = 0.55 + Math.sin(p.phase) * 0.35;
-        ctx.beginPath();
+        p.phase += 0.015;
+        if (p.y > h + p.r * 8) p.y = -p.r * 8;
+        if (p.x < -p.r * 8) p.x = w + p.r * 8;
+        if (p.x > w + p.r * 8) p.x = -p.r * 8;
+        const pulse = 0.6 + Math.sin(p.phase) * 0.25;
         const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
-        grad.addColorStop(0, `hsla(${p.hue}, 95%, 70%, ${0.85 * twinkle})`);
-        grad.addColorStop(1, `hsla(${p.hue}, 95%, 70%, 0)`);
+        grad.addColorStop(0, `hsla(${p.hue}, 85%, 62%, ${0.14 * pulse})`);
+        grad.addColorStop(0.6, `hsla(${p.hue}, 85%, 62%, ${0.06 * pulse})`);
+        grad.addColorStop(1, `hsla(${p.hue}, 85%, 62%, 0)`);
         ctx.fillStyle = grad;
-        ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2);
-        ctx.fill();
         ctx.beginPath();
-        ctx.fillStyle = `hsla(${p.hue}, 100%, 85%, ${twinkle})`;
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2);
         ctx.fill();
       }
       rafId = requestAnimationFrame(tick);

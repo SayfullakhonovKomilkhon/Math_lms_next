@@ -156,7 +156,7 @@ export default function StudentAchievementsPage() {
         />
         <div className={styles.podiumWrap}>
           <h3>
-            <Trophy size={16} style={{ color: '#ffd700' }} /> Подиум месяца
+            <Trophy size={16} style={{ color: '#f5b544' }} /> Подиум месяца
           </h3>
           <Podium entries={podiumEntries} />
         </div>

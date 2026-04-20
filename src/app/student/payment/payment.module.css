@@ -1,26 +1,41 @@
 .banner {
-  padding: 20px;
+  padding: 22px;
   border-radius: var(--s-radius-lg);
   border: 1px solid;
   margin-bottom: 18px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
+  box-shadow: var(--s-shadow-card);
 }
 
 .banner.paid {
-  background: linear-gradient(145deg, rgba(74, 222, 128, 0.16), rgba(74, 222, 128, 0.04));
-  border-color: rgba(74, 222, 128, 0.4);
+  background: linear-gradient(
+    145deg,
+    rgba(0, 195, 113, 0.14),
+    rgba(0, 195, 113, 0.04)
+  );
+  border-color: rgba(0, 195, 113, 0.32);
 }
 
 .banner.pending {
-  background: linear-gradient(145deg, rgba(253, 230, 138, 0.16), rgba(253, 230, 138, 0.04));
-  border-color: rgba(253, 230, 138, 0.4);
+  background: linear-gradient(
+    145deg,
+    rgba(245, 181, 68, 0.16),
+    rgba(245, 181, 68, 0.04)
+  );
+  border-color: rgba(245, 181, 68, 0.38);
 }
 
 .banner.unpaid {
-  background: linear-gradient(145deg, rgba(255, 95, 109, 0.2), rgba(255, 95, 109, 0.06));
-  border-color: rgba(255, 95, 109, 0.4);
-  box-shadow: 0 16px 44px rgba(255, 95, 109, 0.18);
+  background: linear-gradient(
+    145deg,
+    rgba(226, 88, 88, 0.14),
+    rgba(239, 142, 56, 0.08)
+  );
+  border-color: rgba(226, 88, 88, 0.38);
+  box-shadow: 0 16px 36px rgba(226, 88, 88, 0.15);
 }
 
 .bannerRow {
@@ -30,14 +45,16 @@
 }
 
 .bannerIcon {
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 14px rgba(55, 47, 87, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .bannerBody {
@@ -53,8 +70,10 @@
 }
 
 .bannerValue {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
+  font-family: var(--s-font-display);
+  letter-spacing: var(--s-ls-display);
   color: var(--s-text-primary);
   margin-top: 2px;
 }
@@ -66,12 +85,14 @@
 }
 
 .amount {
-  padding: 20px;
+  padding: 22px;
   border-radius: var(--s-radius-lg);
   background: var(--s-gradient-card);
-  border: 1px solid var(--s-border-subtle);
+  border: 1px solid var(--s-card-outline);
   text-align: center;
   box-shadow: var(--s-shadow-card);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
 }
 
 .amountLabel {
@@ -83,14 +104,17 @@
 }
 
 .amountValue {
-  margin: 6px 0;
-  font-size: 38px;
+  margin: 8px 0;
+  font-size: 44px;
   font-weight: 800;
-  background: var(--s-gradient-gold);
+  font-family: var(--s-font-display);
+  letter-spacing: var(--s-ls-display);
+  line-height: 1;
+  background: var(--s-gradient-purple-pink);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 14px rgba(255, 215, 0, 0.4));
+  filter: drop-shadow(0 4px 12px rgba(55, 47, 87, 0.18));
 }
 
 .amountSub {
@@ -105,29 +129,33 @@
 }
 
 .payWay {
-  padding: 16px 12px;
+  padding: 18px 14px;
   border-radius: var(--s-radius);
   background: var(--s-gradient-card);
-  border: 1px solid var(--s-border-subtle);
+  border: 1px solid var(--s-card-outline);
   text-align: center;
   box-shadow: var(--s-shadow-card);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
   transition: all 0.2s var(--s-ease-soft);
 }
 
 .payWay:hover {
-  border-color: rgba(155, 92, 255, 0.45);
+  border-color: rgba(38, 80, 187, 0.35);
+  box-shadow: var(--s-shadow-card-hover);
   transform: translateY(-3px);
 }
 
 .payWayIcon {
   font-size: 28px;
   margin-bottom: 6px;
-  filter: drop-shadow(0 0 12px rgba(155, 92, 255, 0.4));
+  filter: drop-shadow(0 4px 10px rgba(55, 47, 87, 0.15));
 }
 
 .payWayName {
   font-size: 13px;
   font-weight: 800;
+  color: var(--s-text-primary);
 }
 
 .payWayHint {
@@ -139,8 +167,8 @@
 .bank {
   padding: 16px;
   border-radius: var(--s-radius);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed var(--s-border-subtle);
+  background: rgba(255, 248, 240, 0.6);
+  border: 1px dashed rgba(55, 47, 87, 0.2);
   font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: var(--s-text-primary);
@@ -164,7 +192,10 @@
   padding: 14px;
   border-radius: var(--s-radius);
   background: var(--s-gradient-card);
-  border: 1px solid var(--s-border-subtle);
+  border: 1px solid var(--s-card-outline);
+  box-shadow: var(--s-shadow-card);
+  backdrop-filter: var(--s-blur-glass);
+  -webkit-backdrop-filter: var(--s-blur-glass);
   gap: 12px;
 }
 
@@ -174,8 +205,11 @@
 }
 
 .historyAmount {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
+  font-family: var(--s-font-display);
+  letter-spacing: var(--s-ls-display);
+  color: var(--s-text-primary);
 }
 
 .badge {
@@ -187,6 +221,6 @@
   text-transform: uppercase;
 }
 
-.badge.paid { background: rgba(74, 222, 128, 0.18); color: #86efac; }
-.badge.pending { background: rgba(253, 230, 138, 0.18); color: #fde68a; }
-.badge.rejected { background: rgba(255, 95, 109, 0.18); color: #ff97a0; }
+.badge.paid { background: rgba(0, 195, 113, 0.14); color: #098c56; }
+.badge.pending { background: rgba(245, 181, 68, 0.16); color: #b16c18; }
+.badge.rejected { background: rgba(226, 88, 88, 0.14); color: #b53a3a; }

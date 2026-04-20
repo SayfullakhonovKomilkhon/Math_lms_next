@@ -15,12 +15,12 @@ type StatCardProps = {
 };
 
 const ACCENT_COLOR: Record<NonNullable<StatCardProps['accent']>, string> = {
-  purple: '#9B5CFF',
-  pink: '#FF3CAC',
-  gold: '#FFD700',
-  blue: '#4DC0FF',
-  green: '#4ADE80',
-  red: '#FF5F6D',
+  purple: '#372F57',
+  pink: '#EF8E38',
+  gold: '#F5B544',
+  blue: '#2650BB',
+  green: '#00C371',
+  red: '#E25858',
 };
 
 export function StatCard({
