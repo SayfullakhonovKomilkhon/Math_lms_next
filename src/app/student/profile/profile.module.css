@@ -91,90 +91,73 @@
   margin-top: 4px;
 }
 
-.statsRow {
-  margin: 20px 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 16px;
-  border-radius: var(--s-radius);
-  background: var(--s-gradient-card);
-  border: 1px solid var(--s-card-outline);
-  box-shadow: var(--s-shadow-card);
-  backdrop-filter: var(--s-blur-glass);
-  -webkit-backdrop-filter: var(--s-blur-glass);
-}
-
-.statBlock {
-  text-align: center;
-  border-right: 1px solid var(--s-border-subtle);
-  padding: 0 4px;
-}
-
-.statBlock:last-child {
-  border-right: none;
-}
-
-.statVal {
-  font-size: 24px;
-  font-weight: 800;
-  font-family: var(--s-font-display);
-  letter-spacing: var(--s-ls-display);
-  line-height: 1;
-  color: var(--s-text-primary);
-}
-
-.statLabel {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--s-text-secondary);
-  margin-top: 6px;
-}
-
-.menu {
+.form {
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 14px;
 }
 
-.menuItem {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
+.section {
+  padding: 18px 16px 16px;
   border-radius: var(--s-radius);
   background: var(--s-gradient-card);
   border: 1px solid var(--s-card-outline);
   box-shadow: var(--s-shadow-card);
   backdrop-filter: var(--s-blur-glass);
   -webkit-backdrop-filter: var(--s-blur-glass);
-  color: var(--s-text-primary);
-  cursor: pointer;
-  transition: all 0.2s var(--s-ease-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.menuItem:hover {
-  border-color: rgba(38, 80, 187, 0.32);
-  box-shadow: var(--s-shadow-card-hover);
-  transform: translateX(4px);
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--s-brand-blue);
 }
 
-.menuItem:active {
-  transform: scale(0.98);
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.menuIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(
-    145deg,
-    rgba(38, 80, 187, 0.16),
-    rgba(38, 80, 187, 0.04)
-  );
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--s-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.fieldControl {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--s-border-subtle);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(55, 47, 87, 0.05);
+  transition: border-color 0.18s var(--s-ease-soft),
+    box-shadow 0.18s var(--s-ease-soft);
+}
+
+.fieldControl:focus-within {
+  border-color: rgba(38, 80, 187, 0.45);
+  box-shadow: 0 0 0 3px rgba(38, 80, 187, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.fieldIcon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,25 +165,51 @@
   flex-shrink: 0;
 }
 
-.menuBody {
+.input {
   flex: 1;
   min-width: 0;
-}
-
-.menuTitle {
-  font-size: 14px;
-  font-weight: 700;
+  height: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  font-family: inherit;
   color: var(--s-text-primary);
+  padding: 0;
 }
 
-.menuSub {
-  font-size: 11px;
-  color: var(--s-text-secondary);
-  margin-top: 2px;
-}
-
-.menuArrow {
+.input::placeholder {
   color: var(--s-text-muted);
+}
+
+.fieldHint {
+  font-size: 11px;
+  color: var(--s-text-muted);
+  padding-left: 2px;
+}
+
+.eyeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--s-text-muted);
+  cursor: pointer;
+  transition: color 0.15s var(--s-ease-soft),
+    background 0.15s var(--s-ease-soft);
+}
+
+.eyeBtn:hover {
+  color: var(--s-brand-blue);
+  background: rgba(38, 80, 187, 0.08);
+}
+
+.actions {
+  margin-top: 4px;
 }
 
 .logoutBtn {

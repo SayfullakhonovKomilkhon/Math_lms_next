@@ -1,57 +1,40 @@
 'use client';
 
-import Link from 'next/link';
+import { FormEvent, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Calendar,
-  CreditCard,
+  AtSign,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Lock,
   LogOut,
-  Megaphone,
-  MessageCircle,
-  Bell,
-  ChevronRight,
+  Phone,
+  Save,
+  User,
 } from 'lucide-react';
+import api from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/auth.store';
+import { toast } from '@/components/ui/toast';
 import { PageTitle } from '../_components/PageTitle';
 import { SButton } from '../_components/SButton';
 import { useStudentSummary } from '../_lib/useStudentSummary';
 import styles from './profile.module.css';
 
+type UpdatePayload = {
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+};
+
 export default function StudentProfilePage() {
-  const { summary } = useStudentSummary();
+  const { summary, profile } = useStudentSummary();
   const { user, logout } = useAuth();
 
-  const menu = [
-    {
-      href: '/student/schedule',
-      icon: Calendar,
-      title: 'Расписание',
-      sub: 'Мои занятия и ближайший урок',
-    },
-    {
-      href: '/student/payment',
-      icon: CreditCard,
-      title: 'Оплата',
-      sub: 'Статус и история платежей',
-    },
-    {
-      href: '/student/announcements',
-      icon: Megaphone,
-      title: 'Объявления',
-      sub: 'Новости от учителя и центра',
-    },
-    {
-      href: '/student/notifications',
-      icon: Bell,
-      title: 'Уведомления',
-      sub: 'История событий и достижений',
-    },
-    {
-      href: '/student/settings/telegram',
-      icon: MessageCircle,
-      title: 'Telegram',
-      sub: 'Получай оповещения в Telegram',
-    },
-  ];
+  const formKey = `${profile?.id ?? 'mock'}:${user?.email ?? ''}`;
 
   return (
     <div>
@@ -70,41 +53,12 @@ export default function StudentProfilePage() {
         </div>
       </section>
 
-      <div className={styles.statsRow}>
-        <div className={styles.statBlock}>
-          <div className={styles.statVal}>{summary.totalLessons}</div>
-          <div className={styles.statLabel}>уроков</div>
-        </div>
-        <div className={styles.statBlock}>
-          <div className={styles.statVal}>{summary.attendancePercent}%</div>
-          <div className={styles.statLabel}>посещ.</div>
-        </div>
-        <div className={styles.statBlock}>
-          <div className={styles.statVal}>{summary.streak}</div>
-          <div className={styles.statLabel}>стрик</div>
-        </div>
-      </div>
-
-      <nav className={styles.menu} aria-label="Дополнительные разделы">
-        {menu.map(({ href, icon: Icon, title, sub }) => (
-          <Link key={href} href={href} className={styles.menuItem}>
-            <span className={styles.menuIcon}>
-              <Icon size={18} />
-            </span>
-            <span className={styles.menuBody}>
-              <span className={styles.menuTitle}>{title}</span>
-              <span className={styles.menuSub}>{sub}</span>
-            </span>
-            <ChevronRight size={18} className={styles.menuArrow} />
-          </Link>
-        ))}
-      </nav>
-
-      {user ? (
-        <div style={{ marginTop: 14, color: 'var(--s-text-muted)', fontSize: 11, textAlign: 'center' }}>
-          {user.email}
-        </div>
-      ) : null}
+      <ProfileForm
+        key={formKey}
+        initialFullName={profile?.fullName ?? ''}
+        initialPhone={profile?.phone ?? ''}
+        initialEmail={user?.email ?? ''}
+      />
 
       <div className={styles.logoutBtn}>
         <SButton variant="danger" onClick={logout}>
@@ -113,4 +67,260 @@ export default function StudentProfilePage() {
       </div>
     </div>
   );
+}
+
+type ProfileFormProps = {
+  initialFullName: string;
+  initialPhone: string;
+  initialEmail: string;
+};
+
+function ProfileForm({
+  initialFullName,
+  initialPhone,
+  initialEmail,
+}: ProfileFormProps) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+
+  const [fullName, setFullName] = useState(initialFullName);
+  const [phone, setPhone] = useState(initialPhone);
+  const [email, setEmail] = useState(initialEmail);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: (payload: UpdatePayload) =>
+      api.patch('/students/me', payload).then((r) => r.data?.data ?? r.data),
+    onSuccess: (_data, variables) => {
+      toast('Данные аккаунта обновлены');
+      qc.invalidateQueries({ queryKey: ['student-profile'] });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+      if (variables.email && user) {
+        useAuthStore.setState({ user: { ...user, email: variables.email } });
+      }
+    },
+    onError: (err: unknown) => {
+      const message = extractErrorMessage(err);
+      toast(message, 'error');
+    },
+  });
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const payload: UpdatePayload = {};
+
+    const trimmedName = fullName.trim();
+    if (trimmedName && trimmedName !== initialFullName.trim()) {
+      payload.fullName = trimmedName;
+    }
+
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone !== initialPhone.trim()) {
+      payload.phone = trimmedPhone;
+    }
+
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && trimmedEmail !== initialEmail.trim()) {
+      payload.email = trimmedEmail;
+    }
+
+    const wantsPasswordChange = newPassword.length > 0 || confirmPassword.length > 0;
+    if (wantsPasswordChange) {
+      if (newPassword.length < 8) {
+        toast('Новый пароль должен быть минимум 8 символов', 'error');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        toast('Пароли не совпадают', 'error');
+        return;
+      }
+      payload.newPassword = newPassword;
+    }
+
+    const needsCurrentPassword = !!payload.email || !!payload.newPassword;
+    if (needsCurrentPassword) {
+      if (!currentPassword) {
+        toast('Введите текущий пароль для подтверждения', 'error');
+        return;
+      }
+      payload.currentPassword = currentPassword;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      toast('Нет изменений для сохранения', 'info');
+      return;
+    }
+
+    mutation.mutate(payload);
+  };
+
+  return (
+    <form className={styles.form} onSubmit={onSubmit} noValidate>
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>
+          <User size={16} /> Личные данные
+        </div>
+
+        <Field
+          label="Имя и фамилия"
+          icon={<User size={16} />}
+          type="text"
+          value={fullName}
+          onChange={setFullName}
+          placeholder="Например, Алижон Валиев"
+          autoComplete="name"
+        />
+
+        <Field
+          label="Телефон"
+          icon={<Phone size={16} />}
+          type="tel"
+          value={phone}
+          onChange={setPhone}
+          placeholder="+998 90 123 45 67"
+          autoComplete="tel"
+        />
+      </div>
+
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>
+          <AtSign size={16} /> Логин и безопасность
+        </div>
+
+        <Field
+          label="Email (логин)"
+          icon={<AtSign size={16} />}
+          type="email"
+          value={email}
+          onChange={setEmail}
+          placeholder="name@example.com"
+          autoComplete="email"
+        />
+
+        <Field
+          label="Текущий пароль"
+          icon={<Lock size={16} />}
+          type={showCurrent ? 'text' : 'password'}
+          value={currentPassword}
+          onChange={setCurrentPassword}
+          placeholder="Введите текущий пароль"
+          autoComplete="current-password"
+          trailing={
+            <button
+              type="button"
+              className={styles.eyeBtn}
+              onClick={() => setShowCurrent((v) => !v)}
+              aria-label={showCurrent ? 'Скрыть пароль' : 'Показать пароль'}
+            >
+              {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          }
+          hint="Нужен только при смене email или пароля"
+        />
+
+        <Field
+          label="Новый пароль"
+          icon={<KeyRound size={16} />}
+          type={showNew ? 'text' : 'password'}
+          value={newPassword}
+          onChange={setNewPassword}
+          placeholder="Минимум 8 символов"
+          autoComplete="new-password"
+          trailing={
+            <button
+              type="button"
+              className={styles.eyeBtn}
+              onClick={() => setShowNew((v) => !v)}
+              aria-label={showNew ? 'Скрыть пароль' : 'Показать пароль'}
+            >
+              {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          }
+        />
+
+        <Field
+          label="Повторите новый пароль"
+          icon={<KeyRound size={16} />}
+          type={showNew ? 'text' : 'password'}
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          placeholder="Повторите новый пароль"
+          autoComplete="new-password"
+        />
+      </div>
+
+      <div className={styles.actions}>
+        <SButton type="submit" disabled={mutation.isPending}>
+          <Save size={16} />
+          {mutation.isPending ? 'Сохранение…' : 'Сохранить изменения'}
+        </SButton>
+      </div>
+    </form>
+  );
+}
+
+type FieldProps = {
+  label: string;
+  icon?: React.ReactNode;
+  trailing?: React.ReactNode;
+  hint?: string;
+  type: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+  autoComplete?: string;
+};
+
+function Field({
+  label,
+  icon,
+  trailing,
+  hint,
+  type,
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+}: FieldProps) {
+  return (
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <span className={styles.fieldControl}>
+        {icon ? <span className={styles.fieldIcon}>{icon}</span> : null}
+        <input
+          className={styles.input}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          spellCheck={false}
+        />
+        {trailing}
+      </span>
+      {hint ? <span className={styles.fieldHint}>{hint}</span> : null}
+    </label>
+  );
+}
+
+function extractErrorMessage(err: unknown): string {
+  const fallback = 'Не удалось сохранить. Попробуйте ещё раз.';
+  if (!err || typeof err !== 'object') return fallback;
+  const maybeAxios = err as {
+    response?: { data?: { message?: string | string[] } };
+    message?: string;
+  };
+  const msg = maybeAxios.response?.data?.message;
+  if (Array.isArray(msg)) return msg[0] ?? fallback;
+  if (typeof msg === 'string') return msg;
+  if (typeof maybeAxios.message === 'string') return maybeAxios.message;
+  return fallback;
 }
