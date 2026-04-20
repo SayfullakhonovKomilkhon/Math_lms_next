@@ -24,7 +24,7 @@ export default function TeacherGroupsPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {activeGroups.map((group) => (
-          <Link key={group.id} href={`/teacher/groups/${group.id}/attendance`}>
+          <Link key={group.id} href={`/teacher/groups/${group.id}`}>
             <Card className="p-5 transition-all hover:border-emerald-200 hover:shadow-md cursor-pointer">
               <div className="mb-3 flex items-start justify-between">
                 <h3 className="text-lg font-semibold text-slate-900">{group.name}</h3>

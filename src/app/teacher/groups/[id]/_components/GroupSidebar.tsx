@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Pencil, Trash2, Mail, Plus, DollarSign, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ interface SidebarStudent {
   fullName: string;
   phone?: string;
   isActive: boolean;
+  hasPaidThisMonth?: boolean;
 }
 
 interface Props {
@@ -37,39 +38,20 @@ export function GroupSidebar({
   return (
     <aside className="flex w-full flex-col gap-4 lg:max-w-[320px]">
       <Card className="p-5">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-bold text-rose-600">
-              {groupName}
-            </h2>
-            {teacherName && (
-              <p className="mt-0.5 truncate text-sm text-slate-500">· {teacherName}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <ActionIconButton label="Изменить" className="border-amber-200 text-amber-500 hover:bg-amber-50">
-              <Pencil className="h-4 w-4" />
-            </ActionIconButton>
-            <ActionIconButton label="Удалить" className="border-rose-200 text-rose-500 hover:bg-rose-50">
-              <Trash2 className="h-4 w-4" />
-            </ActionIconButton>
-            <ActionIconButton label="Сообщение" className="border-emerald-200 text-emerald-500 hover:bg-emerald-50">
-              <Mail className="h-4 w-4" />
-            </ActionIconButton>
-            <ActionIconButton label="Добавить" className="border-sky-200 text-sky-500 hover:bg-sky-50">
-              <Plus className="h-4 w-4" />
-            </ActionIconButton>
-            <ActionIconButton label="Оплата" className="border-rose-200 text-rose-500 hover:bg-rose-50">
-              <DollarSign className="h-4 w-4" />
-            </ActionIconButton>
-          </div>
+        <div className="mb-3 min-w-0">
+          <h2 className="truncate text-base font-bold text-rose-600">
+            {groupName}
+          </h2>
+          {teacherName && (
+            <p className="mt-0.5 truncate text-sm text-slate-500">· {teacherName}</p>
+          )}
         </div>
 
         <dl className="space-y-3 text-sm">
-          <InfoLine term="Narx" value={priceLabel ?? '—'} />
-          <InfoLine term="Vaqt" value={scheduleLabel} />
-          <InfoLine term="Xona" value={roomLabel ?? '—'} />
-          <InfoLine term="Sanalar" value={dateRangeLabel ?? '—'} />
+          <InfoLine term="Цена" value={priceLabel ?? '—'} />
+          <InfoLine term="Время" value={scheduleLabel} />
+          <InfoLine term="Кабинет" value={roomLabel ?? '—'} />
+          <InfoLine term="Даты" value={dateRangeLabel ?? '—'} />
         </dl>
       </Card>
 
@@ -84,38 +66,45 @@ export function GroupSidebar({
               В группе нет учеников
             </li>
           )}
-          {students.map((student, idx) => (
-            <li
-              key={student.id}
-              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50/60"
-            >
-              <span
-                className={cn(
-                  'h-2.5 w-2.5 shrink-0 rounded-full',
-                  student.isActive ? 'bg-rose-500' : 'bg-slate-300',
-                )}
-                aria-hidden
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-800">
-                  <span className="mr-1 text-slate-400">{idx + 1}.</span>
-                  {student.fullName}
-                </p>
-              </div>
-              {student.phone && (
-                <span className="shrink-0 text-xs text-slate-500 tabular-nums">
-                  {formatPhone(student.phone)}
-                </span>
-              )}
-              <button
-                type="button"
-                className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
-                aria-label="Меню ученика"
+          {students.map((student, idx) => {
+            const paid = student.hasPaidThisMonth === true;
+            const dotLabel = paid
+              ? 'Оплата за месяц подтверждена'
+              : 'Оплата за месяц не получена';
+            return (
+              <li
+                key={student.id}
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50/60"
               >
-                <MoreIcon />
-              </button>
-            </li>
-          ))}
+                <span
+                  className={cn(
+                    'h-2.5 w-2.5 shrink-0 rounded-full',
+                    paid ? 'bg-emerald-500' : 'bg-rose-500',
+                  )}
+                  title={dotLabel}
+                  aria-label={dotLabel}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-800">
+                    <span className="mr-1 text-slate-400">{idx + 1}.</span>
+                    {student.fullName}
+                  </p>
+                </div>
+                {student.phone && (
+                  <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+                    {formatPhone(student.phone)}
+                  </span>
+                )}
+                <Link
+                  href={`/teacher/students/${student.id}`}
+                  aria-label={`Открыть профиль ученика ${student.fullName}`}
+                  className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <MoreIcon />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
         {studentsLink && (
@@ -138,34 +127,6 @@ function InfoLine({ term, value }: { term: string; value: string }) {
       <dt className="font-semibold text-slate-700">{term}:</dt>
       <dd className="text-slate-600">{value}</dd>
     </div>
-  );
-}
-
-function ActionIconButton({
-  label,
-  className,
-  children,
-  onClick,
-}: {
-  label: string;
-  className?: string;
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-full border bg-white shadow-sm transition-colors',
-        'focus:outline-none focus:ring-2 focus:ring-offset-1',
-        className,
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -197,5 +158,4 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-// Used to keep type re-exported from the page if needed.
 export type { SidebarStudent };

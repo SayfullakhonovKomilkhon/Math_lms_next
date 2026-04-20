@@ -13,7 +13,9 @@ import { formatCurrency } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { GroupSidebar } from './_components/GroupSidebar';
 import { AttendanceTab } from './_components/AttendanceTab';
-import { PlaceholderTab } from './_components/PlaceholderTab';
+import { HomeworkTab } from './_components/HomeworkTab';
+import { PracticeTab } from './_components/PracticeTab';
+import { TopicsTab } from './_components/TopicsTab';
 
 interface GroupStudent {
   id: string;
@@ -22,40 +24,27 @@ interface GroupStudent {
   gender: string;
   isActive: boolean;
   monthlyFee: number | string;
+  hasPaidThisMonth?: boolean;
   user?: { email: string };
 }
 
-type TabId =
-  | 'davomat'
-  | 'homework'
-  | 'participation'
-  | 'practice'
-  | 'online'
-  | 'discount'
-  | 'exams'
-  | 'history'
-  | 'notes';
+type TabId = 'davomat' | 'homework' | 'practice' | 'online';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'davomat', label: 'Davomat' },
-  { id: 'homework', label: 'Uy vazifalari(test)' },
-  { id: 'participation', label: 'Faol qatnashuv' },
-  { id: 'practice', label: 'Amaliyot' },
-  { id: 'online', label: 'Onlayn Darslar va materiallar' },
-  { id: 'discount', label: 'Chegirmali Narx' },
-  { id: 'exams', label: 'Imtihonlar' },
-  { id: 'history', label: 'Tarix' },
-  { id: 'notes', label: 'Izohlar' },
+  { id: 'davomat', label: 'Посещаемость' },
+  { id: 'homework', label: 'Домашние задания' },
+  { id: 'practice', label: 'Практика' },
+  { id: 'online', label: 'Темы уроков' },
 ];
 
-const UZ_DAY_LABELS: Record<string, string> = {
-  MONDAY: 'Dushanba',
-  TUESDAY: 'Seshanba',
-  WEDNESDAY: 'Chorshanba',
-  THURSDAY: 'Payshanba',
-  FRIDAY: 'Juma',
-  SATURDAY: 'Shanba',
-  SUNDAY: 'Yakshanba',
+const RU_DAY_LABELS: Record<string, string> = {
+  MONDAY: 'Понедельник',
+  TUESDAY: 'Вторник',
+  WEDNESDAY: 'Среда',
+  THURSDAY: 'Четверг',
+  FRIDAY: 'Пятница',
+  SATURDAY: 'Суббота',
+  SUNDAY: 'Воскресенье',
 };
 
 const ODD_DAYS = new Set(['MONDAY', 'WEDNESDAY', 'FRIDAY']);
@@ -125,6 +114,7 @@ export default function TeacherGroupHubPage() {
         fullName: s.fullName,
         phone: s.phone,
         isActive: s.isActive,
+        hasPaidThisMonth: s.hasPaidThisMonth,
       })),
     [students],
   );
@@ -186,68 +176,9 @@ export default function TeacherGroupHubPage() {
               />
             )}
 
-            {activeTab === 'homework' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Домашние задания"
-                description="Тесты и задания для учеников. Временно доступно через старую страницу ДЗ."
-                redirectHref={`/teacher/groups/${groupId}/homework`}
-                redirectLabel="Открыть ДЗ"
-              />
-            )}
-            {activeTab === 'participation' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Faol qatnashuv"
-                description="Активность учеников на уроках. Скоро добавим."
-              />
-            )}
-            {activeTab === 'practice' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Amaliyot"
-                description="Оценки за практику. Временно доступно через текущую страницу оценок."
-                redirectHref={`/teacher/groups/${groupId}/grades`}
-                redirectLabel="Открыть оценки"
-              />
-            )}
-            {activeTab === 'online' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Онлайн уроки и материалы"
-                description="Ссылки на материалы будут доступны здесь."
-                redirectHref={`/teacher/groups/${groupId}/topics`}
-                redirectLabel="Открыть темы уроков"
-              />
-            )}
-            {activeTab === 'discount' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Chegirmali Narx"
-                description="Индивидуальные скидки ученикам. Скоро."
-              />
-            )}
-            {activeTab === 'exams' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Imtihonlar"
-                description="Список контрольных и экзаменов. Скоро."
-              />
-            )}
-            {activeTab === 'history' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Tarix"
-                description="История изменений по группе. Скоро."
-              />
-            )}
-            {activeTab === 'notes' && (
-              <PlaceholderTab
-                groupId={groupId}
-                label="Izohlar"
-                description="Заметки и комментарии учителя. Скоро."
-              />
-            )}
+            {activeTab === 'homework' && <HomeworkTab groupId={groupId} />}
+            {activeTab === 'practice' && <PracticeTab groupId={groupId} />}
+            {activeTab === 'online' && <TopicsTab groupId={groupId} />}
           </div>
         </Card>
       </div>
@@ -266,14 +197,14 @@ function Breadcrumb({ groupName }: { groupName: string }) {
         className="inline-flex items-center gap-1 rounded px-1 py-0.5 hover:text-slate-600"
       >
         <Home className="h-3 w-3" />
-        Asosiy menyu
+        Главное меню
       </Link>
       <ChevronRight className="h-3 w-3" />
       <Link
         href="/teacher/groups"
         className="rounded px-1 py-0.5 hover:text-slate-600"
       >
-        Guruhlar
+        Группы
       </Link>
       {groupName && (
         <>
@@ -293,9 +224,9 @@ function formatScheduleLabel(
   const allOdd = days.every((d) => ODD_DAYS.has(d));
   const allEven = days.every((d) => EVEN_DAYS.has(d));
   let daysLabel: string;
-  if (allOdd && days.length === ODD_DAYS.size) daysLabel = 'Toq kunlar';
-  else if (allEven && days.length === EVEN_DAYS.size) daysLabel = 'Juft kunlar';
-  else daysLabel = days.map((d) => UZ_DAY_LABELS[d] ?? d).join(', ');
+  if (allOdd && days.length === ODD_DAYS.size) daysLabel = 'Нечётные дни';
+  else if (allEven && days.length === EVEN_DAYS.size) daysLabel = 'Чётные дни';
+  else daysLabel = days.map((d) => RU_DAY_LABELS[d] ?? d).join(', ');
   if (schedule.time) return `${daysLabel} · ${schedule.time}`;
   return daysLabel;
 }

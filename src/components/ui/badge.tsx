@@ -3,7 +3,16 @@ import { PaymentRecordStatus, AttendanceStatus } from '@/types';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'green' | 'red' | 'yellow' | 'gray' | 'blue' | 'outline' | 'secondary' | 'destructive';
+  variant?:
+    | 'green'
+    | 'red'
+    | 'yellow'
+    | 'gray'
+    | 'blue'
+    | 'violet'
+    | 'outline'
+    | 'secondary'
+    | 'destructive';
   className?: string;
 }
 
@@ -17,6 +26,7 @@ export function Badge({ children, variant = 'gray', className }: BadgeProps) {
         variant === 'yellow' && 'bg-yellow-100 text-yellow-800',
         variant === 'gray' && 'bg-gray-100 text-gray-800',
         variant === 'blue' && 'bg-blue-100 text-blue-800',
+        variant === 'violet' && 'bg-violet-100 text-violet-800',
         variant === 'outline' && 'border border-slate-200 bg-white text-slate-700',
         variant === 'secondary' && 'bg-slate-100 text-slate-700',
         variant === 'destructive' && 'bg-red-100 text-red-700',
