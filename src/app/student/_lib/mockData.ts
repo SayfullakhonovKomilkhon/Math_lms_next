@@ -48,9 +48,9 @@ export const mockStats = {
   averageScore: 89,
   placeInGroup: 2,
   totalStudents: 14,
-  goldCount: 3,
-  silverCount: 2,
-  bronzeCount: 1,
+  goldCount: 5,
+  silverCount: 4,
+  bronzeCount: 3,
 };
 
 export const mockLatestHomework = {
@@ -77,27 +77,25 @@ const MONTH_NAMES_RU = [
   'Декабрь',
 ];
 
+// Preview: все 12 месяцев показываем в разблокированном виде с чередованием
+// мест (1/2/3), чтобы видеть все варианты медалей сразу.
+const MOCK_PLACES: (1 | 2 | 3)[] = [1, 2, 1, 3, 2, 1, 2, 3, 1, 2, 3, 1];
+
 export const mockMonthGrid: MockAchievement[] = MONTH_NAMES_RU.map((name, i) => {
-  const unlocked = [0, 2, 3, 5, 7].includes(i);
-  const place: 1 | 2 | 3 | undefined = unlocked
-    ? (([1, 2, 1, 3, 2][[0, 2, 3, 5, 7].indexOf(i)] ?? 2) as 1 | 2 | 3)
-    : undefined;
+  const place = MOCK_PLACES[i] ?? 2;
   return {
     month: i + 1,
     monthName: name,
-    unlocked,
+    unlocked: true,
     place,
-    title: unlocked
-      ? place === 1
+    title:
+      place === 1
         ? 'Лучший месяца'
         : place === 2
           ? 'Серебряный призёр'
-          : 'Бронзовый призёр'
-      : undefined,
-    icon: unlocked ? (place === 1 ? '🥇' : place === 2 ? '🥈' : '🥉') : undefined,
-    description: unlocked
-      ? `Топ-${place} среди учеников группы по итогам месяца.`
-      : undefined,
+          : 'Бронзовый призёр',
+    icon: place === 1 ? '🥇' : place === 2 ? '🥈' : '🥉',
+    description: `Топ-${place} среди учеников группы по итогам месяца.`,
     year: 2026,
   };
 });
