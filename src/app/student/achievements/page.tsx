@@ -22,7 +22,6 @@ import {
   mockLeaderboard,
   mockMonthGrid,
   mockSpecials,
-  mockStats,
 } from '../_lib/mockData';
 import styles from './achievements.module.css';
 
@@ -57,17 +56,48 @@ export default function StudentAchievementsPage() {
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [detail, setDetail] = useState<UnlockDetail | null>(null);
 
-  const medals: HexMedal[] = data?.monthGrid?.length ? data.monthGrid : mockMonthGrid;
-  const specials: SpecialAchievement[] =
-    data?.specialAchievements?.length ? data.specialAchievements : mockSpecials;
-  const stats =
-    data?.stats ?? {
-      goldCount: mockStats.goldCount,
-      silverCount: mockStats.silverCount,
-      bronzeCount: mockStats.bronzeCount,
-      totalAchievements:
-        mockStats.goldCount + mockStats.silverCount + mockStats.bronzeCount,
+  // PREVIEW: force-unlock every monthly medal and special achievement so we
+  // can review the visual design regardless of what the backend returns.
+  // Remove this override once the real achievement flow is ready.
+  const rawMedals: HexMedal[] = data?.monthGrid?.length ? data.monthGrid : mockMonthGrid;
+  const PREVIEW_PLACES: (1 | 2 | 3)[] = [1, 2, 1, 3, 2, 1, 2, 3, 1, 2, 3, 1];
+  const medals: HexMedal[] = rawMedals.map((m, i) => {
+    const place = (m.place ?? PREVIEW_PLACES[i] ?? 2) as 1 | 2 | 3;
+    return {
+      ...m,
+      unlocked: true,
+      place,
+      title:
+        m.title ??
+        (place === 1
+          ? 'Лучший месяца'
+          : place === 2
+            ? 'Серебряный призёр'
+            : 'Бронзовый призёр'),
+      icon: m.icon ?? (place === 1 ? '🥇' : place === 2 ? '🥈' : '🥉'),
+      description:
+        m.description ??
+        `Топ-${place} среди учеников группы по итогам месяца.`,
     };
+  });
+
+  const rawSpecials: SpecialAchievement[] =
+    data?.specialAchievements?.length ? data.specialAchievements : mockSpecials;
+  const specials: SpecialAchievement[] = rawSpecials.map((s) => ({
+    ...s,
+    unlocked: true,
+    unlockedAt: s.unlockedAt ?? new Date().toISOString(),
+  }));
+
+  const goldCount = medals.filter((m) => m.place === 1).length;
+  const silverCount = medals.filter((m) => m.place === 2).length;
+  const bronzeCount = medals.filter((m) => m.place === 3).length;
+  const stats = {
+    goldCount,
+    silverCount,
+    bronzeCount,
+    totalAchievements: goldCount + silverCount + bronzeCount + specials.length,
+  };
 
   const podiumEntries: PodiumEntry[] = mockLeaderboard.slice(0, 3).map((m) => ({
     id: m.id,
