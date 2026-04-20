@@ -67,35 +67,35 @@
 
 .medalStat {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 6px;
+  gap: 2px;
+  padding: 7px 6px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(245, 181, 68, 0.28);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--s-text-primary);
   min-width: 0;
-  line-height: 1;
+  line-height: 1.1;
+  text-align: center;
 }
 
 .medalStat small {
   color: var(--s-text-secondary);
   font-weight: 600;
   font-size: 10.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.1;
   min-width: 0;
 }
 
-@media (max-width: 359px) {
+@media (min-width: 420px) {
   .medalStat {
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 4px;
+    flex-direction: row;
+    gap: 6px;
+    padding: 7px 10px;
   }
 }
 

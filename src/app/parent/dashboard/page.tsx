@@ -97,6 +97,30 @@ export default function ParentDashboard() {
     );
   }
 
+  const child = profile.child;
+  const group = child?.group;
+  const teacher = group?.teacher;
+
+  if (!child) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 leading-tight">
+            Здравствуйте, {profile.fullName}!
+          </h1>
+          <p className="text-slate-500 mt-1">
+            Ваш аккаунт пока не связан с учеником.
+          </p>
+        </div>
+        <EmptyState
+          icon="👧"
+          message="Ребёнок ещё не привязан"
+          description="Обратитесь к администратору, чтобы связать ваш профиль с учеником."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -106,7 +130,8 @@ export default function ParentDashboard() {
             Здравствуйте, {profile.fullName}!
           </h1>
           <p className="text-slate-500 mt-1">
-            Контроль обучения вашего ребенка: <span className="font-bold text-blue-600">{profile.child.fullName}</span>
+            Контроль обучения вашего ребенка:{' '}
+            <span className="font-bold text-blue-600">{child.fullName}</span>
           </p>
         </div>
         <div className="bg-white border rounded-2xl px-5 py-3 shadow-sm flex items-center gap-4">
@@ -115,7 +140,7 @@ export default function ParentDashboard() {
           </div>
           <div>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Группа</p>
-            <p className="text-sm font-bold text-slate-800">{profile.child.group.name}</p>
+            <p className="text-sm font-bold text-slate-800">{group?.name ?? '—'}</p>
           </div>
         </div>
       </div>
@@ -133,16 +158,20 @@ export default function ParentDashboard() {
             <div className="flex items-center justify-between pb-3 border-b">
               <span className="text-sm text-slate-500">Зачислен:</span>
               <span className="text-sm font-bold text-slate-800">
-                {format(new Date(profile.child.enrolledAt), 'LLLL yyyy', { locale: ru })}
+                {child.enrolledAt
+                  ? format(new Date(child.enrolledAt), 'LLLL yyyy', { locale: ru })
+                  : '—'}
               </span>
             </div>
             <div className="flex items-center justify-between pb-3 border-b">
               <span className="text-sm text-slate-500">Преподаватель:</span>
-              <span className="text-sm font-bold text-slate-800">{profile.child.group.teacher.fullName}</span>
+              <span className="text-sm font-bold text-slate-800">
+                {teacher?.fullName ?? '—'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-500 font-sans">Телефон учителя:</span>
-              <span className="text-sm font-bold text-blue-600">{profile.child.group.teacher.phone || '—'}</span>
+              <span className="text-sm font-bold text-blue-600">{teacher?.phone || '—'}</span>
             </div>
             <Link 
               href="/parent/attendance" 
@@ -235,7 +264,7 @@ export default function ParentDashboard() {
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium text-amber-600">
-                  🏆 {profile?.child?.fullName} получил новое достижение
+                  🏆 {child.fullName} получил новое достижение
                 </p>
                 <p className="font-semibold text-slate-900">{latestAchievement.title}</p>
               </div>

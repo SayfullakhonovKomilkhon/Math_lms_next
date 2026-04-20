@@ -99,7 +99,8 @@ export default function ParentPaymentPage() {
           Оплата обучения
         </h1>
         <p className="text-slate-500 mt-1 ml-11">
-          Управление платежами и загрузка чеков для: <span className="font-bold text-slate-900">{profile?.child.fullName}</span>
+          Управление платежами и загрузка чеков для:{' '}
+          <span className="font-bold text-slate-900">{profile?.child?.fullName ?? '—'}</span>
         </p>
       </div>
 
@@ -130,7 +131,7 @@ export default function ParentPaymentPage() {
             
             <div className="flex justify-center flex-wrap gap-2">
               <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-100">MathCenter</Badge>
-              <Badge className="bg-slate-50 text-slate-600 hover:bg-slate-50">Ученик: {profile?.child.fullName}</Badge>
+              <Badge className="bg-slate-50 text-slate-600 hover:bg-slate-50">Ученик: {profile?.child?.fullName ?? '—'}</Badge>
             </div>
 
             <div className="flex flex-col items-center gap-2 pt-4 border-t border-slate-100">
