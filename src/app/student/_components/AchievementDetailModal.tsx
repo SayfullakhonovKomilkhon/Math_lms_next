@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { Share2, Copy, X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import {
   getMonth,
   getMonthlyTitle,
@@ -13,7 +13,6 @@ import {
   type Place,
   type SpecialKey,
 } from '../_lib/achievementsCatalog';
-import { haptic } from '../_lib/hooks';
 import { SButton } from './SButton';
 import styles from './AchievementDetailModal.module.css';
 
@@ -68,7 +67,6 @@ export function AchievementDetailModal({
   onClose,
 }: Props) {
   const mounted = useMounted();
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!detail) return;
@@ -116,30 +114,6 @@ export function AchievementDetailModal({
   }
 
   if (!theme) return null;
-
-  const shareText =
-    detail.kind === 'monthly'
-      ? `🏆 Я получил${gender === 'female' ? 'а' : ''} звание «${title}» в MathCenter CRM! ${monthName} ${year ?? new Date().getFullYear()} ${placeMedal(placeValue!)}`
-      : `🏆 Я получил${gender === 'female' ? 'а' : ''} достижение «${title}» в MathCenter CRM! ✨`;
-
-  const doShare = async () => {
-    haptic(18);
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-        return;
-      } catch {
-        /* fall through to copy */
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
-    } catch {
-      /* noop */
-    }
-  };
 
   const content = (
     <div
@@ -240,12 +214,8 @@ export function AchievementDetailModal({
         </div>
 
         <div className={styles.actions}>
-          <SButton variant="primary" onClick={doShare}>
-            {copied ? <Check size={16} /> : <Share2 size={16} />}
-            {copied ? 'Скопировано!' : 'Поделиться'}
-          </SButton>
-          <SButton variant="ghost" onClick={onClose}>
-            <Copy size={16} /> Закрыть
+          <SButton variant="primary" onClick={onClose}>
+            Закрыть
           </SButton>
         </div>
       </div>

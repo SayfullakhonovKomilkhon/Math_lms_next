@@ -1,5 +1,5 @@
 .hero {
-  padding: 20px 20px 18px;
+  padding: 16px 14px;
   border-radius: var(--s-radius-lg);
   background: linear-gradient(
     145deg,
@@ -14,8 +14,15 @@
   -webkit-backdrop-filter: var(--s-blur-glass);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 18px;
+}
+
+@media (min-width: 420px) {
+  .hero {
+    padding: 20px 20px 18px;
+    gap: 14px;
+  }
 }
 
 .heroIcon {
@@ -52,24 +59,44 @@
 }
 
 .medalsRow {
-  display: flex;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   margin-top: 10px;
 }
 
 .medalStat {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(245, 181, 68, 0.28);
   font-size: 13px;
   font-weight: 800;
   color: var(--s-text-primary);
+  min-width: 0;
+  line-height: 1;
 }
 
 .medalStat small {
   color: var(--s-text-secondary);
   font-weight: 600;
-  font-size: 11px;
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+@media (max-width: 359px) {
+  .medalStat {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 4px;
+  }
 }
 
 .section {
