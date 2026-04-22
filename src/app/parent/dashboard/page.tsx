@@ -16,7 +16,9 @@ import {
   Clock,
   ArrowRight,
   Trophy,
+  Megaphone,
 } from 'lucide-react';
+import { useMyAnnouncements } from '@/hooks/useAnnouncements';
 import Link from 'next/link';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { format } from 'date-fns';
@@ -36,6 +38,9 @@ export default function ParentDashboard() {
     queryKey: ['parent-profile'],
     queryFn: () => api.get<ApiResponse<ParentProfile>>('/parents/me').then(res => res.data),
   });
+
+  const { data: announcementsData } = useMyAnnouncements({ limit: 3 });
+  const latestAnnouncements = announcementsData?.data ?? [];
 
   const { data: paymentRes } = useQuery({
     queryKey: ['parent-child-payment'],
@@ -276,14 +281,60 @@ export default function ParentDashboard() {
 
       {/* Announcements */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-           Новости и новости центра
-        </h2>
-        {/* Placeholder or real query */}
-        <div className="p-10 border-2 border-dashed rounded-3xl text-center">
-            <p className="text-slate-400 italic">Сводка новостей в разработке</p>
-            <Link href="/parent/announcements" className="text-sm font-bold text-blue-600 hover:underline mt-2 inline-block">Перейти к объявлениям</Link>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800">
+            <Megaphone className="h-5 w-5 text-blue-600" />
+            Последние объявления
+          </h2>
+          <Link
+            href="/parent/announcements"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
+          >
+            Все <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
+        {latestAnnouncements.length === 0 ? (
+          <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
+            <Megaphone className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+            <p className="text-sm text-slate-400">Объявлений пока нет</p>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="divide-y divide-slate-100 p-0">
+              {latestAnnouncements.map((a) => (
+                <Link
+                  key={a.id}
+                  href="/parent/announcements"
+                  className="flex items-start gap-3 p-4 transition-colors hover:bg-slate-50"
+                >
+                  {!a.isRead && (
+                    <span
+                      aria-hidden
+                      className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`truncate text-sm ${
+                        a.isRead ? 'font-medium text-slate-700' : 'font-semibold text-slate-900'
+                      }`}
+                    >
+                      {a.title}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-slate-400">
+                      {a.authorName} · {format(new Date(a.createdAt), 'd MMMM, HH:mm', { locale: ru })}
+                    </p>
+                  </div>
+                  {a.isPinned && (
+                    <span className="mt-0.5 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+                      Закреплено
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

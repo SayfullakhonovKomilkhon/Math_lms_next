@@ -132,24 +132,6 @@ export const mockNextTopic = {
   topic: 'Квадратные уравнения с параметром',
 };
 
-export const mockAnnouncements = [
-  {
-    id: 'a1',
-    title: 'Пробный экзамен в субботу',
-    message:
-      'В эту субботу пройдёт пробный экзамен по темам февраля. Приходите в 14:00, принесите свою ручку и черновик.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    authorName: 'Фаррух Ибрагимович',
-  },
-  {
-    id: 'a2',
-    title: 'Смена кабинета',
-    message: 'Со следующей недели занятия проходят в кабинете №205.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    authorName: 'Администрация',
-  },
-];
-
 export const mockNotifications = [
   {
     id: 'n1',

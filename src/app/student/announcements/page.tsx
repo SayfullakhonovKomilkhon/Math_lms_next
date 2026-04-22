@@ -1,48 +1,33 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Megaphone, Search } from 'lucide-react';
-import api from '@/lib/api';
-import type { ApiResponse, Announcement } from '@/types';
+import {
+  useMarkAllAnnouncementsRead,
+  useMarkAnnouncementRead,
+  useMyAnnouncements,
+} from '@/hooks/useAnnouncements';
+import { AnnouncementCard } from '@/components/announcements/AnnouncementCard';
 import { PageTitle } from '../_components/PageTitle';
-import { mockAnnouncements } from '../_lib/mockData';
 import styles from './announcements.module.css';
-
-function formatAgo(d: string) {
-  const diff = Date.now() - new Date(d).getTime();
-  const h = Math.floor(diff / 3_600_000);
-  if (h < 1) return 'только что';
-  if (h < 24) return `${h} ч назад`;
-  const days = Math.floor(h / 24);
-  if (days === 1) return 'вчера';
-  return `${days} дн назад`;
-}
 
 export default function StudentAnnouncementsPage() {
   const [search, setSearch] = useState('');
 
-  const { data } = useQuery({
-    queryKey: ['student-announcements'],
-    queryFn: () =>
-      api.get<ApiResponse<Announcement[]>>('/announcements/my').then((r) => r.data.data ?? []),
-    retry: 0,
-  });
+  const { data, isLoading } = useMyAnnouncements({ limit: 50 });
+  const { mutate: markRead } = useMarkAnnouncementRead();
+  const { mutate: markAllRead, isPending: markingAll } =
+    useMarkAllAnnouncementsRead();
 
-  const announcements: Announcement[] =
-    data && data.length > 0
-      ? data
-      : mockAnnouncements.map((a) => ({ ...a, groupName: undefined }));
+  const unreadCount = data?.meta.unreadCount ?? 0;
 
-  const filtered = useMemo(
-    () =>
-      announcements.filter(
-        (a) =>
-          a.title.toLowerCase().includes(search.toLowerCase()) ||
-          a.message.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [announcements, search],
-  );
+  const filtered = useMemo(() => {
+    const list = data?.data ?? [];
+    const q = search.toLowerCase();
+    return list.filter(
+      (a) => a.title.toLowerCase().includes(q) || a.message.toLowerCase().includes(q),
+    );
+  }, [data, search]);
 
   return (
     <div>
@@ -53,36 +38,44 @@ export default function StudentAnnouncementsPage() {
         gradient
       />
 
-      <div className={styles.search}>
-        <Search size={18} />
-        <input
-          placeholder="Поиск по объявлениям…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className={styles.toolbar}>
+        <div className={styles.search}>
+          <Search size={18} />
+          <input
+            placeholder="Поиск по объявлениям…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            className={styles.markAll}
+            onClick={() => markAllRead()}
+            disabled={markingAll}
+          >
+            Отметить все прочитанными ({unreadCount})
+          </button>
+        )}
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className={styles.empty}>Загрузка…</div>
+      ) : filtered.length === 0 ? (
         <div className={styles.empty}>
-          <span>📢</span>
-          Объявлений пока нет
+          <Megaphone size={36} />
+          <p>Объявлений пока нет</p>
+          <span>Здесь будут появляться сообщения от учителей и администрации.</span>
         </div>
       ) : (
         <div className={styles.list}>
           {filtered.map((a) => (
-            <article key={a.id} className={styles.card}>
-              <div className={styles.head}>
-                <div className={styles.title}>{a.title}</div>
-                <div className={styles.time}>{formatAgo(a.createdAt)}</div>
-              </div>
-              <p className={styles.msg}>{a.message}</p>
-              {a.authorName ? (
-                <div className={styles.author}>
-                  <Megaphone size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                  {a.authorName}
-                </div>
-              ) : null}
-            </article>
+            <AnnouncementCard
+              key={a.id}
+              announcement={a}
+              onRead={markRead}
+              showReadStatus
+            />
           ))}
         </div>
       )}

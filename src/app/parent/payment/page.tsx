@@ -8,8 +8,9 @@ import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTable
 import { Badge } from '@/components/ui/badge';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { PaymentBanner } from '@/components/payments/PaymentBanner';
-import { CreditCard, Upload, Check, AlertCircle, ExternalLink, FileText, Info } from 'lucide-react';
+import { CreditCard, Upload, Check, AlertCircle, Eye, FileText, Info } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/components/ui/toast';
@@ -21,6 +22,7 @@ export default function ParentPaymentPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
+  const [receiptPaymentId, setReceiptPaymentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profileRes, isError: profileError, refetch: refetchProfile } = useQuery({
@@ -239,15 +241,15 @@ export default function ParentPaymentPage() {
                         <PaymentStatusBadge status={item.status} />
                       </DataTableCell>
                       <DataTableCell>
-                        {item.receiptUrl ? (
-                          <a 
-                            href={item.receiptUrl} 
-                            target="_blank" 
-                            rel="noreferrer" 
+                        {item.receiptUrl || item.id ? (
+                          <button
+                            type="button"
+                            onClick={() => setReceiptPaymentId(item.id)}
                             className="bg-slate-100 text-slate-700 hover:bg-blue-600 hover:text-white p-2 rounded-lg transition-all inline-flex items-center"
+                            title="Просмотр чека"
                           >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+                            <Eye className="h-4 w-4" />
+                          </button>
                         ) : '—'}
                       </DataTableCell>
                       <DataTableCell className="text-slate-500 italic">
@@ -261,6 +263,14 @@ export default function ParentPaymentPage() {
           )}
         </CardContent>
       </Card>
+
+      {receiptPaymentId && (
+        <ReceiptModal
+          paymentId={receiptPaymentId}
+          isOpen={!!receiptPaymentId}
+          onClose={() => setReceiptPaymentId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -8,9 +8,11 @@ import {
   CheckCircle2,
   Flame,
   GraduationCap,
+  Megaphone,
   Percent,
   Trophy,
 } from 'lucide-react';
+import { useMyAnnouncements } from '@/hooks/useAnnouncements';
 import api from '@/lib/api';
 import type { ApiResponse, Homework, PaymentSummary, GroupSchedule } from '@/types';
 import { Hero } from '../_components/Hero';
@@ -83,6 +85,9 @@ export default function StudentDashboard() {
         .then((r) => r.data.data ?? null),
     retry: 0,
   });
+
+  const { data: announcementsData } = useMyAnnouncements({ limit: 3 });
+  const latestAnnouncements = announcementsData?.data ?? [];
 
   const { data: scheduleRes } = useQuery<StudentScheduleResponse | null>({
     queryKey: ['student-schedule'],
@@ -217,6 +222,65 @@ export default function StudentDashboard() {
             </div>
           ) : (
             <p className={styles.emptyText}>Расписание скоро появится</p>
+          )}
+        </GlassCard>
+
+        <SectionHeading
+          icon={<Megaphone size={14} />}
+          label="Последние объявления"
+          linkLabel="все"
+          href="/student/announcements"
+        />
+        <GlassCard>
+          {latestAnnouncements.length === 0 ? (
+            <p className={styles.emptyText}>Объявлений пока нет</p>
+          ) : (
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: 0, padding: 0, listStyle: 'none' }}>
+              {latestAnnouncements.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    href="/student/announcements"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: '10px 0',
+                      borderBottom: '1px solid rgba(148, 163, 184, 0.18)',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontWeight: a.isRead ? 500 : 700,
+                        fontSize: 14,
+                        color: 'var(--s-text-primary)',
+                      }}
+                    >
+                      {!a.isRead && (
+                        <span
+                          aria-hidden
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            background: '#2563eb',
+                            display: 'inline-block',
+                          }}
+                        />
+                      )}
+                      {a.title}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--s-text-secondary)' }}>
+                      {a.authorName} · {formatDate(a.createdAt)}
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
         </GlassCard>
 

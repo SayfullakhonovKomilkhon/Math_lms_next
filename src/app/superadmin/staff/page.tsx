@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, UserX, Phone } from 'lucide-react';
+import { Plus, Pencil, UserX, Phone, Settings2 } from 'lucide-react';
 import api from '@/lib/api';
 import { Teacher } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -15,9 +15,10 @@ import { TabsBar, TabsBarButton } from '@/components/ui/tabs-bar';
 import { InputField } from '@/components/ui/input-field';
 import { toast } from '@/components/ui/toast';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, IconMenuItem,
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, IconMenuItem, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
+import { EditStaffSheet, type EditStaffTarget } from './EditStaffSheet';
 
 interface AdminUser {
   id: string; email: string; role: string; isActive: boolean;
@@ -32,6 +33,7 @@ export default function StaffPage() {
   const [tab, setTab] = useState<Tab>('teachers');
   const [editRateId, setEditRateId] = useState<string | null>(null);
   const [editRateValue, setEditRateValue] = useState('');
+  const [editTarget, setEditTarget] = useState<EditStaffTarget | null>(null);
 
   const { data: teachers = [], isLoading: teachersLoading } = useQuery<Teacher[]>({
     queryKey: ['sa-teachers'],
@@ -185,7 +187,25 @@ export default function StaffPage() {
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" accent="admin" className="min-w-[200px]">
+                              <DropdownMenuContent align="end" accent="admin" className="min-w-[240px]">
+                                <IconMenuItem
+                                  accent="admin"
+                                  icon={Settings2}
+                                  label="Редактировать"
+                                  description="Профиль, телефон, ставка"
+                                  iconClassName="border-violet-200 bg-violet-50 text-violet-600"
+                                  onSelect={() =>
+                                    setEditTarget({
+                                      kind: 'teacher',
+                                      id: t.id,
+                                      fullName: t.fullName,
+                                      phone: t.phone,
+                                      ratePerStudent: Number(t.ratePerStudent),
+                                      email: t.user?.email ?? null,
+                                    })
+                                  }
+                                />
+                                <DropdownMenuSeparator />
                                 <IconMenuItem
                                   accent="admin"
                                   icon={UserX}
@@ -242,7 +262,18 @@ export default function StaffPage() {
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" accent="admin" className="min-w-[200px]">
+                            <DropdownMenuContent align="end" accent="admin" className="min-w-[240px]">
+                              <IconMenuItem
+                                accent="admin"
+                                icon={Settings2}
+                                label="Редактировать"
+                                description="Email и пароль"
+                                iconClassName="border-violet-200 bg-violet-50 text-violet-600"
+                                onSelect={() =>
+                                  setEditTarget({ kind: 'admin', id: u.id, email: u.email })
+                                }
+                              />
+                              <DropdownMenuSeparator />
                               <IconMenuItem
                                 accent="admin"
                                 icon={UserX}
@@ -271,6 +302,8 @@ export default function StaffPage() {
           )}
         </Card>
       )}
+
+      <EditStaffSheet target={editTarget} onClose={() => setEditTarget(null)} />
     </div>
   );
 }

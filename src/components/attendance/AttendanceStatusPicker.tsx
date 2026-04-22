@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, UserX } from 'lucide-react';
+import { Check, Clock3, UserX } from 'lucide-react';
 import type { AttendanceStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import {
@@ -15,6 +15,7 @@ const STATUS_META: {
   label: string;
   description: string;
   triggerClass: string;
+  iconClass: string;
   icon: typeof Check;
 }[] = [
   {
@@ -22,27 +23,35 @@ const STATUS_META: {
     label: 'Был на уроке',
     description: 'Присутствовал',
     triggerClass: 'border-emerald-500 bg-emerald-50 text-emerald-700',
+    iconClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     icon: Check,
+  },
+  {
+    value: 'LATE',
+    label: 'Опоздал',
+    description: 'Пришёл, но с опозданием',
+    triggerClass: 'border-amber-500 bg-amber-50 text-amber-700',
+    iconClass: 'border-amber-200 bg-amber-50 text-amber-700',
+    icon: Clock3,
   },
   {
     value: 'ABSENT',
     label: 'Не был на уроке',
     description: 'Отсутствовал',
-    triggerClass: 'border-red-400 bg-red-50 text-red-700',
+    triggerClass: 'border-rose-400 bg-rose-50 text-rose-700',
+    iconClass: 'border-rose-200 bg-rose-50 text-rose-700',
     icon: UserX,
   },
 ];
 
 function metaFor(value: AttendanceStatus) {
-  // If a legacy "LATE" value arrives, show it as PRESENT in the UI.
-  const normalized: AttendanceStatus = value === 'LATE' ? 'PRESENT' : value;
-  return STATUS_META.find((m) => m.value === normalized) ?? STATUS_META[0];
+  return STATUS_META.find((m) => m.value === value) ?? STATUS_META[0];
 }
 
 const ariaLabel: Record<AttendanceStatus, string> = {
   PRESENT: 'Статус: был на уроке. Открыть выбор статуса',
+  LATE: 'Статус: опоздал. Открыть выбор статуса',
   ABSENT: 'Статус: не был на уроке. Открыть выбор статуса',
-  LATE: 'Статус: был на уроке. Открыть выбор статуса',
 };
 
 interface Props {
@@ -71,7 +80,7 @@ export function AttendanceStatusPicker({ value, onChange, disabled }: Props) {
           <TriggerIcon className="h-5 w-5" strokeWidth={2.5} aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" accent="teacher" className="min-w-[220px]">
+      <DropdownMenuContent align="start" accent="teacher" className="min-w-[240px]">
         {STATUS_META.map((m) => (
           <IconMenuItem
             key={m.value}
@@ -79,10 +88,7 @@ export function AttendanceStatusPicker({ value, onChange, disabled }: Props) {
             icon={m.icon}
             label={m.label}
             description={m.description}
-            iconClassName={cn(
-              m.value === 'PRESENT' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
-              m.value === 'ABSENT' && 'border-red-200 bg-red-50 text-red-700',
-            )}
+            iconClassName={m.iconClass}
             onSelect={() => onChange(m.value)}
           />
         ))}

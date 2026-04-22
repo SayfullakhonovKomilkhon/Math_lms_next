@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Download, FileSpreadsheet, FileText, AlertTriangle } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, AlertTriangle, Eye } from 'lucide-react';
+import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import api from '@/lib/api';
 import { Group, Payment } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -97,6 +98,7 @@ export default function FinancePage() {
 
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [receiptPaymentId, setReceiptPaymentId] = useState<string | null>(null);
 
   const confirmMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/payments/${id}/confirm`),
@@ -253,12 +255,15 @@ export default function FinancePage() {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            {p.receiptUrl ? (
-                              <a href={p.receiptUrl} target="_blank" rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-violet-600 hover:underline">
-                                <Download className="h-3 w-3" />
+                            {p.receiptUrl || p.id ? (
+                              <button
+                                type="button"
+                                onClick={() => setReceiptPaymentId(p.id)}
+                                className="inline-flex items-center gap-1 text-xs text-violet-600 hover:underline"
+                              >
+                                <Eye className="h-3 w-3" />
                                 Чек
-                              </a>
+                              </button>
                             ) : '—'}
                           </td>
                         </tr>
@@ -391,11 +396,15 @@ export default function FinancePage() {
                         {formatCurrency(Number(p.amount))}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {p.receiptUrl ? (
-                          <a href={p.receiptUrl} target="_blank" rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-violet-600 hover:underline">
-                            <Download className="h-3 w-3" />Открыть
-                          </a>
+                        {p.receiptUrl || p.id ? (
+                          <button
+                            type="button"
+                            onClick={() => setReceiptPaymentId(p.id)}
+                            className="inline-flex items-center gap-1 text-xs text-violet-600 hover:underline"
+                          >
+                            <Eye className="h-3 w-3" />
+                            Открыть
+                          </button>
                         ) : '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -456,6 +465,21 @@ export default function FinancePage() {
             </div>
           )}
         </Card>
+      )}
+
+      {receiptPaymentId && (
+        <ReceiptModal
+          paymentId={receiptPaymentId}
+          isOpen={!!receiptPaymentId}
+          onClose={() => setReceiptPaymentId(null)}
+          showActions={pending.some((p) => p.id === receiptPaymentId)}
+          onConfirm={async (id) => {
+            await confirmMutation.mutateAsync(id);
+          }}
+          onReject={async (id, reason) => {
+            await rejectMutation.mutateAsync({ id, reason });
+          }}
+        />
       )}
     </div>
   );

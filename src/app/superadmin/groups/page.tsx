@@ -16,14 +16,50 @@ import {
 import { Archive, MoreVertical, Pencil, Plus } from 'lucide-react';
 import { GroupDetailPanel } from '@/app/admin/groups/GroupDetailPanel';
 
-type FormState = { name: string; teacherId: string; maxStudents: number };
+const DAYS = [
+  { key: 'MONDAY', label: 'Пн' },
+  { key: 'TUESDAY', label: 'Вт' },
+  { key: 'WEDNESDAY', label: 'Ср' },
+  { key: 'THURSDAY', label: 'Чт' },
+  { key: 'FRIDAY', label: 'Пт' },
+  { key: 'SATURDAY', label: 'Сб' },
+  { key: 'SUNDAY', label: 'Вс' },
+];
+
+type Schedule = { days: string[]; time: string; duration: number };
+type FormState = { name: string; teacherId: string; maxStudents: number; schedule: Schedule };
+
+const DEFAULT_SCHEDULE: Schedule = { days: ['MONDAY', 'WEDNESDAY', 'FRIDAY'], time: '09:00', duration: 90 };
+
+function DayPicker({ value, onChange }: { value: string[]; onChange: (days: string[]) => void }) {
+  const toggle = (day: string) =>
+    onChange(value.includes(day) ? value.filter((d) => d !== day) : [...value, day]);
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {DAYS.map((d) => (
+        <button
+          key={d.key}
+          type="button"
+          onClick={() => toggle(d.key)}
+          className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+            value.includes(d.key)
+              ? 'border-violet-500 bg-violet-500 text-white'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300'
+          }`}
+        >
+          {d.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function SuperAdminGroupsPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20 });
+  const [form, setForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [editForm, setEditForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20 });
+  const [editForm, setEditForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
@@ -37,29 +73,41 @@ export default function SuperAdminGroupsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post('/groups', {
-      ...form,
-      schedule: { days: ['MONDAY', 'WEDNESDAY', 'FRIDAY'], time: '09:00', duration: 90 },
-    }),
+    mutationFn: () => api.post('/groups', { ...form }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['groups'] });
       toast('Группа создана');
       setShowForm(false);
-      setForm({ name: '', teacherId: '', maxStudents: 20 });
+      setForm({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
     },
-    onError: () => toast('Ошибка', 'error'),
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast(msg || 'Ошибка', 'error');
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/groups/${id}`, {
-      name: editForm.name, teacherId: editForm.teacherId, maxStudents: editForm.maxStudents,
+      name: editForm.name,
+      teacherId: editForm.teacherId,
+      maxStudents: editForm.maxStudents,
+      schedule: editForm.schedule,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['groups'] });
       toast('Группа обновлена');
       setEditingGroup(null);
     },
-    onError: () => toast('Ошибка', 'error'),
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast(msg || 'Ошибка', 'error');
+    },
   });
 
   const archiveMutation = useMutation({
@@ -70,7 +118,17 @@ export default function SuperAdminGroupsPage() {
 
   function openEdit(g: Group) {
     setEditingGroup(g);
-    setEditForm({ name: g.name, teacherId: g.teacher?.id ?? '', maxStudents: g.maxStudents });
+    const s = g.schedule as Partial<Schedule> | undefined;
+    setEditForm({
+      name: g.name,
+      teacherId: g.teacher?.id ?? '',
+      maxStudents: g.maxStudents,
+      schedule: {
+        days: Array.isArray(s?.days) ? s!.days as string[] : DEFAULT_SCHEDULE.days,
+        time: typeof s?.time === 'string' ? s!.time : DEFAULT_SCHEDULE.time,
+        duration: typeof s?.duration === 'number' ? s!.duration : DEFAULT_SCHEDULE.duration,
+      },
+    });
   }
 
   return (
@@ -106,8 +164,43 @@ export default function SuperAdminGroupsPage() {
                 <InputField accent="admin" type="number" value={editForm.maxStudents} onChange={(e) => setEditForm((f) => ({ ...f, maxStudents: Number(e.target.value) }))} />
               </div>
             </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Дни недели</label>
+                <DayPicker
+                  value={editForm.schedule.days}
+                  onChange={(days) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, days } }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Время начала</label>
+                  <InputField
+                    accent="admin"
+                    type="time"
+                    value={editForm.schedule.time}
+                    onChange={(e) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, time: e.target.value } }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Длит. (мин)</label>
+                  <InputField
+                    accent="admin"
+                    type="number"
+                    value={editForm.schedule.duration}
+                    onChange={(e) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, duration: Number(e.target.value) } }))}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="flex gap-3">
-              <Button loading={updateMutation.isPending} onClick={() => updateMutation.mutate(editingGroup.id)}>Сохранить</Button>
+              <Button
+                loading={updateMutation.isPending}
+                className="bg-violet-600 hover:bg-violet-700"
+                onClick={() => updateMutation.mutate(editingGroup.id)}
+              >
+                Сохранить
+              </Button>
               <Button variant="secondary" onClick={() => setEditingGroup(null)}>Отмена</Button>
             </div>
           </CardContent>
@@ -135,8 +228,43 @@ export default function SuperAdminGroupsPage() {
                 <InputField accent="admin" type="number" value={form.maxStudents} onChange={(e) => setForm((f) => ({ ...f, maxStudents: Number(e.target.value) }))} />
               </div>
             </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Дни недели</label>
+                <DayPicker
+                  value={form.schedule.days}
+                  onChange={(days) => setForm((f) => ({ ...f, schedule: { ...f.schedule, days } }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Время начала</label>
+                  <InputField
+                    accent="admin"
+                    type="time"
+                    value={form.schedule.time}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule: { ...f.schedule, time: e.target.value } }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Длит. (мин)</label>
+                  <InputField
+                    accent="admin"
+                    type="number"
+                    value={form.schedule.duration}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule: { ...f.schedule, duration: Number(e.target.value) } }))}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="flex gap-3">
-              <Button loading={createMutation.isPending} onClick={() => createMutation.mutate()}>Создать</Button>
+              <Button
+                loading={createMutation.isPending}
+                className="bg-violet-600 hover:bg-violet-700"
+                onClick={() => createMutation.mutate()}
+              >
+                Создать
+              </Button>
               <Button variant="secondary" onClick={() => setShowForm(false)}>Отмена</Button>
             </div>
           </CardContent>

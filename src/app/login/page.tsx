@@ -5,8 +5,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { ROLE_HOME_PATHS } from '@/lib/auth-routing';
+import { Role } from '@/types';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 
@@ -16,9 +18,34 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+type Portal = 'student' | 'staff';
+
+const PORTAL_ROLES: Record<Portal, Role[]> = {
+  student: ['STUDENT', 'PARENT'],
+  staff: ['SUPER_ADMIN', 'ADMIN', 'TEACHER'],
+};
+
+const PORTAL_COPY: Record<Portal, { title: string; subtitle: string; placeholder: string; wrongRole: string }> = {
+  student: {
+    title: 'Student Login',
+    subtitle: 'Вход для учеников и родителей',
+    placeholder: 'you@example.com',
+    wrongRole:
+      'Этот аккаунт не относится к ученикам или родителям. Вернитесь назад и выберите «Staff».',
+  },
+  staff: {
+    title: 'Staff Login',
+    subtitle: 'Вход для учителей, администраторов и супер-администраторов',
+    placeholder: 'admin@mathcenter.uz',
+    wrongRole:
+      'Этот аккаунт не относится к сотрудникам. Вернитесь назад и выберите «Student».',
+  },
+};
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const router = useRouter();
+  const storeLogin = useAuthStore((s) => s.login);
+  const storeLogout = useAuthStore((s) => s.logout);
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'select' | 'staff' | 'student'>('select');
@@ -32,13 +59,31 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = async (data: FormData) => {
+  const goBack = () => {
+    setStep('select');
+    reset();
+  };
+
+  const onSubmit = async (portal: Portal, data: FormData) => {
     setLoading(true);
     try {
-      await login(data.email, data.password);
+      await storeLogin(data.email, data.password);
+      const user = useAuthStore.getState().user;
+      const role = user?.role;
+      if (!role) throw new Error('No role in auth response');
+
+      const allowed = PORTAL_ROLES[portal];
+      if (!allowed.includes(role)) {
+        storeLogout();
+        toast(PORTAL_COPY[portal].wrongRole, 'error');
+        return;
+      }
+
+      router.push(ROLE_HOME_PATHS[role] ?? '/login');
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -101,30 +146,32 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === 'staff' && (
+          {(step === 'staff' || step === 'student') && (
             <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-              <button 
-                onClick={() => setStep('select')}
+              <button
+                onClick={goBack}
                 className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0E1541] mb-6 transition-colors"
                 type="button"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </button>
-              
+
               <div className="mb-8">
-                <h2 className="text-[#0E1541] text-[32px] font-bold leading-tight mb-2 tracking-tight">Staff Login</h2>
-                <p className="text-gray-500 text-[15px]">Please enter your credentials to continue</p>
+                <h2 className="text-[#0E1541] text-[32px] font-bold leading-tight mb-2 tracking-tight">
+                  {PORTAL_COPY[step].title}
+                </h2>
+                <p className="text-gray-500 text-[15px]">{PORTAL_COPY[step].subtitle}</p>
               </div>
-              
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+              <form onSubmit={handleSubmit((data) => onSubmit(step, data))} className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-[#0E1541] mb-2">Email address</label>
                   <input
                     {...register('email')}
                     type="email"
                     autoComplete="email"
-                    placeholder="admin@mathcenter.uz"
+                    placeholder={PORTAL_COPY[step].placeholder}
                     className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[15px] text-[#0E1541] placeholder:text-gray-400 bg-white focus:ring-2 focus:ring-[#0E1541] focus:border-[#0E1541] outline-none transition-all"
                   />
                   {errors.email && (
@@ -150,24 +197,6 @@ export default function LoginPage() {
                   Log in
                 </Button>
               </form>
-            </div>
-          )}
-
-          {step === 'student' && (
-            <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-              <button 
-                onClick={() => setStep('select')}
-                className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0E1541] mb-6 transition-colors"
-                type="button"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </button>
-              
-              <div className="mb-8">
-                <h2 className="text-[#0E1541] text-[32px] font-bold leading-tight mb-2 tracking-tight">Student Login</h2>
-                <p className="text-gray-500 text-[15px]">Student portal is currently unavailable.</p>
-              </div>
             </div>
           )}
 

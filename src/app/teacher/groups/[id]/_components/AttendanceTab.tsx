@@ -15,14 +15,20 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ChevronDown, Plus, Search, UserRound } from 'lucide-react';
+import { Check, ChevronDown, Clock3, Plus, Search, UserRound, UserX } from 'lucide-react';
 import api from '@/lib/api';
 import { AttendanceRecord, AttendanceStatus, LessonTopic } from '@/types';
 import { InputField } from '@/components/ui/input-field';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  IconMenuItem,
+} from '@/components/ui/dropdown-menu';
 
-type UiStatus = 'PRESENT' | 'ABSENT';
+type UiStatus = AttendanceStatus; // 'PRESENT' | 'ABSENT' | 'LATE'
 type AttendanceMap = Record<string, Record<string, UiStatus>>;
 
 interface GroupSchedule {
@@ -145,10 +151,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
     const local = attendanceMap[studentId]?.[dateStr];
     if (local) return local;
     const remote = recordMap.get(`${studentId}__${dateStr}`);
-    if (!remote) return null;
-    // Map any existing "LATE" records to PRESENT in the UI (see task: keep only was/wasn't)
-    if (remote === 'ABSENT') return 'ABSENT';
-    return 'PRESENT';
+    return remote ?? null;
   };
 
   const latestRequestRef = useRef<Record<string, number>>({});
@@ -183,11 +186,11 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
     }
   };
 
-  const toggleCell = (studentId: string, date: Date) => {
+  const setCellStatus = (studentId: string, date: Date, next: UiStatus) => {
     if (isAfter(startOfDay(date), todayStart)) return;
     const dateStr = format(date, 'yyyy-MM-dd');
     const current = getUiStatus(studentId, date);
-    const next: UiStatus = current === 'PRESENT' ? 'ABSENT' : 'PRESENT';
+    if (current === next) return;
 
     setAttendanceMap((prev) => {
       const studentMap = { ...(prev[studentId] ?? {}) };
@@ -337,10 +340,10 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                         key={`${student.id}-${day.toISOString()}`}
                         className="px-2 py-2 text-center"
                       >
-                        <AttendanceDot
+                        <AttendanceCell
                           status={status}
                           disabled={isFuture}
-                          onClick={() => toggleCell(student.id, day)}
+                          onSelect={(next) => setCellStatus(student.id, day, next)}
                         />
                       </td>
                     );
@@ -355,47 +358,115 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
         <LegendItem color="bg-emerald-500" label="Был на уроке" />
+        <LegendItem color="bg-amber-500" label="Опоздал" />
         <LegendItem color="bg-rose-500" label="Не был на уроке" />
-        <span>Изменения сохраняются автоматически</span>
+        <span className="text-slate-400">Нажмите на кружок — выберите статус. Изменения сохраняются автоматически.</span>
       </div>
     </div>
   );
 }
 
-function AttendanceDot({
+const STATUS_OPTIONS: {
+  value: UiStatus;
+  label: string;
+  description: string;
+  icon: typeof Check;
+  iconClass: string;
+}[] = [
+  {
+    value: 'PRESENT',
+    label: 'Был на уроке',
+    description: 'Присутствовал',
+    icon: Check,
+    iconClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  },
+  {
+    value: 'LATE',
+    label: 'Опоздал',
+    description: 'Пришёл, но с опозданием',
+    icon: Clock3,
+    iconClass: 'border-amber-200 bg-amber-50 text-amber-700',
+  },
+  {
+    value: 'ABSENT',
+    label: 'Не был на уроке',
+    description: 'Отсутствовал',
+    icon: UserX,
+    iconClass: 'border-rose-200 bg-rose-50 text-rose-700',
+  },
+];
+
+function cellAriaLabel(status: UiStatus | null, disabled?: boolean): string {
+  if (disabled) return 'Урок ещё не прошёл';
+  switch (status) {
+    case 'PRESENT':
+      return 'Был на уроке. Открыть выбор статуса';
+    case 'LATE':
+      return 'Опоздал. Открыть выбор статуса';
+    case 'ABSENT':
+      return 'Не был на уроке. Открыть выбор статуса';
+    default:
+      return 'Не отмечен. Открыть выбор статуса';
+  }
+}
+
+function AttendanceCell({
   status,
   disabled,
-  onClick,
+  onSelect,
 }: {
   status: UiStatus | null;
   disabled?: boolean;
-  onClick: () => void;
+  onSelect: (next: UiStatus) => void;
 }) {
-  return (
+  const trigger = (
     <button
       type="button"
-      onClick={onClick}
       disabled={disabled}
+      aria-label={cellAriaLabel(status, disabled)}
       className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-full border transition-transform',
+        'inline-flex h-7 w-7 items-center justify-center rounded-full border transition-transform',
+        'focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1',
         !disabled && 'hover:scale-110',
         disabled && 'cursor-not-allowed opacity-40',
-        status === null && 'border-slate-200 bg-white text-transparent',
+        status === null && 'border-dashed border-slate-300 bg-white text-slate-300',
         status === 'PRESENT' && 'border-emerald-500 bg-emerald-500 text-white',
+        status === 'LATE' && 'border-amber-500 bg-amber-500 text-white',
         status === 'ABSENT' && 'border-rose-500 bg-rose-500 text-white',
       )}
-      aria-label={
-        status === 'PRESENT'
-          ? 'Был на уроке'
-          : status === 'ABSENT'
-            ? 'Не был на уроке'
-            : disabled
-              ? 'Урок ещё не прошёл'
-              : 'Не отмечен'
-      }
     >
-      {status !== null && <UserRound className="h-3.5 w-3.5" strokeWidth={2.5} />}
+      {status === 'LATE' ? (
+        <Clock3 className="h-3.5 w-3.5" strokeWidth={2.5} />
+      ) : status === 'ABSENT' ? (
+        <UserX className="h-3.5 w-3.5" strokeWidth={2.5} />
+      ) : status === 'PRESENT' ? (
+        <UserRound className="h-3.5 w-3.5" strokeWidth={2.5} />
+      ) : (
+        <ChevronDown className="h-3 w-3" strokeWidth={2.5} />
+      )}
     </button>
+  );
+
+  if (disabled) return trigger;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="center" accent="teacher" className="min-w-[220px]">
+        {STATUS_OPTIONS.map((o) => (
+          <IconMenuItem
+            key={o.value}
+            accent="teacher"
+            icon={o.icon}
+            label={o.label}
+            description={o.description}
+            iconClassName={o.iconClass}
+            data-selected={status === o.value}
+            onSelect={() => onSelect(o.value)}
+          />
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

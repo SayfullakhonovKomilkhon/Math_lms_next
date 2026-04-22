@@ -10,6 +10,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -374,6 +375,82 @@ export default function SuperAdminDashboard() {
     };
   }, [growth]);
 
+  // ── Derived: padded growth series ──
+  // Фиксируем "скелет" временной шкалы, чтобы с одной точкой график
+  // рисовался как полноценная кривая от начала года / 12 недель назад.
+  const paddedGrowth = useMemo((): GrowthEntry[] => {
+    if (growthPeriod === 'monthly') {
+      const year = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 1..12
+      const byKey = new Map(growth.map((g) => [g.date, g]));
+      const out: GrowthEntry[] = [];
+      let rollingTotal = 0;
+      for (let m = 1; m <= currentMonth; m++) {
+        const key = `${year}-${String(m).padStart(2, '0')}`;
+        const entry = byKey.get(key);
+        if (entry) {
+          out.push(entry);
+          rollingTotal = entry.totalStudents;
+        } else {
+          out.push({ date: key, newStudents: 0, totalStudents: rollingTotal });
+        }
+      }
+      return out;
+    }
+    // weekly: 12 недель назад → сейчас
+    const weekStart = new Date(now);
+    const day = weekStart.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    weekStart.setDate(weekStart.getDate() + diff);
+    weekStart.setHours(0, 0, 0, 0);
+    const byKey = new Map(growth.map((g) => [g.date, g]));
+    const out: GrowthEntry[] = [];
+    let rollingTotal = 0;
+    for (let i = 11; i >= 0; i--) {
+      const wk = new Date(weekStart);
+      wk.setDate(weekStart.getDate() - i * 7);
+      const key = wk.toISOString().slice(0, 10);
+      const entry = byKey.get(key);
+      if (entry) {
+        out.push(entry);
+        rollingTotal = entry.totalStudents;
+      } else {
+        out.push({ date: key, newStudents: 0, totalStudents: rollingTotal });
+      }
+    }
+    return out;
+  }, [growth, growthPeriod, now]);
+
+  // ── Derived: padded attendance series ──
+  type AttendancePoint = {
+    month: string;
+    percentage: number | null;
+    isReal: boolean;
+  };
+  const paddedAttendance = useMemo((): AttendancePoint[] => {
+    const currentMonth = now.getMonth(); // 0..11
+    const byKey = new Map(attByMonth.map((a) => [a.month, a]));
+    const out: AttendancePoint[] = [];
+    for (let m = 0; m <= currentMonth; m++) {
+      const name = MONTH_LONG[m];
+      const entry = byKey.get(name);
+      if (entry) {
+        out.push({ month: name, percentage: entry.percentage, isReal: true });
+      } else {
+        out.push({ month: name, percentage: null, isReal: false });
+      }
+    }
+    return out;
+  }, [attByMonth, now]);
+
+  const attendanceMin = useMemo(() => {
+    const values = paddedAttendance
+      .map((a) => a.percentage)
+      .filter((v): v is number => typeof v === 'number');
+    if (!values.length) return 60;
+    return Math.max(0, Math.min(...values) - 10);
+  }, [paddedAttendance]);
+
   const pageDescription = `Ключевые показатели центра • ${MONTH_LONG[now.getMonth()]} ${now.getFullYear()}`;
 
   return (
@@ -607,10 +684,10 @@ export default function SuperAdminDashboard() {
             <div className="h-[220px]">
               {hasMounted ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={growth} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                  <AreaChart data={paddedGrowth} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
                     <defs>
                       <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.18} />
+                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.28} />
                         <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                       </linearGradient>
                     </defs>
@@ -621,6 +698,8 @@ export default function SuperAdminDashboard() {
                       tickLine={false}
                       tick={{ fontSize: 11, fill: '#94a3b8' }}
                       tickFormatter={(v: string) => formatGrowthTick(v, growthPeriod)}
+                      interval={0}
+                      minTickGap={0}
                     />
                     <YAxis
                       allowDecimals={false}
@@ -642,10 +721,12 @@ export default function SuperAdminDashboard() {
                       type="monotone"
                       dataKey="newStudents"
                       stroke="#7c3aed"
-                      strokeWidth={2}
+                      strokeWidth={2.5}
                       fill="url(#growthGrad)"
-                      dot={false}
-                      activeDot={{ r: 4, strokeWidth: 0 }}
+                      dot={{ r: 4, fill: '#7c3aed', stroke: '#fff', strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: '#7c3aed', stroke: '#fff', strokeWidth: 3 }}
+                      isAnimationActive
+                      animationDuration={750}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -688,12 +769,12 @@ export default function SuperAdminDashboard() {
               {hasMounted ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
-                    data={attByMonth}
-                    margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
+                    data={paddedAttendance}
+                    margin={{ top: 8, right: 12, bottom: 0, left: -20 }}
                   >
                     <defs>
                       <linearGradient id="attendGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#059669" stopOpacity={0.18} />
+                        <stop offset="5%" stopColor="#059669" stopOpacity={0.28} />
                         <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                       </linearGradient>
                     </defs>
@@ -703,13 +784,29 @@ export default function SuperAdminDashboard() {
                       axisLine={false}
                       tickLine={false}
                       tick={{ fontSize: 11, fill: '#94a3b8' }}
+                      interval={0}
+                      minTickGap={0}
+                      tickFormatter={(v: string) => v.slice(0, 3)}
                     />
                     <YAxis
-                      domain={[60, 100]}
+                      domain={[attendanceMin, 100]}
                       axisLine={false}
                       tickLine={false}
                       tick={{ fontSize: 11, fill: '#94a3b8' }}
                       tickFormatter={(v) => `${v}%`}
+                    />
+                    <ReferenceLine
+                      y={85}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                      label={{
+                        value: 'Цель 85%',
+                        position: 'right',
+                        fill: '#b45309',
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
                     />
                     <Tooltip
                       content={
@@ -722,10 +819,39 @@ export default function SuperAdminDashboard() {
                       type="monotone"
                       dataKey="percentage"
                       stroke="#059669"
-                      strokeWidth={2}
+                      strokeWidth={2.5}
                       fill="url(#attendGrad)"
-                      dot={false}
-                      activeDot={{ r: 4, strokeWidth: 0 }}
+                      connectNulls
+                      dot={(props: {
+                        cx?: number;
+                        cy?: number;
+                        payload?: AttendancePoint;
+                        index?: number;
+                      }) => {
+                        const key = `att-dot-${props.index ?? 0}`;
+                        if (!props.payload?.isReal) {
+                          return <g key={key} />;
+                        }
+                        return (
+                          <circle
+                            key={key}
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={5}
+                            fill="#059669"
+                            stroke="#fff"
+                            strokeWidth={2.5}
+                          />
+                        );
+                      }}
+                      activeDot={{
+                        r: 7,
+                        fill: '#059669',
+                        stroke: '#fff',
+                        strokeWidth: 3,
+                      }}
+                      isAnimationActive
+                      animationDuration={750}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

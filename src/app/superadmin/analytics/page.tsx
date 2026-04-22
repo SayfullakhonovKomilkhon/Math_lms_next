@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Bar, BarChart, CartesianGrid, Line, LineChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, LabelList,
+  ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { FileSpreadsheet } from 'lucide-react';
 import api from '@/lib/api';
@@ -32,6 +32,37 @@ interface GradesCenter {
   byTeacher: { teacherId: string; teacherName: string; groupsCount: number; studentsCount: number; averageScore: number }[];
   topStudents: { studentId: string; fullName: string; groupName: string; averageScore: number; totalWorks: number }[];
   byMonth: { month: string; averageScore: number }[];
+}
+
+const MONTH_LONG = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+];
+const MONTH_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+type TrendPoint<K extends string> = { month: string; isReal: boolean } & { [P in K]: number | null };
+
+function padMonthly<K extends string>(
+  data: { month: string }[] | undefined,
+  key: K,
+  valueGetter: (row: Record<string, unknown>) => number,
+): TrendPoint<K>[] {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const byKey = new Map<string, Record<string, unknown>>(
+    (data ?? []).map((d) => [d.month, d as unknown as Record<string, unknown>]),
+  );
+  const out: TrendPoint<K>[] = [];
+  for (let m = 0; m <= currentMonth; m++) {
+    const name = MONTH_LONG[m];
+    const entry = byKey.get(name);
+    if (entry) {
+      out.push({ month: name, isReal: true, [key]: valueGetter(entry) } as TrendPoint<K>);
+    } else {
+      out.push({ month: name, isReal: false, [key]: null } as TrendPoint<K>);
+    }
+  }
+  return out;
 }
 
 async function downloadBlob(url: string, filename: string) {
@@ -81,6 +112,18 @@ export default function AnalyticsPage() {
     ? (attendance?.byGroup ?? []).filter((g) => g.groupId === groupId)
     : (attendance?.byGroup ?? []);
 
+  const paddedAttendanceMonths = useMemo(
+    () => padMonthly(attendance?.byMonth, 'percentage', (r) => Number(r.percentage) || 0),
+    [attendance?.byMonth],
+  );
+  const paddedGradesMonths = useMemo(
+    () => padMonthly(grades?.byMonth, 'averageScore', (r) => Number(r.averageScore) || 0),
+    [grades?.byMonth],
+  );
+
+  const colorForScore = (v: number) =>
+    v >= 80 ? '#059669' : v >= 60 ? '#f59e0b' : '#ef4444';
+
   return (
     <div className="space-y-6">
       <PageHeader title="Аналитика" description="Посещаемость и успеваемость по центру" />
@@ -127,15 +170,32 @@ export default function AnalyticsPage() {
 
             {attGroups.length > 0 && (
               <Card>
-                <CardHeader><h2 className="font-semibold text-slate-900">Посещаемость по группам</h2></CardHeader>
-                <CardContent className="h-56">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <h2 className="font-semibold text-slate-900">Посещаемость по группам</h2>
+                  <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-600" />≥ 80%</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500" />60–79%</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-red-500" />&lt; 60%</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={attGroups} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <BarChart data={attGroups} margin={{ top: 20, right: 12, bottom: 4, left: 0 }} barCategoryGap="28%">
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="groupName" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-                      <Tooltip formatter={(v) => [`${v}%`, 'Посещаемость']} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                      <Bar dataKey="percentage" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                      <XAxis dataKey="groupName" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v}%`} />
+                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="4 4" strokeWidth={1}
+                        label={{ value: '80%', position: 'right', fill: '#047857', fontSize: 10, fontWeight: 600 }} />
+                      <Tooltip cursor={{ fill: 'rgba(124,58,237,0.06)' }}
+                        formatter={(v) => [`${v}%`, 'Посещаемость']}
+                        contentStyle={{ borderRadius: 10, fontSize: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }} />
+                      <Bar dataKey="percentage" radius={[8, 8, 0, 0]} isAnimationActive animationDuration={700}>
+                        {attGroups.map((g) => (
+                          <Cell key={g.groupId} fill={colorForScore(g.percentage)} />
+                        ))}
+                        <LabelList dataKey="percentage" position="top" formatter={(v) => `${v}%`}
+                          style={{ fontSize: 11, fontWeight: 600, fill: '#334155' }} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -145,15 +205,39 @@ export default function AnalyticsPage() {
             {attendance.byMonth.length > 0 && (
               <Card>
                 <CardHeader><h2 className="font-semibold text-slate-900">Динамика по месяцам</h2></CardHeader>
-                <CardContent className="h-56">
+                <CardContent className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={attendance.byMonth}>
+                    <AreaChart data={paddedAttendanceMonths} margin={{ top: 10, right: 16, bottom: 0, left: -20 }}>
+                      <defs>
+                        <linearGradient id="attMonthGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                      <Tooltip formatter={(v) => [`${v}%`, 'Посещаемость']} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                      <Line type="monotone" dataKey="percentage" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                    </LineChart>
+                      <XAxis dataKey="month" axisLine={false} tickLine={false}
+                        tick={{ fontSize: 11, fill: '#94a3b8' }}
+                        interval={0} minTickGap={0}
+                        tickFormatter={(v: string) => {
+                          const idx = MONTH_LONG.indexOf(v);
+                          return idx >= 0 ? MONTH_SHORT[idx] : v.slice(0, 3);
+                        }} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false}
+                        tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v}%`} />
+                      <ReferenceLine y={85} stroke="#f59e0b" strokeDasharray="4 4" strokeWidth={1.5}
+                        label={{ value: 'Цель 85%', position: 'right', fill: '#b45309', fontSize: 10, fontWeight: 600 }} />
+                      <Tooltip formatter={(v) => [`${v}%`, 'Посещаемость']}
+                        contentStyle={{ borderRadius: 10, fontSize: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }} />
+                      <Area type="monotone" dataKey="percentage" stroke="#7c3aed" strokeWidth={2.5}
+                        fill="url(#attMonthGrad)" connectNulls
+                        dot={(props: { cx?: number; cy?: number; payload?: { isReal?: boolean }; index?: number }) => {
+                          const key = `att-dot-${props.index ?? 0}`;
+                          if (!props.payload?.isReal) return <g key={key} />;
+                          return <circle key={key} cx={props.cx} cy={props.cy} r={5} fill="#7c3aed" stroke="#fff" strokeWidth={2.5} />;
+                        }}
+                        activeDot={{ r: 7, fill: '#7c3aed', stroke: '#fff', strokeWidth: 3 }}
+                        isAnimationActive animationDuration={750} />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
@@ -218,15 +302,39 @@ export default function AnalyticsPage() {
             {grades.byMonth.length > 0 && (
               <Card>
                 <CardHeader><h2 className="font-semibold text-slate-900">Динамика по месяцам</h2></CardHeader>
-                <CardContent className="h-56">
+                <CardContent className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={grades.byMonth}>
+                    <AreaChart data={paddedGradesMonths} margin={{ top: 10, right: 16, bottom: 0, left: -20 }}>
+                      <defs>
+                        <linearGradient id="gradesMonthGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                      <Tooltip formatter={(v) => [`${v}%`, 'Средний балл']} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                      <Line type="monotone" dataKey="averageScore" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                    </LineChart>
+                      <XAxis dataKey="month" axisLine={false} tickLine={false}
+                        tick={{ fontSize: 11, fill: '#94a3b8' }}
+                        interval={0} minTickGap={0}
+                        tickFormatter={(v: string) => {
+                          const idx = MONTH_LONG.indexOf(v);
+                          return idx >= 0 ? MONTH_SHORT[idx] : v.slice(0, 3);
+                        }} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false}
+                        tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v}%`} />
+                      <ReferenceLine y={80} stroke="#10b981" strokeDasharray="4 4" strokeWidth={1.5}
+                        label={{ value: 'Цель 80%', position: 'right', fill: '#047857', fontSize: 10, fontWeight: 600 }} />
+                      <Tooltip formatter={(v) => [`${v}%`, 'Средний балл']}
+                        contentStyle={{ borderRadius: 10, fontSize: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }} />
+                      <Area type="monotone" dataKey="averageScore" stroke="#7c3aed" strokeWidth={2.5}
+                        fill="url(#gradesMonthGrad)" connectNulls
+                        dot={(props: { cx?: number; cy?: number; payload?: { isReal?: boolean }; index?: number }) => {
+                          const key = `grades-dot-${props.index ?? 0}`;
+                          if (!props.payload?.isReal) return <g key={key} />;
+                          return <circle key={key} cx={props.cx} cy={props.cy} r={5} fill="#7c3aed" stroke="#fff" strokeWidth={2.5} />;
+                        }}
+                        activeDot={{ r: 7, fill: '#7c3aed', stroke: '#fff', strokeWidth: 3 }}
+                        isAnimationActive animationDuration={750} />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>

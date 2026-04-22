@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -16,43 +17,55 @@ import {
   Trophy,
   Calendar,
   Megaphone,
+  Settings,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { AccountSettingsDialog } from '@/components/account/AccountSettingsDialog';
+import { AnnouncementsBadge } from '@/components/announcements/AnnouncementsBadge';
 
 export type PanelVariant = 'admin' | 'teacher' | 'student' | 'parent';
 
-const ADMIN_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: 'announcements';
+};
+
+const ADMIN_NAV: NavItem[] = [
   { href: '/admin/students', label: 'Ученики', icon: Users },
   { href: '/admin/groups', label: 'Группы', icon: BookOpen },
   { href: '/admin/payments', label: 'Оплаты', icon: CreditCard },
   { href: '/admin/attendance', label: 'Посещаемость', icon: ClipboardList },
+  { href: '/admin/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
 ];
 
-const TEACHER_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+const TEACHER_NAV: NavItem[] = [
   { href: '/teacher/groups', label: 'Мои группы', icon: BookOpen },
   { href: '/teacher/salary', label: 'Зарплата', icon: DollarSign },
+  { href: '/teacher/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
 ];
 
-const STUDENT_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+const STUDENT_NAV: NavItem[] = [
   { href: '/student/dashboard', label: 'Главная', icon: Home },
   { href: '/student/homework', label: 'Домашние задания', icon: Book },
   { href: '/student/grades', label: 'Оценки', icon: BarChart2 },
   { href: '/student/achievements', label: 'Достижения', icon: Trophy },
   { href: '/student/payment', label: 'Оплата', icon: CreditCard },
   { href: '/student/schedule', label: 'Расписание', icon: Calendar },
-  { href: '/student/announcements', label: 'Объявления', icon: Megaphone },
+  { href: '/student/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
 ];
 
-const PARENT_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+const PARENT_NAV: NavItem[] = [
   { href: '/parent/dashboard', label: 'Главная', icon: Home },
   { href: '/parent/attendance', label: 'Посещаемость', icon: ClipboardList },
   { href: '/parent/grades', label: 'Успеваемость', icon: BarChart2 },
   { href: '/parent/homework', label: 'Домашние задания', icon: Book },
   { href: '/parent/achievements', label: 'Достижения', icon: Trophy },
   { href: '/parent/payment', label: 'Оплата', icon: CreditCard },
-  { href: '/parent/announcements', label: 'Объявления', icon: Megaphone },
+  { href: '/parent/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
 ];
 
 const styles = {
@@ -82,9 +95,17 @@ const styles = {
   },
 } as const;
 
+const dialogAccent = {
+  admin: 'indigo',
+  teacher: 'emerald',
+  student: 'orange',
+  parent: 'blue',
+} as const;
+
 export function AppSidebar({ variant }: { variant: PanelVariant }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const navItems = (() => {
     if (variant === 'admin') return ADMIN_NAV;
@@ -120,7 +141,7 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 p-3 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon, badge }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
@@ -141,7 +162,8 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
                   active ? t.iconActive : 'text-slate-400',
                 )}
               />
-              {label}
+              <span className="flex-1">{label}</span>
+              {badge === 'announcements' && <AnnouncementsBadge />}
             </Link>
           );
         })}
@@ -154,10 +176,23 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
           <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.email}</p>
           <button
             type="button"
-            onClick={logout}
+            onClick={() => setSettingsOpen(true)}
             className={cn(
               'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors',
               'hover:bg-slate-50 hover:text-slate-900',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+              t.ring,
+            )}
+          >
+            <Settings className="h-4 w-4" />
+            Настройки аккаунта
+          </button>
+          <button
+            type="button"
+            onClick={logout}
+            className={cn(
+              'mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-slate-500 transition-colors',
+              'hover:bg-slate-100 hover:text-slate-900',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2',
             )}
           >
@@ -166,6 +201,12 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
           </button>
         </div>
       </div>
+
+      <AccountSettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        accent={dialogAccent[variant]}
+      />
     </aside>
   );
 }

@@ -240,7 +240,31 @@ export interface Announcement {
   id: string;
   title: string;
   message: string;
+  authorId: string;
+  authorName: string;
+  group: { id: string; name: string } | null;
+  isPinned: boolean;
+  isRead: boolean;
+  readAt: string | null;
   createdAt: string;
-  authorName?: string;
-  groupName?: string;
+  updatedAt: string;
+  readCount?: number;
+}
+
+export interface AnnouncementsResponse {
+  data: Announcement[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    unreadCount?: number;
+  };
+}
+
+export interface CreateAnnouncementPayload {
+  title: string;
+  message: string;
+  groupId?: string;
+  isPinned?: boolean;
 }

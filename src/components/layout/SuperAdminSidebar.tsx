@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,21 +11,38 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Settings,
+  ShieldCheck,
   TrendingUp,
   UserCog,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { AccountSettingsDialog } from '@/components/account/AccountSettingsDialog';
+import { AnnouncementsBadge } from '@/components/announcements/AnnouncementsBadge';
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: 'announcements';
+};
+
+const NAV: NavItem[] = [
   { href: '/superadmin/dashboard', label: 'Дашборд', icon: LayoutDashboard },
   { href: '/superadmin/staff', label: 'Персонал', icon: UserCog },
   { href: '/superadmin/groups', label: 'Группы', icon: BookOpen },
   { href: '/superadmin/finance', label: 'Финансы', icon: DollarSign },
   { href: '/superadmin/analytics', label: 'Аналитика', icon: BarChart2 },
   { href: '/superadmin/salary', label: 'Зарплаты', icon: TrendingUp },
+  {
+    href: '/superadmin/announcements',
+    label: 'Объявления',
+    icon: Megaphone,
+    badge: 'announcements',
+  },
   { href: '/superadmin/settings', label: 'Настройки', icon: Settings },
   { href: '/superadmin/audit', label: 'Журнал действий', icon: ClipboardList },
 ];
@@ -32,6 +50,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
 export function SuperAdminSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-200/60 bg-white shadow-sm md:flex">
@@ -48,7 +67,7 @@ export function SuperAdminSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {NAV.map(({ href, label, icon: Icon, badge }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
@@ -65,7 +84,8 @@ export function SuperAdminSidebar() {
               <Icon
                 className={cn('h-4 w-4 shrink-0', active ? 'text-violet-600' : 'text-slate-400')}
               />
-              {label}
+              <span className="flex-1">{label}</span>
+              {badge === 'announcements' && <AnnouncementsBadge />}
             </Link>
           );
         })}
@@ -77,14 +97,28 @@ export function SuperAdminSidebar() {
           <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.email}</p>
           <button
             type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Настройки аккаунта
+          </button>
+          <button
+            type="button"
             onClick={logout}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
           >
             <LogOut className="h-4 w-4" />
             Выйти
           </button>
         </div>
       </div>
+
+      <AccountSettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        accent="violet"
+      />
     </aside>
   );
 }
