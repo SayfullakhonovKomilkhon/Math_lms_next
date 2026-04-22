@@ -22,6 +22,7 @@ interface Props {
   onRead?: (id: string) => void;
   onDelete?: (id: string) => void;
   onPin?: (id: string) => void;
+  onShowReaders?: (id: string) => void;
   canDelete?: boolean;
   canPin?: boolean;
   showReadStatus?: boolean;
@@ -33,6 +34,7 @@ export function AnnouncementCard({
   onRead,
   onDelete,
   onPin,
+  onShowReaders,
   canDelete,
   canPin,
   showReadStatus = true,
@@ -99,10 +101,22 @@ export function AnnouncementCard({
             </span>
           )}
           {showReadCount && typeof readCount === 'number' && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-              <Check className="h-3 w-3" />
-              Прочитано: {readCount}
-            </span>
+            onShowReaders ? (
+              <button
+                type="button"
+                onClick={() => onShowReaders(id)}
+                title="Показать, кто прочитал"
+                className="inline-flex items-center gap-1 rounded-full border border-transparent bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              >
+                <Check className="h-3 w-3" />
+                Прочитано: {readCount}
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                <Check className="h-3 w-3" />
+                Прочитано: {readCount}
+              </span>
+            )
           )}
         </div>
 

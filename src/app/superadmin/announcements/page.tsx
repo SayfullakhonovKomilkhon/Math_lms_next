@@ -12,6 +12,7 @@ import {
 } from '@/hooks/useAnnouncements';
 import { AnnouncementCard } from '@/components/announcements/AnnouncementCard';
 import { AnnouncementCreateForm } from '@/components/announcements/AnnouncementCreateForm';
+import { AnnouncementReadersDialog } from '@/components/announcements/AnnouncementReadersDialog';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -19,6 +20,7 @@ export default function SuperAdminAnnouncementsPage() {
   const [showForm, setShowForm] = useState(false);
   const [filterGroup, setFilterGroup] = useState<string>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [readersId, setReadersId] = useState<string | null>(null);
 
   const { data: groupsData } = useQuery({
     queryKey: ['groups'],
@@ -105,12 +107,18 @@ export default function SuperAdminAnnouncementsPage() {
               canPin
               onDelete={setDeleteId}
               onPin={togglePin}
+              onShowReaders={setReadersId}
               showReadStatus={false}
               showReadCount
             />
           ))}
         </div>
       )}
+
+      <AnnouncementReadersDialog
+        announcementId={readersId}
+        onClose={() => setReadersId(null)}
+      />
 
       <ConfirmDialog
         isOpen={!!deleteId}

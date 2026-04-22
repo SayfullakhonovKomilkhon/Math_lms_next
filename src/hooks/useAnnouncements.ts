@@ -51,6 +51,39 @@ export function useAllAnnouncements(params?: AnnouncementsListParams) {
   });
 }
 
+export interface AnnouncementReader {
+  userId: string;
+  fullName: string;
+  role: 'STUDENT' | 'PARENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN';
+  email: string;
+  group: { id: string; name: string } | null;
+  extra: string | null;
+  readAt: string;
+}
+
+export interface AnnouncementReadersResponse {
+  announcement: {
+    id: string;
+    title: string;
+    group: { id: string; name: string } | null;
+  };
+  readCount: number;
+  recipientCount: number;
+  readers: AnnouncementReader[];
+}
+
+export function useAnnouncementReaders(id: string | null) {
+  return useQuery<AnnouncementReadersResponse>({
+    queryKey: ['announcements', 'readers', id],
+    queryFn: () =>
+      api
+        .get<ApiResponse<AnnouncementReadersResponse>>(`/announcements/${id}/reads`)
+        .then((r) => r.data.data),
+    enabled: !!id,
+    staleTime: 15_000,
+  });
+}
+
 export function useUnreadAnnouncementsCount(enabled = true) {
   return useQuery<{ count: number }>({
     queryKey: KEYS.unread,
