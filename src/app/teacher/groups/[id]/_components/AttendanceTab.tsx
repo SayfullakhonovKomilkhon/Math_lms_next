@@ -31,7 +31,7 @@ import {
   Grade,
   LessonTopic,
 } from '@/types';
-import { InputField } from '@/components/ui/input-field';
+import { InputField, SelectField } from '@/components/ui/input-field';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import {
@@ -86,7 +86,6 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
   const qc = useQueryClient();
   const today = useMemo(() => new Date(), []);
   const todayStart = useMemo(() => startOfDay(today), [today]);
-  const todayStr = useMemo(() => format(today, 'yyyy-MM-dd'), [today]);
   const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(today));
   const [selectedDate, setSelectedDate] = useState<string>(() => format(today, 'yyyy-MM-dd'));
   const [topicInput, setTopicInput] = useState<string>('');
@@ -106,6 +105,17 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
     if (indexes.length === 0) return allDays;
     return allDays.filter((date) => indexes.includes(date.getDay()));
   }, [monthStart, monthEnd, schedule?.days]);
+
+  // Lesson days that the teacher is actually allowed to pick in the date
+  // selector — those that are not in the future. Returned as yyyy-MM-dd
+  // strings so the <select> can compare values without timezone surprises.
+  const selectableLessonDayStrs = useMemo(
+    () =>
+      lessonDays
+        .filter((d) => !isAfter(startOfDay(d), todayStart))
+        .map((d) => format(d, 'yyyy-MM-dd')),
+    [lessonDays, todayStart],
+  );
 
   const { data: monthAttendance = [], isLoading: attendanceLoading } = useQuery({
     queryKey: [
@@ -430,20 +440,41 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
       {/* Date & topic selector row */}
       <div className="grid gap-3 md:grid-cols-[minmax(200px,1fr)_minmax(280px,2fr)]">
         <div className="relative">
-          <InputField
+          {/*
+            Restrict the date picker to the actual lesson days for the
+            current month (and not in the future). The native `<input
+            type="date">` allows arbitrary dates which made it possible to
+            jump to a day that has no schedule entry — confusing for the
+            teacher. Using a `<select>` keeps the UX simple and the values
+            valid by construction.
+          */}
+          <SelectField
             accent="teacher"
-            type="date"
-            max={todayStr}
-            value={selectedDate}
+            value={selectableLessonDayStrs.includes(selectedDate) ? selectedDate : ''}
             onChange={(e) => {
               const v = e.target.value;
-              if (v && v > todayStr) return;
+              if (!v) return;
               setSelectedDate(v);
-              if (v) {
-                setCurrentMonth(startOfMonth(parseISO(v)));
-              }
+              setCurrentMonth(startOfMonth(parseISO(v)));
             }}
-          />
+            disabled={selectableLessonDayStrs.length === 0}
+          >
+            {selectableLessonDayStrs.length === 0 && (
+              <option value="">Нет прошедших уроков в этом месяце</option>
+            )}
+            {!selectableLessonDayStrs.includes(selectedDate) &&
+              selectableLessonDayStrs.length > 0 && (
+                <option value="">Выберите день урока…</option>
+              )}
+            {selectableLessonDayStrs.map((dateStr) => {
+              const d = parseISO(dateStr);
+              return (
+                <option key={dateStr} value={dateStr}>
+                  {format(d, 'dd MMMM yyyy, EEEE', { locale: ru })}
+                </option>
+              );
+            })}
+          </SelectField>
         </div>
 
         <TopicCombobox
@@ -474,7 +505,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                 <th className="sticky left-0 z-10 min-w-[180px] border-b border-slate-200 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   ИМЕНА
                 </th>
-                {lessonDays.map((day) => {
+                {lessonDays.map((day, idx) => {
                   const dateStr = format(day, 'yyyy-MM-dd');
                   const isSelected =
                     isWithinInterval(day, { start: monthStart, end: monthEnd }) &&
@@ -485,6 +516,12 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                   const tooltip = topic
                     ? `${dateLabel} — ${topic}${isExam ? ' (введите баллы)' : ''}`
                     : `${dateLabel} — тема не указана`;
+                  // For the last few columns the centered tooltip would
+                  // overflow the table on the right and force a horizontal
+                  // scrollbar. Anchor it to the right instead so it grows
+                  // toward the inside of the table.
+                  const isNearEnd = idx >= lessonDays.length - 2;
+                  const isNearStart = idx <= 1;
                   return (
                     <th
                       key={day.toISOString()}
@@ -502,10 +539,26 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                       <span>{format(day, 'dd.MM')}</span>
                       <span
                         role="tooltip"
-                        className="pointer-events-none absolute left-1/2 top-full z-30 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-within:block"
+                        className={cn(
+                          'pointer-events-none absolute top-full z-30 mt-1 hidden whitespace-nowrap rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-within:block',
+                          isNearEnd
+                            ? 'right-0'
+                            : isNearStart
+                              ? 'left-0'
+                              : 'left-1/2 -translate-x-1/2',
+                        )}
                       >
                         {tooltip}
-                        <span className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-slate-900" />
+                        <span
+                          className={cn(
+                            'absolute -top-1 h-2 w-2 rotate-45 bg-slate-900',
+                            isNearEnd
+                              ? 'right-3'
+                              : isNearStart
+                                ? 'left-3'
+                                : 'left-1/2 -translate-x-1/2',
+                          )}
+                        />
                       </span>
                     </th>
                   );
