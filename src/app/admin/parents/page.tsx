@@ -1,9 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { ChevronRight, Pencil, Plus, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { Parent } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function ParentsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
@@ -99,16 +101,21 @@ export default function ParentsPage() {
                       <DataTableHeaderCell>Email</DataTableHeaderCell>
                       <DataTableHeaderCell>Телефон</DataTableHeaderCell>
                       <DataTableHeaderCell>Дети</DataTableHeaderCell>
+                      <DataTableHeaderCell className="text-right">
+                        Действия
+                      </DataTableHeaderCell>
                     </DataTableHead>
                     <tbody>
                       {parents.map((p) => (
                         <DataTableRow
                           key={p.id}
                           className="cursor-pointer hover:bg-slate-50"
+                          onClick={() => router.push(`/admin/parents/${p.id}`)}
                         >
                           <DataTableCell>
                             <Link
                               href={`/admin/parents/${p.id}`}
+                              onClick={(e) => e.stopPropagation()}
                               className="font-semibold text-slate-900 hover:text-blue-600"
                             >
                               {p.fullName}
@@ -135,6 +142,17 @@ export default function ParentsPage() {
                               )}
                             </div>
                           </DataTableCell>
+                          <DataTableCell className="text-right">
+                            <Link
+                              href={`/admin/parents/${p.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button variant="ghost" size="sm">
+                                <Pencil className="mr-1 h-4 w-4" />
+                                Изменить
+                              </Button>
+                            </Link>
+                          </DataTableCell>
                         </DataTableRow>
                       ))}
                     </tbody>
@@ -146,26 +164,31 @@ export default function ParentsPage() {
                   <Link
                     key={p.id}
                     href={`/admin/parents/${p.id}`}
-                    className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50"
+                    className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50"
                   >
-                    <p className="font-semibold text-slate-900">{p.fullName}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {p.user?.email ?? '—'}
-                      {p.phone ? ` · ${p.phone}` : ''}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {(p.students ?? []).length === 0 ? (
-                        <span className="text-xs text-slate-400">
-                          Без детей
-                        </span>
-                      ) : (
-                        (p.students ?? []).map((link) => (
-                          <Badge key={link.student.id} variant="blue">
-                            {link.student.fullName}
-                          </Badge>
-                        ))
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900">
+                        {p.fullName}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {p.user?.email ?? '—'}
+                        {p.phone ? ` · ${p.phone}` : ''}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(p.students ?? []).length === 0 ? (
+                          <span className="text-xs text-slate-400">
+                            Без детей
+                          </span>
+                        ) : (
+                          (p.students ?? []).map((link) => (
+                            <Badge key={link.student.id} variant="blue">
+                              {link.student.fullName}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
                     </div>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
                   </Link>
                 ))}
               </div>
