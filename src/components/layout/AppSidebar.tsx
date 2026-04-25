@@ -123,10 +123,10 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
   }[variant];
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200/90 bg-white shadow-sm md:flex">
+    <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200/90 bg-white shadow-sm md:flex">
       <div
         className={cn(
-          'px-5 py-6 text-white shadow-inner',
+          'shrink-0 px-5 py-6 text-white shadow-inner',
           'bg-gradient-to-br',
           t.header,
         )}
@@ -144,7 +144,7 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5 p-3 overflow-y-auto">
+      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-3">
         {navItems.map(({ href, label, icon: Icon, badge }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
@@ -174,7 +174,7 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
 
       </nav>
 
-      <div className="p-3">
+      <div className="shrink-0 p-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm">
           <p className="truncate text-xs font-medium text-slate-500">Вошли как</p>
           <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.email}</p>

@@ -55,8 +55,8 @@ export function SuperAdminSidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-200/60 bg-white shadow-sm md:flex">
-      <div className="bg-gradient-to-br from-violet-600 to-purple-700 px-5 py-6 text-white shadow-inner">
+    <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-violet-200/60 bg-white shadow-sm md:flex">
+      <div className="shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 px-5 py-6 text-white shadow-inner">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
             <GraduationCap className="h-6 w-6 text-white" />
@@ -70,7 +70,7 @@ export function SuperAdminSidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-3">
         {NAV.map(({ href, label, icon: Icon, badge }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
@@ -95,7 +95,7 @@ export function SuperAdminSidebar() {
         })}
       </nav>
 
-      <div className="p-3">
+      <div className="shrink-0 p-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm">
           <p className="truncate text-xs font-medium text-slate-500">Вошли как</p>
           <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.email}</p>
