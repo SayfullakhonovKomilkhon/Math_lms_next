@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileSpreadsheet, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import api from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { downloadFromApi, extractApiErrorMessage } from '@/lib/download';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -27,26 +28,6 @@ interface SalaryHistory {
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
   'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-async function downloadBlob(url: string, filename: string) {
-  try {
-    const token = document.cookie.split('; ').find((r) => r.startsWith('auth-storage='));
-    const authData = token ? JSON.parse(decodeURIComponent(token.split('=')[1])) : null;
-    const accessToken = authData?.state?.accessToken;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${url}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
-    if (!res.ok) throw new Error();
-    const blob = await res.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch {
-    toast('Ошибка экспорта', 'error');
-  }
-}
 
 export default function SalaryPage() {
   const qc = useQueryClient();
@@ -79,6 +60,22 @@ export default function SalaryPage() {
     onError: () => toast('Ошибка', 'error'),
   });
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await downloadFromApi(
+        '/reports/salary/excel',
+        `salary-${year}-${String(month).padStart(2, '0')}.xlsx`,
+      );
+    } catch (err) {
+      toast(extractApiErrorMessage(err, 'Ошибка экспорта'), 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const total = teachers.reduce((s, t) => s + t.totalSalary, 0);
   const years = [now.getFullYear() - 1, now.getFullYear()];
 
@@ -89,8 +86,10 @@ export default function SalaryPage() {
         description="Расчёт на основе активных учеников × ставка"
         actions={
           <Button
-            variant="secondary" size="sm"
-            onClick={() => downloadBlob('/reports/salary/excel', `salary-${year}-${String(month).padStart(2, '0')}.xlsx`)}
+            variant="secondary"
+            size="sm"
+            loading={exporting}
+            onClick={handleExport}
           >
             <FileSpreadsheet className="mr-1.5 h-4 w-4 text-green-600" />
             Экспорт ведомости

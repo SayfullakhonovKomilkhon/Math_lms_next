@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { FileSpreadsheet } from 'lucide-react';
 import api from '@/lib/api';
+import { downloadFromApi, extractApiErrorMessage } from '@/lib/download';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,31 +66,30 @@ function padMonthly<K extends string>(
   return out;
 }
 
-async function downloadBlob(url: string, filename: string) {
-  try {
-    const token = document.cookie.split('; ').find((r) => r.startsWith('auth-storage='));
-    const authData = token ? JSON.parse(decodeURIComponent(token.split('=')[1])) : null;
-    const accessToken = authData?.state?.accessToken;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${url}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
-    if (!res.ok) throw new Error('Export failed');
-    const blob = await res.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch {
-    toast('Ошибка экспорта', 'error');
-  }
-}
-
 export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>('attendance');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [groupId, setGroupId] = useState('');
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  const exportParamsObj = () => {
+    const p: Record<string, string> = {};
+    if (from) p.from = from;
+    if (to) p.to = to;
+    return p;
+  };
+
+  const handleExport = async (key: string, url: string, filename: string) => {
+    setExporting(key);
+    try {
+      await downloadFromApi(url, filename, { params: exportParamsObj() });
+    } catch (err) {
+      toast(extractApiErrorMessage(err, 'Ошибка экспорта'), 'error');
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const params = new URLSearchParams();
   if (from) params.append('from', from);
@@ -246,8 +246,18 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <h2 className="font-semibold text-slate-900">По группам</h2>
-                <Button variant="secondary" size="sm"
-                  onClick={() => downloadBlob(`/reports/attendance/excel?${qs}`, `attendance-${new Date().toISOString().slice(0, 10)}.xlsx`)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={exporting === 'attendance'}
+                  onClick={() =>
+                    handleExport(
+                      'attendance',
+                      '/reports/attendance/excel',
+                      `attendance-${new Date().toISOString().slice(0, 10)}.xlsx`,
+                    )
+                  }
+                >
                   <FileSpreadsheet className="mr-1.5 h-4 w-4 text-green-600" />Excel
                 </Button>
               </CardHeader>
@@ -381,8 +391,18 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <h2 className="font-semibold text-slate-900">Топ-10 учеников</h2>
-                <Button variant="secondary" size="sm"
-                  onClick={() => downloadBlob(`/reports/grades/excel?${qs}`, `grades-${new Date().toISOString().slice(0, 10)}.xlsx`)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={exporting === 'grades'}
+                  onClick={() =>
+                    handleExport(
+                      'grades',
+                      '/reports/grades/excel',
+                      `grades-${new Date().toISOString().slice(0, 10)}.xlsx`,
+                    )
+                  }
+                >
                   <FileSpreadsheet className="mr-1.5 h-4 w-4 text-green-600" />Excel
                 </Button>
               </CardHeader>

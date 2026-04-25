@@ -7,6 +7,7 @@ import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import api from '@/lib/api';
 import { Group, Payment } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { downloadFromApi, extractApiErrorMessage } from '@/lib/download';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,34 +23,6 @@ interface Debtor {
 }
 
 type Tab = 'all' | 'debtors' | 'pending';
-
-// ─── Export helper ────────────────────────────────────────────────────────────
-
-async function downloadBlob(url: string, filename: string, onStart: () => void, onEnd: () => void) {
-  onStart();
-  try {
-    const token = document.cookie
-      .split('; ')
-      .find((r) => r.startsWith('auth-storage='));
-    const authData = token ? JSON.parse(decodeURIComponent(token.split('=')[1])) : null;
-    const accessToken = authData?.state?.accessToken;
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${url}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
-    if (!res.ok) throw new Error('Export failed');
-    const blob = await res.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch {
-    toast('Ошибка экспорта', 'error');
-  } finally {
-    onEnd();
-  }
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -119,12 +92,28 @@ export default function FinancePage() {
   });
 
   const exportParams = () => {
-    const p = new URLSearchParams();
-    if (from) p.append('from', from);
-    if (to) p.append('to', to);
-    if (groupId) p.append('groupId', groupId);
-    if (status) p.append('status', status);
-    return p.toString();
+    const p: Record<string, string> = {};
+    if (from) p.from = from;
+    if (to) p.to = to;
+    if (groupId) p.groupId = groupId;
+    if (status) p.status = status;
+    return p;
+  };
+
+  const handleExport = async (
+    key: string,
+    url: string,
+    filename: string,
+    params?: Record<string, string>,
+  ) => {
+    setExporting(key);
+    try {
+      await downloadFromApi(url, filename, { params });
+    } catch (err) {
+      toast(extractApiErrorMessage(err, 'Ошибка экспорта'), 'error');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const confirmedTotal = payments
@@ -192,11 +181,11 @@ export default function FinancePage() {
                   size="sm"
                   loading={exporting === 'excel'}
                   onClick={() =>
-                    downloadBlob(
-                      `/reports/payments/excel?${exportParams()}`,
+                    handleExport(
+                      'excel',
+                      '/reports/payments/excel',
                       `payments-${new Date().toISOString().slice(0, 10)}.xlsx`,
-                      () => setExporting('excel'),
-                      () => setExporting(null),
+                      exportParams(),
                     )
                   }
                 >
@@ -208,11 +197,11 @@ export default function FinancePage() {
                   size="sm"
                   loading={exporting === 'pdf'}
                   onClick={() =>
-                    downloadBlob(
-                      `/reports/payments/pdf?${exportParams()}`,
+                    handleExport(
+                      'pdf',
+                      '/reports/payments/pdf',
                       `payments-${new Date().toISOString().slice(0, 10)}.pdf`,
-                      () => setExporting('pdf'),
-                      () => setExporting(null),
+                      exportParams(),
                     )
                   }
                 >
@@ -302,11 +291,11 @@ export default function FinancePage() {
               size="sm"
               loading={exporting === 'debtors-excel'}
               onClick={() =>
-                downloadBlob(
-                  '/reports/students/excel?isActive=true',
+                handleExport(
+                  'debtors-excel',
+                  '/reports/students/excel',
                   `debtors-${new Date().toISOString().slice(0, 10)}.xlsx`,
-                  () => setExporting('debtors-excel'),
-                  () => setExporting(null),
+                  { isActive: 'true' },
                 )
               }
             >
