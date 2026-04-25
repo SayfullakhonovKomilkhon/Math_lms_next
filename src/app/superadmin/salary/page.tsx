@@ -33,7 +33,7 @@ async function downloadBlob(url: string, filename: string) {
     const token = document.cookie.split('; ').find((r) => r.startsWith('auth-storage='));
     const authData = token ? JSON.parse(decodeURIComponent(token.split('=')[1])) : null;
     const accessToken = authData?.state?.accessToken;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}${url}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${url}`, {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
     if (!res.ok) throw new Error();

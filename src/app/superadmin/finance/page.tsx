@@ -34,7 +34,7 @@ async function downloadBlob(url: string, filename: string, onStart: () => void, 
     const authData = token ? JSON.parse(decodeURIComponent(token.split('=')[1])) : null;
     const accessToken = authData?.state?.accessToken;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}${url}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${url}`, {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
     if (!res.ok) throw new Error('Export failed');
