@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Award, Sparkles, Trophy, Users } from 'lucide-react';
 import api from '@/lib/api';
@@ -180,6 +181,24 @@ export default function ParentAchievementsPage() {
       if (next) setCelebrate(next);
     }, 120);
   };
+
+  // Manual trigger via `?celebrate=1|2|3` so the celebration can be previewed
+  // for the currently selected child without having to grant a real medal.
+  // Fires once per visit and then strips the param from the URL.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const raw = searchParams.get('celebrate');
+    if (!raw) return;
+    const place = Number(raw);
+    if (place !== 1 && place !== 2 && place !== 3) return;
+    const month = new Date().getMonth() + 1;
+    setCelebrate({ month, place: place as 1 | 2 | 3 });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('celebrate');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   const openMedalDetail = (m: MonthMedal) => {
     if (!m.unlocked || !m.place) return;

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Award, Sparkles, Trophy, Users } from 'lucide-react';
 import { PageTitle } from '../_components/PageTitle';
 import { SectionHeading } from '../_components/Card';
@@ -41,11 +42,25 @@ export default function StudentAchievementsPage() {
 
   const [detail, setDetail] = useState<AchievementDetail | null>(null);
   const [celebrate, setCelebrate] = useState<CelebrationInput | null>(null);
-  // `celebrate` will be triggered automatically the first time a brand-new
-  // medal appears in the data (handled by the gamification flow). The page
-  // intentionally has no manual "demo" buttons so students experience the
-  // animation only when they actually earn an achievement.
-  void setCelebrate;
+
+  // Manual trigger via `?celebrate=1|2|3` so the celebration can be previewed
+  // (e.g. for a demo, screenshot, or QA) without having to grant a real
+  // achievement in the database. Fires once per visit, then strips the param
+  // from the URL so a refresh doesn't replay it endlessly.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const raw = searchParams.get('celebrate');
+    if (!raw) return;
+    const place = Number(raw);
+    if (place !== 1 && place !== 2 && place !== 3) return;
+    const month = new Date().getMonth() + 1;
+    setCelebrate({ month, place: place as 1 | 2 | 3 });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('celebrate');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   const { data: ratingRes } = useQuery({
     queryKey: ['student-rating', 'month'],
