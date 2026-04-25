@@ -21,9 +21,15 @@ export default function SettingsPage() {
   const [calcMonth, setCalcMonth] = useState(String(now.getMonth() + 1));
   const [calcYear, setCalcYear] = useState(String(now.getFullYear()));
 
-  const { data: settings = [], isLoading } = useQuery<Setting[]>({
+  const {
+    data: settings = [],
+    isLoading,
+    error: loadError,
+    refetch,
+  } = useQuery<Setting[]>({
     queryKey: ['sa-settings'],
     queryFn: () => api.get('/settings').then((r) => r.data.data),
+    retry: 1,
   });
 
   useEffect(() => {
@@ -83,6 +89,26 @@ export default function SettingsPage() {
 
       {isLoading ? (
         <p className="text-sm text-slate-400">Загрузка...</p>
+      ) : loadError ? (
+        <Card>
+          <CardContent className="space-y-3 py-6">
+            <p className="text-sm font-medium text-rose-600">
+              Не удалось загрузить настройки центра.
+            </p>
+            <p className="text-xs text-slate-500">
+              {(loadError as { response?: { data?: { message?: string } }; message?: string })
+                ?.response?.data?.message ??
+                (loadError as { message?: string })?.message ??
+                'Сервер вернул ошибку. Проверьте, что миграции применены (prisma migrate deploy) и таблица Setting существует.'}
+            </p>
+            <Button
+              className="bg-violet-600 hover:bg-violet-700"
+              onClick={() => refetch()}
+            >
+              Повторить
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
 
