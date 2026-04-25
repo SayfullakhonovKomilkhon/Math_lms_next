@@ -20,6 +20,8 @@ export default function ParentAchievementsPage() {
     queryFn: () => api.get(`/achievements/student/${childId}`).then((r) => r.data.data),
     enabled: !!childId,
     staleTime: 1000 * 60 * 10,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading) {

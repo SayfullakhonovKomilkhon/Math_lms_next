@@ -6,7 +6,11 @@ import { ApiResponse, AttendanceRecord } from '@/types';
 import { AttendanceCalendar } from '@/components/attendance/AttendanceCalendar';
 import { ClipboardList, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import {
+  useParentProfile,
+  useSelectedChild,
+  PARENT_CHILD_QUERY_DEFAULTS,
+} from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
 
 export default function ParentAttendancePage() {
@@ -22,6 +26,7 @@ export default function ParentAttendancePage() {
         })
         .then((res) => res.data),
     enabled: !!selectedId,
+    ...PARENT_CHILD_QUERY_DEFAULTS,
   });
 
   if (isLoading) {

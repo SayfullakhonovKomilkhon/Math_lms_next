@@ -9,7 +9,11 @@ import { ScoreChart } from '@/components/grades/ScoreChart';
 import { BarChart, TrendingUp, BookOpen, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import {
+  useParentProfile,
+  useSelectedChild,
+  PARENT_CHILD_QUERY_DEFAULTS,
+} from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
 
 export default function ParentGradesPage() {
@@ -25,6 +29,7 @@ export default function ParentGradesPage() {
         })
         .then((res) => res.data),
     enabled: !!selectedId,
+    ...PARENT_CHILD_QUERY_DEFAULTS,
   });
 
   if (isLoading) {

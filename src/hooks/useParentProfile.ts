@@ -1,18 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { ApiResponse, ParentProfile } from '@/types';
 
 const STORAGE_KEY = 'mc:parent:selectedChildId';
 
 export function useParentProfile() {
+  // Profile rarely changes (name, linked children) so we keep it fresh for
+  // 5 minutes. Without this every parent sub-page re-fetched the profile on
+  // mount, which made navigation feel sluggish.
   return useQuery({
     queryKey: ['parent-profile'],
     queryFn: () =>
       api.get<ApiResponse<ParentProfile>>('/parents/me').then((r) => r.data.data),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -49,3 +54,18 @@ export function useSelectedChild(profile: ParentProfile | undefined) {
     hasMultiple: children.length > 1,
   };
 }
+
+/**
+ * Default cache options for parent-side queries that fetch data scoped to a
+ * particular child. Keeping the data fresh for 60s and cached for 5m makes
+ * navigation between parent sub-pages feel instant while still showing
+ * up-to-date numbers.
+ */
+export const PARENT_CHILD_QUERY_DEFAULTS: Pick<
+  UseQueryOptions<unknown, unknown, unknown, ReadonlyArray<unknown>>,
+  'staleTime' | 'gcTime' | 'refetchOnWindowFocus'
+> = {
+  staleTime: 60 * 1000,
+  gcTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: false,
+};

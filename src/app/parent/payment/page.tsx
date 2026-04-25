@@ -3,7 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ApiResponse, PaymentSummary } from '@/types';
-import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import {
+  useParentProfile,
+  useSelectedChild,
+  PARENT_CHILD_QUERY_DEFAULTS,
+} from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTableRow } from '@/components/ui/data-table';
@@ -43,6 +47,7 @@ export default function ParentPaymentPage() {
         })
         .then((res) => res.data),
     enabled: !!selectedId,
+    ...PARENT_CHILD_QUERY_DEFAULTS,
   });
 
   const uploadMutation = useMutation({

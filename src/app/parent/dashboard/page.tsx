@@ -16,7 +16,11 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { useMyAnnouncements } from '@/hooks/useAnnouncements';
-import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import {
+  useParentProfile,
+  useSelectedChild,
+  PARENT_CHILD_QUERY_DEFAULTS,
+} from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
 import Link from 'next/link';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
@@ -54,6 +58,7 @@ export default function ParentDashboard() {
         })
         .then((res) => res.data),
     enabled: !!selectedId,
+    ...PARENT_CHILD_QUERY_DEFAULTS,
   });
 
   const { data: gradesRes } = useQuery({
@@ -65,6 +70,7 @@ export default function ParentDashboard() {
         })
         .then((res) => res.data),
     enabled: !!selectedId,
+    ...PARENT_CHILD_QUERY_DEFAULTS,
   });
 
   const childId = selected?.id;
@@ -73,6 +79,8 @@ export default function ParentDashboard() {
     queryFn: () => api.get(`/achievements/student/${childId}`).then((r) => r.data.data),
     enabled: !!childId,
     staleTime: 1000 * 60 * 10,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   if (profileLoading) {
@@ -120,12 +128,17 @@ export default function ParentDashboard() {
   const group = child?.group;
   const teacher = group?.teacher;
 
+  // Some legacy parents were imported without `fullName`; show the email as
+  // a graceful fallback so the greeting never reads "Здравствуйте, !".
+  const greetName =
+    (profile.fullName && profile.fullName.trim()) || profile.email || 'родитель';
+
   if (!child) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 leading-tight">
-            Здравствуйте, {profile.fullName}!
+            Здравствуйте, {greetName}!
           </h1>
           <p className="text-slate-500 mt-1">
             Ваш аккаунт пока не связан с учеником.
@@ -151,7 +164,7 @@ export default function ParentDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 leading-tight">
-            Здравствуйте, {profile.fullName}!
+            Здравствуйте, {greetName}!
           </h1>
           <p className="text-slate-500 mt-1">
             Контроль обучения вашего ребенка:{' '}
