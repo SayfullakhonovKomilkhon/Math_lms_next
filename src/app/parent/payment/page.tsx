@@ -9,20 +9,41 @@ import {
   PARENT_CHILD_QUERY_DEFAULTS,
 } from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTableRow } from '@/components/ui/data-table';
-import { Badge } from '@/components/ui/badge';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { PaymentBanner } from '@/components/payments/PaymentBanner';
-import { CreditCard, Upload, Check, AlertCircle, Eye, FileText, Info } from 'lucide-react';
+import {
+  CreditCard,
+  Upload,
+  Check,
+  Eye,
+  FileText,
+  History,
+  X,
+} from 'lucide-react';
 import { useState, useRef } from 'react';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/components/ui/toast';
-import { CardSkeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
+
+const STATUS_TONE: Record<string, string> = {
+  PAID: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+  CONFIRMED: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+  PENDING: 'bg-gradient-to-br from-amber-400 to-orange-500',
+  REJECTED: 'bg-gradient-to-br from-rose-500 to-red-600',
+  UNPAID: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  PAID: 'Оплачено',
+  CONFIRMED: 'Оплачено',
+  PENDING: 'На проверке',
+  REJECTED: 'Отклонено',
+  UNPAID: 'Не оплачено',
+};
 
 export default function ParentPaymentPage() {
   const queryClient = useQueryClient();
@@ -62,14 +83,16 @@ export default function ParentPaymentPage() {
       if (fileInputRef.current) fileInputRef.current.value = '';
     },
     onError: () => {
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить чек.', variant: 'destructive' });
-    }
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить чек.',
+        variant: 'destructive',
+      });
+    },
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
   };
 
   const handleUpload = () => {
@@ -82,12 +105,9 @@ export default function ParentPaymentPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-        <TableSkeleton rows={5} cols={5} />
+      <div className="space-y-5">
+        <CardSkeleton />
+        <CardSkeleton />
       </div>
     );
   }
@@ -108,182 +128,192 @@ export default function ParentPaymentPage() {
   const payment = paymentRes?.data;
   const history = payment?.history || [];
   const childName = selected?.fullName ?? '—';
+  const status = payment?.currentMonth.status ?? 'UNPAID';
+  const accentBg = STATUS_TONE[status] ?? STATUS_TONE.UNPAID;
 
   return (
-    <div className="space-y-6">
-      <ChildSelector
-        children={children}
-        selectedId={selectedId}
-        onSelect={select}
-      />
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
-          <CreditCard className="h-8 w-8 text-blue-600" />
-          Оплата обучения
-        </h1>
-        <p className="text-slate-500 mt-1 ml-11">
-          Управление платежами и загрузка чеков для:{' '}
-          <span className="font-bold text-slate-900">{childName}</span>
-        </p>
+    <div className="space-y-5 pb-2">
+      <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
+
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <CreditCard className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold leading-tight text-slate-900 sm:text-2xl">
+            Оплата обучения
+          </h1>
+          <p className="mt-0.5 truncate text-[12px] text-slate-500 sm:text-sm">
+            Для: <span className="font-semibold text-slate-700">{childName}</span>
+          </p>
+        </div>
       </div>
 
-      <PaymentBanner 
-        daysUntilPayment={payment?.currentMonth.daysUntilPayment ?? null} 
-        status={payment?.currentMonth.status ?? 'UNPAID'} 
+      <PaymentBanner
+        daysUntilPayment={payment?.currentMonth.daysUntilPayment ?? null}
+        status={status}
       />
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Current Month Info */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <span className="p-1.5 bg-blue-100 rounded-lg text-blue-600">
-                <CreditCard className="h-4 w-4" />
-              </span>
-              Текущий месяц
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8 text-center space-y-6">
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">К оплате</p>
-              <p className="text-5xl font-black text-slate-900">{payment?.currentMonth.amount} сум</p>
-              <p className="text-sm font-medium text-slate-500">
-                Срок: {payment?.currentMonth.nextPaymentDate ? format(new Date(payment.currentMonth.nextPaymentDate), 'd MMMM yyyy', { locale: ru }) : 'Не указан'}
-              </p>
-            </div>
-            
-            <div className="flex justify-center flex-wrap gap-2">
-              <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-100">MathCenter</Badge>
-              <Badge className="bg-slate-50 text-slate-600 hover:bg-slate-50">Ученик: {childName}</Badge>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 pt-4 border-t border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase">Статус оплаты:</p>
-                <PaymentStatusBadge status={payment?.currentMonth.status || 'UNPAID'} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Upload Receipt */}
-        <Card className="shadow-sm border-2 border-dashed border-blue-200 bg-blue-50/30">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Upload className="h-5 w-5 text-blue-600" />
-              Загрузить чек об оплате
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center pt-2 pb-8 px-8 text-center">
-            <div 
-              className="w-full h-40 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center bg-white cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all mb-4 group"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {file ? (
-                <div className="flex flex-col items-center">
-                  <FileText className="h-10 w-10 text-blue-600 mb-2" />
-                  <p className="text-sm font-bold text-slate-900 truncate max-w-[200px]">{file.name}</p>
-                  <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-10 w-10 text-slate-300 group-hover:text-blue-500 group-hover:scale-110 transition-all mb-2" />
-                  <p className="text-sm font-bold text-slate-600">Нажмите для выбора файла</p>
-                  <p className="text-xs text-slate-400">PNG, JPG или PDF до 5MB</p>
-                </>
-              )}
-            </div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*,.pdf" 
-              onChange={handleFileChange} 
-            />
-            
-            <button
-               onClick={handleUpload}
-               disabled={!file || uploadMutation.isPending}
-               className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2
-                 ${!file || uploadMutation.isPending 
-                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                   : 'bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0'
-                 }`}
-            >
-              {uploadMutation.isPending ? 'Загрузка...' : (
-                <>
-                  {file ? <Check className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
-                  Отправить чек на проверку
-                </>
-              )}
-            </button>
-            <p className="text-[10px] text-slate-400 mt-4 leading-relaxed max-w-xs">
-                Загружая чек, вы подтверждаете факт оплаты обучения вашего ребенка за текущий расчетный период.
+      {/* Hero current-month */}
+      <div className={`relative overflow-hidden rounded-3xl p-5 text-white shadow-[0_8px_24px_-12px_rgba(15,23,42,0.4)] sm:p-6 ${accentBg}`}>
+        <div className="absolute right-0 top-0 h-40 w-40 -translate-y-12 translate-x-12 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm">
+            <CreditCard className="h-3 w-3" /> {STATUS_LABEL[status] ?? status}
+          </div>
+          <p className="mt-3 text-xs font-medium opacity-90">К оплате за текущий месяц</p>
+          <p className="mt-1 text-4xl font-black tracking-tight sm:text-5xl">
+            {(payment?.currentMonth.amount ?? 0).toLocaleString('ru-RU')}
+            <span className="ml-1 text-lg font-bold opacity-90">сум</span>
+          </p>
+          {payment?.currentMonth.nextPaymentDate && (
+            <p className="mt-1 text-xs opacity-85">
+              Срок:{' '}
+              {format(new Date(payment.currentMonth.nextPaymentDate), 'd MMMM yyyy', {
+                locale: ru,
+              })}
             </p>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
+
+      {/* Upload card */}
+      <section className="rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+          <Upload className="h-4 w-4 text-blue-600" />
+          Загрузить чек
+        </h2>
+        <p className="mt-0.5 text-[12px] text-slate-500">
+          PNG, JPG или PDF до 5MB
+        </p>
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="mt-3 flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 px-4 py-7 text-center transition-all active:border-blue-300 active:bg-blue-50"
+        >
+          {file ? (
+            <>
+              <FileText className="h-8 w-8 text-blue-600" />
+              <p className="line-clamp-1 max-w-[220px] text-sm font-semibold text-slate-900">
+                {file.name}
+              </p>
+              <p className="text-[11px] text-slate-400">
+                {(file.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </>
+          ) : (
+            <>
+              <Upload className="h-8 w-8 text-slate-300" />
+              <p className="text-sm font-semibold text-slate-700">Выбрать файл</p>
+              <p className="text-[11px] text-slate-400">или сделать фото чека</p>
+            </>
+          )}
+        </button>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/*,.pdf"
+          onChange={handleFileChange}
+        />
+
+        {file && (
+          <button
+            type="button"
+            onClick={() => {
+              setFile(null);
+              if (fileInputRef.current) fileInputRef.current.value = '';
+            }}
+            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-slate-500 active:text-rose-600"
+          >
+            <X className="h-3.5 w-3.5" /> Убрать файл
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={!file || uploadMutation.isPending}
+          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all ${
+            !file || uploadMutation.isPending
+              ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+              : 'bg-blue-600 text-white shadow-[0_8px_20px_-8px_rgba(37,99,235,0.5)] active:scale-[0.99] active:bg-blue-700'
+          }`}
+        >
+          {uploadMutation.isPending ? (
+            'Загрузка…'
+          ) : (
+            <>
+              {file ? <Check className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
+              Отправить на проверку
+            </>
+          )}
+        </button>
+      </section>
 
       {/* History */}
-      <Card className="shadow-sm border-slate-200 overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Info className="h-5 w-5 text-slate-600" />
-            История платежей
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+      <section className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <header className="flex items-center gap-2 px-4 py-3">
+          <History className="h-4 w-4 text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-800">История платежей</h2>
+          {history.length > 0 && (
+            <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+              {history.length}
+            </span>
+          )}
+        </header>
+        <div className="border-t border-slate-100">
           {history.length === 0 ? (
-            <div className="p-6">
+            <div className="px-4 py-6">
               <EmptyState
                 icon="💳"
-                message="У вас пока нет истории платежей"
-                description="Когда чеки будут загружены или подтверждены, история появится здесь."
+                message="История пуста"
+                description="Загруженные и подтверждённые чеки появятся здесь."
               />
             </div>
           ) : (
-            <DataTable>
-              <table className="w-full text-sm">
-                <DataTableHead className="bg-slate-50/50">
-                  <DataTableHeaderCell>Дата</DataTableHeaderCell>
-                  <DataTableHeaderCell>Сумма</DataTableHeaderCell>
-                  <DataTableHeaderCell>Статус</DataTableHeaderCell>
-                  <DataTableHeaderCell>Чек</DataTableHeaderCell>
-                  <DataTableHeaderCell>Заметки</DataTableHeaderCell>
-                </DataTableHead>
-                <tbody>
-                  {history.map((item) => (
-                    <DataTableRow key={item.id} className="hover:bg-slate-50/30 transition-colors">
-                      <DataTableCell className="text-slate-500 font-medium">
-                        {format(new Date(item.createdAt), 'd MMMM yyyy, HH:mm', { locale: ru })}
-                      </DataTableCell>
-                      <DataTableCell className="font-bold text-slate-900 text-base">
-                        {item.amount} сум
-                      </DataTableCell>
-                      <DataTableCell>
-                        <PaymentStatusBadge status={item.status} />
-                      </DataTableCell>
-                      <DataTableCell>
-                        {item.receiptUrl || item.id ? (
-                          <button
-                            type="button"
-                            onClick={() => setReceiptPaymentId(item.id)}
-                            className="bg-slate-100 text-slate-700 hover:bg-blue-600 hover:text-white p-2 rounded-lg transition-all inline-flex items-center"
-                            title="Просмотр чека"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                        ) : '—'}
-                      </DataTableCell>
-                      <DataTableCell className="text-slate-500 italic">
-                        {item.rejectReason || (item.status === 'CONFIRMED' ? <span className="text-green-600 not-italic">Принято ✓</span> : '—')}
-                      </DataTableCell>
-                    </DataTableRow>
-                  ))}
-                </tbody>
-              </table>
-            </DataTable>
+            <ul className="divide-y divide-slate-100">
+              {history.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-slate-900">
+                      {item.amount.toLocaleString('ru-RU')} сум
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {format(new Date(item.createdAt), 'd MMM yyyy, HH:mm', {
+                        locale: ru,
+                      })}
+                    </p>
+                    {item.rejectReason && (
+                      <p className="mt-1 line-clamp-2 text-[11px] italic text-rose-500">
+                        {item.rejectReason}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <PaymentStatusBadge status={item.status} />
+                    {(item.receiptUrl || item.id) && (
+                      <button
+                        type="button"
+                        onClick={() => setReceiptPaymentId(item.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors active:bg-blue-600 active:text-white"
+                        title="Посмотреть чек"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {receiptPaymentId && (
         <ReceiptModal

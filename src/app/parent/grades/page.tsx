@@ -3,10 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ApiResponse, GradeRecord } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTableRow } from '@/components/ui/data-table';
 import { ScoreChart } from '@/components/grades/ScoreChart';
-import { BarChart, TrendingUp, BookOpen, AlertCircle } from 'lucide-react';
+import { BarChart, BookOpen, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import {
@@ -15,6 +13,23 @@ import {
   PARENT_CHILD_QUERY_DEFAULTS,
 } from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
+import { CardSkeleton } from '@/components/ui/Skeleton';
+
+const TYPE_LABEL: Record<string, string> = {
+  TEST: 'Тест',
+  CONTROL: 'Контрольная',
+  PRACTICE: 'Практика',
+  HOMEWORK: 'Домашняя',
+  EXAM: 'Экзамен',
+};
+
+const TYPE_TONE: Record<string, string> = {
+  TEST: 'bg-rose-50 text-rose-700',
+  CONTROL: 'bg-orange-50 text-orange-700',
+  PRACTICE: 'bg-blue-50 text-blue-700',
+  HOMEWORK: 'bg-emerald-50 text-emerald-700',
+  EXAM: 'bg-violet-50 text-violet-700',
+};
 
 export default function ParentGradesPage() {
   const { data: profile } = useParentProfile();
@@ -33,151 +48,153 @@ export default function ParentGradesPage() {
   });
 
   if (isLoading) {
-    return <div className="flex h-[400px] items-center justify-center">Загрузка данных...</div>;
+    return (
+      <div className="space-y-5">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    );
   }
 
   const grades = gradesRes?.data || [];
-
-  // Total points earned + average raw score (per work).
   const totalPoints = grades.reduce((acc, g) => acc + Number(g.score || 0), 0);
-  const avgRaw = grades.length > 0
-    ? Math.round(totalPoints / grades.length)
-    : 0;
+  const avgRaw = grades.length > 0 ? Math.round(totalPoints / grades.length) : 0;
 
-  // Monthly stats for chart — average raw score per month.
-  const months: Record<string, { total: number, count: number }> = {};
-  grades.forEach(g => {
-    const month = g.date.substring(0, 7); // YYYY-MM
+  const months: Record<string, { total: number; count: number }> = {};
+  grades.forEach((g) => {
+    const month = g.date.substring(0, 7);
     if (!months[month]) months[month] = { total: 0, count: 0 };
     months[month].total += Number(g.score || 0);
     months[month].count += 1;
   });
-  const chartData = Object.entries(months).map(([month, data]) => ({
-    month,
-    averageScore: Math.round(data.total / data.count)
-  })).sort((a,b) => a.month.localeCompare(b.month));
+  const chartData = Object.entries(months)
+    .map(([month, data]) => ({ month, averageScore: Math.round(data.total / data.count) }))
+    .sort((a, b) => a.month.localeCompare(b.month));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-2">
       <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
-          <BarChart className="h-8 w-8 text-indigo-600" />
-          Успеваемость ребенка
-        </h1>
-        <p className="text-slate-500 mt-1 ml-11">
-          Результаты тестов, контрольных и работы на уроке
-        </p>
-      </div>
 
-      <div className="grid lg:grid-cols-4 gap-6">
-        <Card className="lg:col-span-1 shadow-sm border-slate-200 bg-indigo-600 text-white">
-          <CardContent className="pt-8 text-center pb-8">
-            <TrendingUp className="h-8 w-8 mx-auto mb-4 opacity-70" />
-            <p className="text-sm font-bold text-indigo-100 uppercase tracking-widest">Сумма баллов</p>
-            <p className="text-6xl font-black mt-2">{totalPoints}</p>
-            <p className="text-xs text-indigo-200 mt-4 px-4 leading-relaxed font-medium">
-              {grades.length} {grades.length === 1 ? 'работа' : 'работ'} · средний балл {avgRaw}
-            </p>
-          </CardContent>
-        </Card>
-
-        <div className="lg:col-span-3">
-            <ScoreChart data={chartData} />
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+          <BarChart className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold leading-tight text-slate-900 sm:text-2xl">
+            Успеваемость
+          </h1>
+          <p className="mt-0.5 text-[12px] text-slate-500 sm:text-sm">
+            Результаты тестов, контрольных и работы
+          </p>
         </div>
       </div>
 
-      <Card className="shadow-sm border-slate-200 overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-slate-400" />
-            Список всех оценок
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <DataTable>
-            <table className="w-full text-sm">
-              <DataTableHead className="bg-slate-50/80">
-                <DataTableHeaderCell>Дата</DataTableHeaderCell>
-                <DataTableHeaderCell>Тип</DataTableHeaderCell>
-                <DataTableHeaderCell className="text-right">Результат</DataTableHeaderCell>
-                <DataTableHeaderCell>Комментарий учителя</DataTableHeaderCell>
-              </DataTableHead>
-              <tbody>
-                {grades.length === 0 ? (
-                  <DataTableRow>
-                    <DataTableCell colSpan={4} className="py-12 text-center text-slate-400 italic">
-                      Оценок пока не зафиксировано
-                    </DataTableCell>
-                  </DataTableRow>
-                ) : (
-                  grades.map((grade) => (
-                    <DataTableRow key={grade.id} className="hover:bg-slate-50/50 transition-colors">
-                      <DataTableCell className="text-slate-500 font-medium whitespace-nowrap">
-                        {format(new Date(grade.date), 'd MMMM yyyy', { locale: ru })}
-                      </DataTableCell>
-                      <DataTableCell className="whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${cnType(grade.lessonType)}`}>
-                          {grade.lessonType}
-                        </span>
-                      </DataTableCell>
-                      <DataTableCell className="text-right">
-                        <div className="flex flex-col items-end">
-                            <span className={`text-base font-black ${cnScore(grade.scorePercent)}`}>
-                                {grade.score} <span className="text-xs font-bold text-slate-400">/ {grade.maxScore}</span>
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase">
-                                балл.
-                            </span>
-                        </div>
-                      </DataTableCell>
-                      <DataTableCell className="text-slate-600 italic">
-                        {grade.comment || (
-                            <span className="text-slate-300 text-xs">Комментарий отсутствует</span>
-                        )}
-                      </DataTableCell>
-                    </DataTableRow>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </DataTable>
-        </CardContent>
-      </Card>
-      
-      <div className="p-6 bg-slate-900 text-white rounded-3xl flex flex-col md:flex-row items-center gap-8 border shadow-xl shadow-slate-100">
-          <div className="p-4 bg-white/10 rounded-2xl">
-              <AlertCircle className="h-10 w-10 text-white" />
+      {/* Hero stats */}
+      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 p-5 text-white shadow-[0_8px_24px_-12px_rgba(79,70,229,0.45)] sm:p-6">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-indigo-100/80">
+              <TrendingUp className="h-3 w-3" /> Сумма баллов
+            </p>
+            <p className="mt-1 text-5xl font-black tracking-tight sm:text-6xl">
+              {totalPoints}
+            </p>
+            <p className="mt-2 text-xs text-indigo-100/85">
+              {grades.length} {pluralWorks(grades.length)} · средний {avgRaw}
+            </p>
           </div>
-          <div className="space-y-2">
-              <h4 className="text-xl font-black">Нужна помощь с предметом?</h4>
-              <p className="text-slate-400 text-sm max-w-xl">
-                  Если вы заметили снижение успеваемости вашего ребенка, пожалуйста, свяжитесь с нашим академическим куратором для разбора ситуации.
-              </p>
+          <div className="rounded-2xl bg-white/15 px-3 py-2 text-center backdrop-blur-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-100/80">
+              Средний
+            </p>
+            <p className="mt-0.5 text-xl font-black">{avgRaw}</p>
           </div>
-          <Link href="#" className="md:ml-auto bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:bg-white/90 transition-colors">
-              Связаться
-          </Link>
+        </div>
       </div>
+
+      {/* Chart */}
+      {chartData.length > 0 && (
+        <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white p-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <ScoreChart data={chartData} />
+        </div>
+      )}
+
+      {/* Grades list */}
+      <section className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <header className="flex items-center gap-2 px-4 py-3">
+          <BookOpen className="h-4 w-4 text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-800">Все оценки</h2>
+          <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+            {grades.length}
+          </span>
+        </header>
+        <div className="border-t border-slate-100">
+          {grades.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm text-slate-400">
+              Оценок пока не зафиксировано
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {grades.map((g) => {
+                const tone =
+                  g.scorePercent >= 80
+                    ? 'text-emerald-600'
+                    : g.scorePercent >= 60
+                      ? 'text-amber-600'
+                      : 'text-rose-600';
+                const dot =
+                  g.scorePercent >= 80
+                    ? 'bg-emerald-500'
+                    : g.scorePercent >= 60
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500';
+                const label = TYPE_LABEL[g.lessonType] || g.lessonType;
+                const tagTone = TYPE_TONE[g.lessonType] || 'bg-slate-100 text-slate-700';
+                return (
+                  <li key={g.id} className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tagTone}`}
+                          >
+                            {label}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {format(new Date(g.date), 'd MMM', { locale: ru })}
+                          </span>
+                        </div>
+                        {g.comment && (
+                          <p className="mt-1.5 line-clamp-2 text-[13px] italic text-slate-500">
+                            {g.comment}
+                          </p>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className={`text-xl font-black leading-none ${tone}`}>
+                          {g.score}
+                        </p>
+                        <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                          из {g.maxScore}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
 
-function cnType(type: string) {
-    switch(type) {
-        case 'TEST': return 'bg-red-100 text-red-700 border-red-200';
-        case 'CONTROL': return 'bg-orange-100 text-orange-700 border-orange-200';
-        case 'PRACTICE': return 'bg-blue-100 text-blue-700 border-blue-200';
-        default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-}
-
-function cnScore(percent: number) {
-  if (percent >= 80) return 'text-emerald-600';
-  if (percent >= 60) return 'text-amber-600';
-  return 'text-red-600';
-}
-
-function Link({ children, className, href }: any) {
-    return <a className={className} href={href}>{children}</a>
+function pluralWorks(n: number) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'работа';
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'работы';
+  return 'работ';
 }

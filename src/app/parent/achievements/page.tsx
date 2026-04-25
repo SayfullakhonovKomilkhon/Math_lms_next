@@ -1,17 +1,19 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Trophy } from 'lucide-react';
+import { Trophy, Share2 } from 'lucide-react';
 import api from '@/lib/api';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { AchievementMonthGrid } from '@/components/achievements/AchievementMonthGrid';
 import { SpecialAchievements } from '@/components/achievements/SpecialAchievements';
 import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
+import { CardSkeleton } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/toast';
 
 export default function ParentAchievementsPage() {
   const { data: profile } = useParentProfile();
   const { children, selectedId, select } = useSelectedChild(profile);
+  const { toast } = useToast();
 
   const childId = selectedId;
 
@@ -25,11 +27,21 @@ export default function ParentAchievementsPage() {
   });
 
   if (isLoading) {
-    return <p className="py-10 text-center text-slate-400">Загрузка...</p>;
+    return (
+      <div className="space-y-5">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    );
   }
 
   if (!data) {
-    return <p className="py-10 text-center text-slate-400">Нет данных</p>;
+    return (
+      <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white py-16 text-center">
+        <Trophy className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+        <p className="font-medium text-slate-500">Нет данных о достижениях</p>
+      </div>
+    );
   }
 
   const { student, monthGrid, specialAchievements, stats } = data;
@@ -37,66 +49,88 @@ export default function ParentAchievementsPage() {
   const shareText = `🏆 ${student.fullName} получил ${stats.totalAchievements} достижений в MathCenter! 🥇${stats.goldCount} 🥈${stats.silverCount} 🥉${stats.bronzeCount}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-2">
       <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
-              <Trophy className="h-6 w-6 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Достижения</p>
-              <p className="font-bold text-slate-900">{student.fullName}</p>
-              {student.groupName && (
-                <p className="text-sm text-slate-500">{student.groupName}</p>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex gap-4 text-center">
-              <div>
-                <p className="text-xl font-bold text-yellow-500">🥇 {stats.goldCount}</p>
-                <p className="text-xs text-slate-400">Золото</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-slate-400">🥈 {stats.silverCount}</p>
-                <p className="text-xs text-slate-400">Серебро</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-amber-700">🥉 {stats.bronzeCount}</p>
-                <p className="text-xs text-slate-400">Бронза</p>
-              </div>
-            </div>
-            <button
-              onClick={() => navigator.clipboard.writeText(shareText)}
-              className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100"
-            >
-              Поделиться
-            </button>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Monthly grid */}
-      <Card>
-        <CardHeader>
-          <h2 className="font-semibold text-slate-900">Ежемесячные достижения</h2>
-        </CardHeader>
-        <CardContent>
+      {/* Hero card */}
+      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-5 text-white shadow-[0_8px_24px_-12px_rgba(245,158,11,0.5)] sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+            <Trophy className="h-7 w-7" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/80">
+              Достижения
+            </p>
+            <h1 className="mt-0.5 truncate text-xl font-bold leading-tight sm:text-2xl">
+              {student.fullName}
+            </h1>
+            {student.groupName && (
+              <p className="mt-0.5 text-[12px] text-white/85">{student.groupName}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <MedalStat icon="🥇" count={stats.goldCount} label="Золото" />
+          <MedalStat icon="🥈" count={stats.silverCount} label="Серебро" />
+          <MedalStat icon="🥉" count={stats.bronzeCount} label="Бронза" />
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            if (navigator.share) {
+              try {
+                await navigator.share({ text: shareText });
+                return;
+              } catch {
+                // ignore — fall back to clipboard
+              }
+            }
+            await navigator.clipboard.writeText(shareText);
+            toast({ title: 'Скопировано', description: 'Текст в буфере обмена' });
+          }}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white/20 px-3 py-2 text-xs font-semibold backdrop-blur-sm transition-colors active:bg-white/30"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          Поделиться
+        </button>
+      </div>
+
+      <section className="overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
+        <h2 className="text-sm font-bold text-slate-800">Ежемесячные достижения</h2>
+        <div className="mt-3">
           <AchievementMonthGrid monthGrid={monthGrid} />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      {/* Special achievements */}
-      <Card>
-        <CardHeader>
-          <h2 className="font-semibold text-slate-900">Особые достижения</h2>
-        </CardHeader>
-        <CardContent>
+      <section className="overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5">
+        <h2 className="text-sm font-bold text-slate-800">Особые достижения</h2>
+        <div className="mt-3">
           <SpecialAchievements achievements={specialAchievements} />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MedalStat({
+  icon,
+  count,
+  label,
+}: {
+  icon: string;
+  count: number;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-white/15 px-2 py-2.5 text-center backdrop-blur-sm">
+      <p className="text-2xl leading-none">{icon}</p>
+      <p className="mt-1 text-lg font-black leading-none">{count}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white/80">
+        {label}
+      </p>
     </div>
   );
 }

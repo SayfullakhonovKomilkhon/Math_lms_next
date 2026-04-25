@@ -3,17 +3,16 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ApiResponse, PaymentSummary, GradeRecord } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  User,
-  Users,
   Calendar,
-  BarChart,
+  BarChart2,
   CreditCard,
-  AlertCircle,
   ArrowRight,
   Trophy,
   Megaphone,
+  BookOpen,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { useMyAnnouncements } from '@/hooks/useAnnouncements';
 import {
@@ -23,7 +22,6 @@ import {
 } from '@/hooks/useParentProfile';
 import { ChildSelector } from '@/components/parent/ChildSelector';
 import Link from 'next/link';
-import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { CardSkeleton, ProfileSkeleton } from '@/components/ui/Skeleton';
@@ -35,6 +33,29 @@ interface AchievementGridEntry {
   icon?: string;
   title?: string;
 }
+
+const PAYMENT_ACCENT: Record<string, { bg: string; text: string; label: string }> = {
+  PAID: {
+    bg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    text: 'text-emerald-50',
+    label: 'Оплачено',
+  },
+  PENDING: {
+    bg: 'bg-gradient-to-br from-amber-400 to-orange-500',
+    text: 'text-amber-50',
+    label: 'На проверке',
+  },
+  REJECTED: {
+    bg: 'bg-gradient-to-br from-rose-500 to-red-600',
+    text: 'text-rose-50',
+    label: 'Отклонено',
+  },
+  UNPAID: {
+    bg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+    text: 'text-blue-50',
+    label: 'Не оплачено',
+  },
+};
 
 export default function ParentDashboard() {
   const {
@@ -84,21 +105,13 @@ export default function ParentDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  // Show skeletons whenever we don't have a confirmed child yet AND the
-  // profile is still being fetched. This prevents the "Ребёнок не привязан"
-  // flash when react-query is showing stale (empty) cached data while a
-  // background refetch is in flight — exactly the case where users
-  // previously saw a blank empty state and felt forced to click "Обновить".
   const profileEmpty = !profile || (profile.children?.length ?? 0) === 0;
   if (profileLoading || (profileFetching && profileEmpty)) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <ProfileSkeleton />
-        <div className="grid gap-6 lg:grid-cols-3">
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
+        <CardSkeleton />
+        <CardSkeleton />
       </div>
     );
   }
@@ -118,8 +131,9 @@ export default function ParentDashboard() {
   const payment = paymentRes?.data;
   const grades = (gradesRes?.data || []).slice(0, 3);
   const latestAchievement =
-    (achievementsRes?.monthGrid as AchievementGridEntry[] | undefined)?.find((entry) => entry.unlocked) ??
-    null;
+    (achievementsRes?.monthGrid as AchievementGridEntry[] | undefined)?.find(
+      (entry) => entry.unlocked,
+    ) ?? null;
 
   if (!profile) {
     return (
@@ -135,22 +149,14 @@ export default function ParentDashboard() {
   const group = child?.group;
   const teacher = group?.teacher;
 
-  // Some legacy parents were imported without `fullName`; show the email as
-  // a graceful fallback so the greeting never reads "Здравствуйте, !".
   const greetName =
     (profile.fullName && profile.fullName.trim()) || profile.email || 'родитель';
+  const firstName = greetName.split(' ')[0] || greetName;
 
   if (!child) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 leading-tight">
-            Здравствуйте, {greetName}!
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Ваш аккаунт пока не связан с учеником.
-          </p>
-        </div>
+      <div className="space-y-5">
+        <HeaderHello firstName={firstName} childName={null} />
         <EmptyState
           icon="👧"
           message="Ребёнок ещё не привязан"
@@ -160,221 +166,324 @@ export default function ParentDashboard() {
     );
   }
 
+  const childInitials = child.fullName
+    .split(' ')
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const paymentStatus = payment?.currentMonth.status ?? 'UNPAID';
+  const paymentAccent = PAYMENT_ACCENT[paymentStatus] ?? PAYMENT_ACCENT.UNPAID;
+  const paymentAmount = payment?.currentMonth.amount ?? 0;
+  const paymentDue = payment?.currentMonth.nextPaymentDate;
+  const daysLeft = payment?.currentMonth.daysUntilPayment ?? null;
+
   return (
-    <div className="space-y-6">
-      <ChildSelector
-        children={children}
-        selectedId={selectedId}
-        onSelect={select}
-      />
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 leading-tight">
-            Здравствуйте, {greetName}!
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Контроль обучения вашего ребенка:{' '}
-            <span className="font-bold text-blue-600">{child.fullName}</span>
-          </p>
-        </div>
-        <div className="bg-white border rounded-2xl px-5 py-3 shadow-sm flex items-center gap-4">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Users className="h-5 w-5 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Группа</p>
-            <p className="text-sm font-bold text-slate-800">{group?.name ?? '—'}</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-5 pb-2">
+      <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Child Info Card */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="border-b bg-slate-50/50">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
-              Обучение ребенка
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b">
-              <span className="text-sm text-slate-500">Зачислен:</span>
-              <span className="text-sm font-bold text-slate-800">
-                {child.enrolledAt
-                  ? format(new Date(child.enrolledAt), 'LLLL yyyy', { locale: ru })
-                  : '—'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between pb-3 border-b">
-              <span className="text-sm text-slate-500">Преподаватель:</span>
-              <span className="text-sm font-bold text-slate-800">
-                {teacher?.fullName ?? '—'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500 font-sans">Телефон учителя:</span>
-              <span className="text-sm font-bold text-blue-600">{teacher?.phone || '—'}</span>
-            </div>
-            <Link 
-              href="/parent/attendance" 
-              className="mt-4 flex items-center justify-center gap-2 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors group"
-            >
-              <Calendar className="h-4 w-4 text-slate-400 group-hover:text-blue-600" />
-              <span className="text-xs font-bold text-slate-600">Проверить посещаемость</span>
-              <ArrowRight className="h-3 w-3 ml-auto text-slate-300" />
-            </Link>
-          </CardContent>
-        </Card>
-
-        {/* Latest Grades */}
-        <Card className="lg:col-span-1 shadow-sm border-slate-200">
-          <CardHeader className="border-b bg-slate-50/50 flex flex-row items-center justify-between">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <BarChart className="h-5 w-5 text-indigo-600" />
-              Последние оценки
-            </CardTitle>
-            <Link href="/parent/grades">
-              <ArrowRight className="h-4 w-4 text-slate-400 hover:text-indigo-600 transition-colors" />
-            </Link>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {grades.length === 0 ? (
-                <div className="p-10 text-center text-slate-400 italic text-sm">Нет оценок</div>
-              ) : (
-                grades.map((grade) => (
-                  <div key={grade.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-slate-400 capitalize">{grade.lessonType}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{format(new Date(grade.date), 'd MMMM', { locale: ru })}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-lg font-black text-slate-900">{grade.score}</p>
-                        <p className="text-[10px] text-slate-400 uppercase font-bold">из {grade.maxScore}</p>
-                      </div>
-                      <div className={`w-1 h-8 rounded-full ${grade.scorePercent >= 80 ? 'bg-green-500' : grade.scorePercent >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} />
-                    </div>
-                  </div>
-                ))
+      {/* Hero greeting + child profile */}
+      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_8px_24px_-8px_rgba(79,70,229,0.5)] sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-bold backdrop-blur-sm sm:h-16 sm:w-16 sm:text-xl">
+            {childInitials || '👧'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-blue-100/80">
+              Здравствуйте, {firstName}
+            </p>
+            <h1 className="mt-0.5 truncate text-xl font-bold leading-tight sm:text-2xl">
+              {child.fullName}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-blue-100/90">
+              {group?.name && (
+                <span className="rounded-full bg-white/15 px-2 py-0.5 backdrop-blur-sm">
+                  {group.name}
+                </span>
+              )}
+              {teacher?.fullName && (
+                <span className="truncate">· {teacher.fullName}</span>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment & Action */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="border-b bg-slate-50/50">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-600" />
-              Статус оплаты
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-6">
-            <div className="flex flex-col items-center justify-center py-4 px-2 space-y-3">
-              <PaymentStatusBadge status={payment?.currentMonth.status || 'UNPAID'} />
-              <div className="text-center">
-                <p className="text-2xl font-black text-slate-900">{payment?.currentMonth.amount} сум</p>
-                <p className="text-xs text-slate-400 font-medium">Сумма за текущий месяц</p>
-              </div>
-            </div>
-
-            {payment?.currentMonth.status === 'UNPAID' && (
-              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-xl text-red-700">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                <p className="text-xs font-medium">Оплата просрочена или не загружена</p>
-              </div>
-            )}
-
-            <Link 
-              href="/parent/payment" 
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all hover:-translate-y-0.5 active:translate-y-0"
-            >
-              Загрузить чек об оплате
-            </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Latest Achievement */}
-      {latestAchievement && (
-        <Link href="/parent/achievements">
-          <Card className="cursor-pointer border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-xl">
-                {latestAchievement.icon}
+      {/* Payment hero card */}
+      <Link
+        href="/parent/payment"
+        className={`group block overflow-hidden rounded-3xl ${paymentAccent.bg} relative p-5 text-white shadow-[0_8px_24px_-12px_rgba(15,23,42,0.4)] transition-transform active:scale-[0.99] sm:p-6`}
+      >
+        <div className="absolute right-0 top-0 h-40 w-40 -translate-y-12 translate-x-12 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm">
+                <CreditCard className="h-3 w-3" />
+                {paymentAccent.label}
               </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-amber-600">
-                  🏆 {child.fullName} получил новое достижение
+              <p className="mt-3 text-xs font-medium opacity-90">К оплате за месяц</p>
+              <p className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
+                {paymentAmount.toLocaleString('ru-RU')}
+                <span className="ml-1 text-base font-bold opacity-90">сум</span>
+              </p>
+              {paymentDue && (
+                <p className="mt-1 text-xs opacity-85">
+                  до {format(new Date(paymentDue), 'd MMMM', { locale: ru })}
+                  {typeof daysLeft === 'number' && daysLeft >= 0 && paymentStatus === 'UNPAID'
+                    ? ` · осталось ${daysLeft} ${pluralDays(daysLeft)}`
+                    : ''}
                 </p>
-                <p className="font-semibold text-slate-900">{latestAchievement.title}</p>
-              </div>
-              <Trophy className="h-5 w-5 text-amber-500" />
-            </CardContent>
-          </Card>
+              )}
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 opacity-70 transition-transform group-active:translate-x-0.5" />
+          </div>
+          <div className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold backdrop-blur-sm">
+            Загрузить чек
+            <ArrowRight className="h-3.5 w-3.5" />
+          </div>
+        </div>
+      </Link>
+
+      {/* Quick actions grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <ActionTile
+          href="/parent/attendance"
+          icon={Calendar}
+          label="Посещаемость"
+          tint="bg-blue-50 text-blue-600"
+        />
+        <ActionTile
+          href="/parent/grades"
+          icon={BarChart2}
+          label="Оценки"
+          tint="bg-indigo-50 text-indigo-600"
+        />
+        <ActionTile
+          href="/parent/homework"
+          icon={BookOpen}
+          label="Домашка"
+          tint="bg-emerald-50 text-emerald-600"
+        />
+        <ActionTile
+          href="/parent/achievements"
+          icon={Trophy}
+          label="Награды"
+          tint="bg-amber-50 text-amber-600"
+        />
+      </div>
+
+      {/* Latest grades */}
+      <SectionCard
+        title="Последние оценки"
+        icon={BarChart2}
+        href="/parent/grades"
+        accent="text-indigo-600"
+      >
+        {grades.length === 0 ? (
+          <EmptyRow text="Оценок пока нет" />
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {grades.map((g) => {
+              const tone = g.scorePercent >= 80
+                ? 'text-emerald-600'
+                : g.scorePercent >= 60
+                  ? 'text-amber-600'
+                  : 'text-rose-600';
+              const dot = g.scorePercent >= 80
+                ? 'bg-emerald-500'
+                : g.scorePercent >= 60
+                  ? 'bg-amber-500'
+                  : 'bg-rose-500';
+              return (
+                <li key={g.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-800 capitalize">
+                      {g.lessonType.toLowerCase()}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {format(new Date(g.date), 'd MMMM', { locale: ru })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-lg font-bold leading-none ${tone}`}>{g.score}</p>
+                    <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                      из {g.maxScore}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </SectionCard>
+
+      {/* Latest achievement */}
+      {latestAchievement && (
+        <Link
+          href="/parent/achievements"
+          className="block rounded-3xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-4 transition-transform active:scale-[0.99]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+              {latestAchievement.icon || '🏆'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                <Sparkles className="h-3 w-3" /> Новое достижение
+              </p>
+              <p className="truncate font-bold text-slate-900">
+                {latestAchievement.title}
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-amber-500" />
+          </div>
         </Link>
       )}
 
       {/* Announcements */}
-      <div className="mt-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800">
-            <Megaphone className="h-5 w-5 text-blue-600" />
-            Последние объявления
-          </h2>
-          <Link
-            href="/parent/announcements"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
-          >
-            Все <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+      <SectionCard
+        title="Объявления"
+        icon={Megaphone}
+        href="/parent/announcements"
+        accent="text-blue-600"
+      >
         {latestAnnouncements.length === 0 ? (
-          <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
-            <Megaphone className="mx-auto mb-2 h-8 w-8 text-slate-300" />
-            <p className="text-sm text-slate-400">Объявлений пока нет</p>
-          </div>
+          <EmptyRow text="Объявлений пока нет" />
         ) : (
-          <Card>
-            <CardContent className="divide-y divide-slate-100 p-0">
-              {latestAnnouncements.map((a) => (
+          <ul className="divide-y divide-slate-100">
+            {latestAnnouncements.map((a) => (
+              <li key={a.id}>
                 <Link
-                  key={a.id}
                   href="/parent/announcements"
-                  className="flex items-start gap-3 p-4 transition-colors hover:bg-slate-50"
+                  className="flex items-start gap-3 px-4 py-3 transition-colors active:bg-slate-50"
                 >
-                  {!a.isRead && (
-                    <span
-                      aria-hidden
-                      className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"
-                    />
-                  )}
+                  <span
+                    aria-hidden
+                    className={`mt-2 h-2 w-2 shrink-0 rounded-full ${
+                      a.isRead ? 'bg-slate-200' : 'bg-blue-500'
+                    }`}
+                  />
                   <div className="min-w-0 flex-1">
                     <p
                       className={`truncate text-sm ${
-                        a.isRead ? 'font-medium text-slate-700' : 'font-semibold text-slate-900'
+                        a.isRead
+                          ? 'font-medium text-slate-700'
+                          : 'font-semibold text-slate-900'
                       }`}
                     >
                       {a.title}
                     </p>
-                    <p className="mt-0.5 truncate text-xs text-slate-400">
-                      {a.authorName} · {format(new Date(a.createdAt), 'd MMMM, HH:mm', { locale: ru })}
+                    <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                      {a.authorName} ·{' '}
+                      {format(new Date(a.createdAt), 'd MMM, HH:mm', { locale: ru })}
                     </p>
                   </div>
                   {a.isPinned && (
-                    <span className="mt-0.5 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
-                      Закреплено
+                    <span className="ml-1 mt-0.5 shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+                      📌
                     </span>
                   )}
                 </Link>
-              ))}
-            </CardContent>
-          </Card>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
+      </SectionCard>
     </div>
   );
+}
+
+function HeaderHello({
+  firstName,
+  childName,
+}: {
+  firstName: string;
+  childName: string | null;
+}) {
+  return (
+    <div className="rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 p-5 text-white shadow-[0_8px_24px_-8px_rgba(79,70,229,0.5)]">
+      <p className="text-xs font-medium text-blue-100/80">Здравствуйте,</p>
+      <h1 className="mt-0.5 text-xl font-bold sm:text-2xl">{firstName}</h1>
+      {childName && (
+        <p className="mt-2 text-sm text-blue-100/90">Ваш ребёнок: {childName}</p>
+      )}
+    </div>
+  );
+}
+
+function ActionTile({
+  href,
+  icon: Icon,
+  label,
+  tint,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  tint: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all active:scale-[0.98] active:bg-slate-50"
+    >
+      <span
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tint}`}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
+    </Link>
+  );
+}
+
+function SectionCard({
+  title,
+  icon: Icon,
+  href,
+  accent,
+  children,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  accent: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex items-center justify-between px-4 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+          <Icon className={`h-4 w-4 ${accent}`} />
+          {title}
+        </h2>
+        <Link
+          href={href}
+          className="-mr-1 rounded-lg p-1.5 text-slate-400 transition-colors active:bg-slate-100 active:text-slate-600"
+          aria-label={`Открыть ${title}`}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      </div>
+      <div className="border-t border-slate-100">{children}</div>
+    </section>
+  );
+}
+
+function EmptyRow({ text }: { text: string }) {
+  return (
+    <div className="px-4 py-8 text-center text-sm text-slate-400">{text}</div>
+  );
+}
+
+function pluralDays(n: number) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'день';
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'дня';
+  return 'дней';
 }
