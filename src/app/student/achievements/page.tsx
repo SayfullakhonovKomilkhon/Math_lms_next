@@ -54,7 +54,7 @@ export default function StudentAchievementsPage() {
   const podiumEntries: PodiumEntry[] = (ratingRes?.rating ?? []).slice(0, 3).map((r, i) => ({
     id: r.studentId,
     fullName: r.fullName,
-    score: Math.round(r.averageScore),
+    score: Math.round(r.totalPoints ?? 0),
     place: (r.place ?? i + 1) as 1 | 2 | 3,
     isMe: false,
   }));

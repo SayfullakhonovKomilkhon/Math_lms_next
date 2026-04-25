@@ -71,7 +71,7 @@ export default function StudentGradesPage() {
   }> = apiRating.map((r: RatingEntry, i) => ({
     id: r.studentId,
     fullName: r.fullName,
-    score: Math.round(r.averageScore),
+    score: Math.round(r.totalPoints ?? 0),
     place: r.place ?? i + 1,
     isMe: r.studentId === profile?.id,
   }));
@@ -195,7 +195,7 @@ export default function StudentGradesPage() {
                     {r.fullName}
                     {r.isMe ? ' · ВЫ' : ''}
                   </span>
-                  <span className={styles.score}>{r.score}%</span>
+                  <span className={styles.score}>{r.score} балл.</span>
                   <span className={`${styles.change} ${chCls}`}>
                     {ch > 0 ? `▲${ch}` : ch === 0 ? '—' : `▼${Math.abs(ch)}`}
                   </span>
@@ -228,11 +228,15 @@ export default function StudentGradesPage() {
                       {LESSON_TYPE_LABEL[g.lessonType] ?? g.lessonType}
                     </div>
                     <div className={styles.gradeComment}>
-                      {g.comment || `${g.score} из ${g.maxScore}`}
+                      {g.comment || `Балл за работу`}
                     </div>
                   </div>
                   <div className={`${styles.gradeScore} ${scoreCls}`}>
-                    {g.scorePercent}%
+                    <span style={{ fontSize: 18, fontWeight: 800 }}>{g.score}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.6 }}>
+                      {' '}
+                      / {g.maxScore}
+                    </span>
                   </div>
                 </div>
               );

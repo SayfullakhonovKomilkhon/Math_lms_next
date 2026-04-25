@@ -49,7 +49,7 @@ export function RatingTable({ data, period, onPeriodChange }: Props) {
                 Ученик
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Средний балл
+                Баллы
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Работ
@@ -88,7 +88,10 @@ export function RatingTable({ data, period, onPeriodChange }: Props) {
                           : 'text-red-600'
                     }`}
                   >
-                    {entry.averageScore}%
+                    {entry.totalPoints}
+                  </span>
+                  <span className="ml-1 text-xs font-medium text-slate-400">
+                    балл.
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-slate-600">{entry.totalWorks}</td>

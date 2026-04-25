@@ -48,7 +48,7 @@ export function Podium({ entries }: PodiumProps) {
               {e?.fullName ?? '—'}
             </div>
             {e?.isMe ? <span className={styles.meLabel}>ВЫ</span> : null}
-            <div className={styles.score}>{e ? `${e.score}%` : ''}</div>
+            <div className={styles.score}>{e ? `${e.score} балл.` : ''}</div>
             <div className={styles.pedestal}>{place}</div>
           </div>
         ))}

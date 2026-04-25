@@ -33,17 +33,18 @@ export default function ParentGradesPage() {
 
   const grades = gradesRes?.data || [];
 
-  // Calculate simple stats
-  const avg = grades.length > 0 
-    ? Math.round(grades.reduce((acc, curr) => acc + curr.scorePercent, 0) / grades.length) 
+  // Total points earned + average raw score (per work).
+  const totalPoints = grades.reduce((acc, g) => acc + Number(g.score || 0), 0);
+  const avgRaw = grades.length > 0
+    ? Math.round(totalPoints / grades.length)
     : 0;
 
-  // Monthly stats for chart
+  // Monthly stats for chart — average raw score per month.
   const months: Record<string, { total: number, count: number }> = {};
   grades.forEach(g => {
     const month = g.date.substring(0, 7); // YYYY-MM
     if (!months[month]) months[month] = { total: 0, count: 0 };
-    months[month].total += g.scorePercent;
+    months[month].total += Number(g.score || 0);
     months[month].count += 1;
   });
   const chartData = Object.entries(months).map(([month, data]) => ({
@@ -68,10 +69,10 @@ export default function ParentGradesPage() {
         <Card className="lg:col-span-1 shadow-sm border-slate-200 bg-indigo-600 text-white">
           <CardContent className="pt-8 text-center pb-8">
             <TrendingUp className="h-8 w-8 mx-auto mb-4 opacity-70" />
-            <p className="text-sm font-bold text-indigo-100 uppercase tracking-widest">Средний балл</p>
-            <p className="text-6xl font-black mt-2">{avg}%</p>
+            <p className="text-sm font-bold text-indigo-100 uppercase tracking-widest">Сумма баллов</p>
+            <p className="text-6xl font-black mt-2">{totalPoints}</p>
             <p className="text-xs text-indigo-200 mt-4 px-4 leading-relaxed font-medium">
-              Средний результат на основе всех {grades.length} выполненных работ
+              {grades.length} {grades.length === 1 ? 'работа' : 'работ'} · средний балл {avgRaw}
             </p>
           </CardContent>
         </Card>
@@ -118,10 +119,10 @@ export default function ParentGradesPage() {
                       <DataTableCell className="text-right">
                         <div className="flex flex-col items-end">
                             <span className={`text-base font-black ${cnScore(grade.scorePercent)}`}>
-                                {grade.scorePercent}%
+                                {grade.score} <span className="text-xs font-bold text-slate-400">/ {grade.maxScore}</span>
                             </span>
                             <span className="text-[10px] text-slate-400 font-bold uppercase">
-                                {grade.score} / {grade.maxScore}
+                                балл.
                             </span>
                         </div>
                       </DataTableCell>
