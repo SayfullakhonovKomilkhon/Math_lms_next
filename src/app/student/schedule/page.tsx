@@ -6,7 +6,6 @@ import api from '@/lib/api';
 import type { ApiResponse, GroupSchedule } from '@/types';
 import { PageTitle } from '../_components/PageTitle';
 import { SectionHeading } from '../_components/Card';
-import { mockNextTopic, mockSchedule, mockStudent } from '../_lib/mockData';
 import styles from './schedule.module.css';
 
 interface ScheduleData {
@@ -40,23 +39,13 @@ export default function StudentSchedulePage() {
     retry: 0,
   });
 
-  const days =
-    data?.schedule?.days && data.schedule.days.length > 0
-      ? data.schedule.days
-      : mockSchedule.map((s) => ({
-          day: s.day as GroupSchedule['days'][number]['day'],
-          startTime: s.startTime,
-          endTime: s.endTime,
-        }));
+  const days = data?.schedule?.days ?? [];
   const sorted = [...days].sort(
     (a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day),
   );
-  const next = data?.nextTopic ?? mockNextTopic;
-  const teacher =
-    data?.teacher && data.teacher.fullName
-      ? data.teacher
-      : { fullName: mockStudent.teacherName, phone: '+998 90 000 00 00' };
-  const groupName = data?.groupName ?? mockStudent.groupName;
+  const next = data?.nextTopic ?? null;
+  const teacher = data?.teacher && data.teacher.fullName ? data.teacher : null;
+  const groupName = data?.groupName ?? '—';
 
   return (
     <div>
@@ -68,15 +57,21 @@ export default function StudentSchedulePage() {
       />
 
       <SectionHeading icon={<Clock size={14} />} label="Еженедельно" />
-      <div className={styles.scheduleGrid}>
-        {sorted.map((d) => (
-          <div key={d.day} className={styles.dayCard}>
-            <div className={styles.dayLabel}>{DAY_MAP[d.day] ?? d.day}</div>
-            <div className={styles.dayTime}>{d.startTime}</div>
-            <div className={styles.dayEnd}>до {d.endTime}</div>
-          </div>
-        ))}
-      </div>
+      {sorted.length === 0 ? (
+        <div style={{ padding: 20, color: 'var(--s-text-secondary)' }}>
+          Расписание пока не задано.
+        </div>
+      ) : (
+        <div className={styles.scheduleGrid}>
+          {sorted.map((d) => (
+            <div key={d.day} className={styles.dayCard}>
+              <div className={styles.dayLabel}>{DAY_MAP[d.day] ?? d.day}</div>
+              <div className={styles.dayTime}>{d.startTime}</div>
+              <div className={styles.dayEnd}>до {d.endTime}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className={styles.section}>
         <SectionHeading icon={<BookOpen size={14} />} label="Ближайшая тема" />
@@ -95,23 +90,20 @@ export default function StudentSchedulePage() {
         )}
       </div>
 
-      <div className={styles.section}>
-        <SectionHeading icon={<MapPin size={14} />} label="Филиал и учитель" />
-        <div className={styles.centerCard}>
-          <div className={styles.centerTitle}>{mockStudent.centerName}</div>
-          <div className={styles.centerMeta}>
-            <MapPin size={14} />
-            ул. Махтумкули, 79 · ориентир: Экопарк
-          </div>
-          <div className={styles.teacherRow}>
-            <div className={styles.teacherAvatar}>{initials(teacher.fullName)}</div>
-            <div>
-              <div className={styles.teacherName}>{teacher.fullName}</div>
-              <div className={styles.teacherPhone}>{teacher.phone ?? '—'}</div>
+      {teacher && (
+        <div className={styles.section}>
+          <SectionHeading icon={<MapPin size={14} />} label="Учитель" />
+          <div className={styles.centerCard}>
+            <div className={styles.teacherRow}>
+              <div className={styles.teacherAvatar}>{initials(teacher.fullName)}</div>
+              <div>
+                <div className={styles.teacherName}>{teacher.fullName}</div>
+                <div className={styles.teacherPhone}>{teacher.phone ?? '—'}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className={styles.info}>
         <Info size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />

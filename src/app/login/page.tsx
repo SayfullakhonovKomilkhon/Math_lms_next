@@ -127,7 +127,7 @@ export default function LoginPage() {
                 >
                   <div className="flex flex-col justify-center pr-2">
                     <span className="font-semibold text-[18px] mb-0.5">Student</span>
-                    <span className="text-[13.5px] text-[#AAB0C8]">Access the students' portal here.</span>
+                    <span className="text-[13.5px] text-[#AAB0C8]">Access the students&apos; portal here.</span>
                   </div>
                   <ChevronRight className="w-[22px] h-[22px] text-white shrink-0 transform group-hover:translate-x-1 transition-transform" />
                 </button>

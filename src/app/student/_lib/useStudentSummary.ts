@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { ApiResponse, StudentProfile } from '@/types';
-import { mockStudent } from './mockData';
 
 type StudentSummary = {
   fullName: string;
@@ -42,9 +41,7 @@ function computeLevel(totalLessons: number, attendancePercent: number) {
 
 /**
  * Hook that wraps the /students/me endpoint, producing a convenient summary
- * with game-like fields (level, xp, title) derived client-side. When the API
- * is unavailable, returns mock data with Uzbek names so the UI always looks
- * alive (useful for demos & offline development).
+ * with game-like fields (level, xp, title) derived client-side.
  */
 export function useStudentSummary(): {
   summary: StudentSummary;
@@ -52,7 +49,7 @@ export function useStudentSummary(): {
   isMock: boolean;
   profile: StudentProfile | null;
 } {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['student-profile'],
     queryFn: () =>
       api.get<ApiResponse<StudentProfile>>('/students/me').then((r) => r.data.data),
@@ -93,24 +90,24 @@ export function useStudentSummary(): {
 
   return {
     summary: {
-      fullName: mockStudent.fullName,
-      firstName: mockStudent.firstName,
-      initials: toInitials(mockStudent.fullName),
-      groupName: mockStudent.groupName,
-      teacherName: mockStudent.teacherName,
-      centerName: mockStudent.centerName,
-      totalLessons: 64,
-      attendancePercent: 96,
-      level: mockStudent.level,
-      xp: mockStudent.xp,
-      xpNeeded: mockStudent.xpNeeded,
-      title: mockStudent.title,
-      titleEmoji: mockStudent.titleEmoji,
-      streak: mockStudent.streak,
-      gender: mockStudent.gender,
+      fullName: 'Ученик',
+      firstName: 'Ученик',
+      initials: 'У',
+      groupName: 'Группа',
+      teacherName: '—',
+      centerName: 'MathCenter',
+      totalLessons: 0,
+      attendancePercent: 0,
+      level: 1,
+      xp: 0,
+      xpNeeded: 1440,
+      title: 'Юный исследователь',
+      titleEmoji: '🌱',
+      streak: 0,
+      gender: 'male',
     },
     loading: isLoading,
-    isMock: isError || !isLoading,
+    isMock: false,
     profile: null,
   };
 }

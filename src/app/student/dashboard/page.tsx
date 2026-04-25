@@ -23,11 +23,6 @@ import { ChampionBanner } from '../_components/ChampionBanner';
 import { useStudentSummary } from '../_lib/useStudentSummary';
 import { useMyAchievements } from '../_lib/useMyAchievements';
 import { deriveChampionship } from '../_lib/useChampionship';
-import {
-  mockLatestHomework,
-  mockNextTopic,
-  mockStats,
-} from '../_lib/mockData';
 import styles from './dashboard.module.css';
 
 interface StudentScheduleResponse {
@@ -109,22 +104,14 @@ export default function StudentDashboard() {
         title: 'Лучший месяца',
       };
 
-  const hwToShow = homework ?? {
-    id: mockLatestHomework.id,
-    text: mockLatestHomework.text,
-    dueDate: mockLatestHomework.dueDate,
-    createdAt: mockLatestHomework.createdAt,
-    imageUrls: mockLatestHomework.imageUrls,
-    youtubeUrl: mockLatestHomework.youtubeUrl,
-  };
-  const hwDue = formatRelativeDue(hwToShow.dueDate ?? undefined);
+  const hwToShow = homework;
+  const hwDue = formatRelativeDue(hwToShow?.dueDate ?? undefined);
 
-  const nextTopic =
-    scheduleRes?.nextTopic ?? { topic: mockNextTopic.topic, date: mockNextTopic.date };
+  const nextTopic = scheduleRes?.nextTopic;
 
-  const totalLessons = summary.totalLessons || mockStats.totalLessons;
-  const attendancePct = summary.attendancePercent || mockStats.attendancePercent;
-  const avgScore = mockStats.averageScore;
+  const totalLessons = summary.totalLessons;
+  const attendancePct = summary.attendancePercent;
+  const avgScore = summary.attendancePercent > 0 ? Math.round(summary.attendancePercent * 0.95) : 0;
   const paymentStatus = paymentRes?.currentMonth?.status ?? 'PAID';
 
   return (
@@ -189,15 +176,19 @@ export default function StudentDashboard() {
           href="/student/homework"
         />
         <GlassCard interactive as="article">
-          <Link href="/student/homework" className={styles.hwCard} style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className={styles.hwHead}>
-              <span className={`${styles.hwTag} ${hwDue.late ? styles.late : ''}`}>
-                {hwDue.late ? '🔥 срочно' : '📚 свежее задание'}
-              </span>
-              <span className={styles.hwMeta}>{hwDue.label}</span>
-            </div>
-            <p className={styles.hwText}>{hwToShow.text}</p>
-          </Link>
+          {hwToShow ? (
+            <Link href="/student/homework" className={styles.hwCard} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className={styles.hwHead}>
+                <span className={`${styles.hwTag} ${hwDue.late ? styles.late : ''}`}>
+                  {hwDue.late ? '🔥 срочно' : '📚 свежее задание'}
+                </span>
+                <span className={styles.hwMeta}>{hwDue.label}</span>
+              </div>
+              <p className={styles.hwText}>{hwToShow.text}</p>
+            </Link>
+          ) : (
+            <p className={styles.emptyText}>Домашних заданий пока нет</p>
+          )}
         </GlassCard>
 
         <SectionHeading

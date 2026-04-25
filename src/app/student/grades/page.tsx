@@ -14,7 +14,6 @@ import { PageTitle } from '../_components/PageTitle';
 import { SectionHeading } from '../_components/Card';
 import { Podium, type PodiumEntry } from '../_components/Podium';
 import { useStudentSummary } from '../_lib/useStudentSummary';
-import { mockGrades, mockLeaderboard } from '../_lib/mockData';
 import styles from './grades.module.css';
 
 function initials(name: string) {
@@ -61,7 +60,6 @@ export default function StudentGradesPage() {
   });
 
   const apiRating = ratingRes?.rating ?? [];
-  const usingMock = apiRating.length === 0;
 
   const ratingList: Array<{
     id: string;
@@ -70,17 +68,15 @@ export default function StudentGradesPage() {
     place: number;
     change?: number;
     isMe?: boolean;
-  }> = usingMock
-    ? mockLeaderboard
-    : apiRating.map((r: RatingEntry, i) => ({
-        id: r.studentId,
-        fullName: r.fullName,
-        score: Math.round(r.averageScore),
-        place: r.place ?? i + 1,
-        isMe: r.studentId === profile?.id,
-      }));
+  }> = apiRating.map((r: RatingEntry, i) => ({
+    id: r.studentId,
+    fullName: r.fullName,
+    score: Math.round(r.averageScore),
+    place: r.place ?? i + 1,
+    isMe: r.studentId === profile?.id,
+  }));
 
-  const myPlace = ratingRes?.myPlace ?? ratingList.find((r) => r.isMe)?.place ?? 2;
+  const myPlace = ratingRes?.myPlace ?? ratingList.find((r) => r.isMe)?.place ?? null;
   const total = ratingRes?.totalStudents ?? ratingList.length;
 
   const podium: PodiumEntry[] = ratingList.slice(0, 3).map((r) => ({
@@ -91,7 +87,7 @@ export default function StudentGradesPage() {
     isMe: r.isMe,
   }));
 
-  const grades = gradesRes && gradesRes.length > 0 ? gradesRes : mockGrades;
+  const grades = gradesRes ?? [];
 
   return (
     <div>
@@ -119,18 +115,20 @@ export default function StudentGradesPage() {
 
       {tab === 'rating' ? (
         <>
-          <div className={styles.myPlace}>
-            <div className={styles.placeBadge}>{myPlace}</div>
-            <div className={styles.placeBody}>
-              <div className={styles.placeLabel}>Моё место</div>
-              <div className={styles.placeValue}>
-                {myPlace} <span style={{ color: 'var(--s-text-secondary)', fontWeight: 600, fontSize: 14 }}>из {total}</span>
-              </div>
-              <div className={styles.placeSub}>
-                {myPlace <= 3 ? 'Ты на подиуме — держи темп!' : 'Ещё немного и ты на подиуме!'}
+          {myPlace !== null && (
+            <div className={styles.myPlace}>
+              <div className={styles.placeBadge}>{myPlace}</div>
+              <div className={styles.placeBody}>
+                <div className={styles.placeLabel}>Моё место</div>
+                <div className={styles.placeValue}>
+                  {myPlace} <span style={{ color: 'var(--s-text-secondary)', fontWeight: 600, fontSize: 14 }}>из {total}</span>
+                </div>
+                <div className={styles.placeSub}>
+                  {myPlace <= 3 ? 'Ты на подиуме — держи темп!' : 'Ещё немного и ты на подиуме!'}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <SectionHeading icon={<Users size={14} />} label="Подиум месяца" />
           <div
@@ -149,6 +147,11 @@ export default function StudentGradesPage() {
           </div>
 
           <SectionHeading icon={<Award size={14} />} label="Полный рейтинг" />
+          {ratingList.length === 0 ? (
+            <p style={{ color: 'var(--s-text-secondary)', textAlign: 'center', padding: 24 }}>
+              Рейтинг ещё не сформирован
+            </p>
+          ) : (
           <ul
             className={styles.leaderList}
             style={{ listStyle: 'none', padding: 0, margin: 0 }}
@@ -200,10 +203,16 @@ export default function StudentGradesPage() {
               );
             })}
           </ul>
+          )}
         </>
       ) : (
         <>
           <SectionHeading icon={<List size={14} />} label="Последние оценки" />
+          {grades.length === 0 ? (
+            <p style={{ color: 'var(--s-text-secondary)', textAlign: 'center', padding: 24 }}>
+              Оценок пока нет
+            </p>
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {grades.map((g) => {
               const { day, month } = formatDay(g.date);
@@ -229,6 +238,7 @@ export default function StudentGradesPage() {
               );
             })}
           </div>
+          )}
         </>
       )}
     </div>

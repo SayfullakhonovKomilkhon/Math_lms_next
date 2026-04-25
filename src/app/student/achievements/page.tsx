@@ -27,7 +27,9 @@ import { useStudentSummary } from '../_lib/useStudentSummary';
 import { useMyAchievements } from '../_lib/useMyAchievements';
 import { deriveChampionship } from '../_lib/useChampionship';
 import { MONTHS } from '../_lib/achievementsCatalog';
-import { mockLeaderboard } from '../_lib/mockData';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+import type { ApiResponse, MyRating } from '@/types';
 import styles from './achievements.module.css';
 
 export default function StudentAchievementsPage() {
@@ -42,12 +44,19 @@ export default function StudentAchievementsPage() {
   const [detail, setDetail] = useState<AchievementDetail | null>(null);
   const [celebrate, setCelebrate] = useState<CelebrationInput | null>(null);
 
-  const podiumEntries: PodiumEntry[] = mockLeaderboard.slice(0, 3).map((m) => ({
-    id: m.id,
-    fullName: m.fullName,
-    score: m.score,
-    place: m.place as 1 | 2 | 3,
-    isMe: m.isMe,
+  const { data: ratingRes } = useQuery({
+    queryKey: ['student-rating', 'month'],
+    queryFn: () =>
+      api.get<ApiResponse<MyRating>>(`/grades/my/rating?period=month`).then((r) => r.data.data),
+    retry: 0,
+  });
+
+  const podiumEntries: PodiumEntry[] = (ratingRes?.rating ?? []).slice(0, 3).map((r, i) => ({
+    id: r.studentId,
+    fullName: r.fullName,
+    score: Math.round(r.averageScore),
+    place: (r.place ?? i + 1) as 1 | 2 | 3,
+    isMe: false,
   }));
 
   const goldCount = medals.filter((m) => m.unlocked && m.place === 1).length;
@@ -124,7 +133,13 @@ export default function StudentAchievementsPage() {
           <h3>
             <Trophy size={16} style={{ color: '#f5b544' }} /> Подиум месяца
           </h3>
-          <Podium entries={podiumEntries} />
+          {podiumEntries.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--s-text-secondary)', padding: 20 }}>
+              Подиум ещё не сформирован
+            </p>
+          ) : (
+            <Podium entries={podiumEntries} />
+          )}
         </div>
       </div>
 

@@ -8,7 +8,6 @@ import api from '@/lib/api';
 import type { ApiResponse, Homework } from '@/types';
 import { PageTitle } from '../_components/PageTitle';
 import { SectionHeading } from '../_components/Card';
-import { mockLatestHomework } from '../_lib/mockData';
 import styles from './homework.module.css';
 
 function extractVideoId(url?: string): string | null {
@@ -52,19 +51,7 @@ export default function StudentHomeworkPage() {
 
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const homeworks: Homework[] =
-    data && data.length > 0
-      ? data
-      : [
-          {
-            id: mockLatestHomework.id,
-            text: mockLatestHomework.text,
-            dueDate: mockLatestHomework.dueDate,
-            createdAt: mockLatestHomework.createdAt,
-            imageUrls: mockLatestHomework.imageUrls,
-            youtubeUrl: mockLatestHomework.youtubeUrl,
-          },
-        ];
+  const homeworks: Homework[] = data ?? [];
 
   const latest = homeworks[0];
   const history = homeworks.slice(1);

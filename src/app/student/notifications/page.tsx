@@ -6,7 +6,6 @@ import { Check } from 'lucide-react';
 import api from '@/lib/api';
 import { PageTitle } from '../_components/PageTitle';
 import { SButton } from '../_components/SButton';
-import { mockNotifications } from '../_lib/mockData';
 import styles from './notifications.module.css';
 
 interface Notification {
@@ -60,7 +59,7 @@ export default function StudentNotificationsPage() {
     retry: 0,
   });
 
-  const list = data?.notifications ?? mockNotifications;
+  const list: Notification[] = data?.notifications ?? [];
   const filtered = typeFilter ? list.filter((n) => n.type === typeFilter) : list;
   const unread = filtered.some((n) => !n.isRead);
 
