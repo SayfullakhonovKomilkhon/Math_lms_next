@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { ApiResponse, ParentProfile } from '@/types';
 
@@ -60,12 +60,13 @@ export function useSelectedChild(profile: ParentProfile | undefined) {
  * particular child. Keeping the data fresh for 60s and cached for 5m makes
  * navigation between parent sub-pages feel instant while still showing
  * up-to-date numbers.
+ *
+ * Typed as a plain readonly object so it can be spread into any `useQuery`
+ * call regardless of the query's data type — using `UseQueryOptions<unknown>`
+ * here would cause TS to infer incompatible generics at the call sites.
  */
-export const PARENT_CHILD_QUERY_DEFAULTS: Pick<
-  UseQueryOptions<unknown, unknown, unknown, ReadonlyArray<unknown>>,
-  'staleTime' | 'gcTime' | 'refetchOnWindowFocus'
-> = {
+export const PARENT_CHILD_QUERY_DEFAULTS = {
   staleTime: 60 * 1000,
   gcTime: 5 * 60 * 1000,
   refetchOnWindowFocus: false,
-};
+} as const;
