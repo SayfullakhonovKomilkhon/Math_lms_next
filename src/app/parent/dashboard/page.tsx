@@ -84,7 +84,13 @@ export default function ParentDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  if (profileLoading) {
+  // Show skeletons whenever we don't have a confirmed child yet AND the
+  // profile is still being fetched. This prevents the "Ребёнок не привязан"
+  // flash when react-query is showing stale (empty) cached data while a
+  // background refetch is in flight — exactly the case where users
+  // previously saw a blank empty state and felt forced to click "Обновить".
+  const profileEmpty = !profile || (profile.children?.length ?? 0) === 0;
+  if (profileLoading || (profileFetching && profileEmpty)) {
     return (
       <div className="space-y-6">
         <ProfileSkeleton />
@@ -142,31 +148,14 @@ export default function ParentDashboard() {
             Здравствуйте, {greetName}!
           </h1>
           <p className="text-slate-500 mt-1">
-            {profileFetching
-              ? 'Проверяем привязанных учеников…'
-              : 'Ваш аккаунт пока не связан с учеником.'}
+            Ваш аккаунт пока не связан с учеником.
           </p>
         </div>
         <EmptyState
           icon="👧"
           message="Ребёнок ещё не привязан"
-          description="Обратитесь к администратору, чтобы связать ваш профиль с учеником. Если ребёнка только что добавили — нажмите «Обновить»."
+          description="Обратитесь к администратору, чтобы связать ваш профиль с учеником. Как только ребёнка добавят — данные подгрузятся автоматически."
         />
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => {
-              void refetch();
-            }}
-            disabled={profileFetching}
-            className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <ArrowRight
-              className={`h-4 w-4 ${profileFetching ? 'animate-spin' : ''}`}
-            />
-            {profileFetching ? 'Обновляем…' : 'Обновить'}
-          </button>
-        </div>
       </div>
     );
   }

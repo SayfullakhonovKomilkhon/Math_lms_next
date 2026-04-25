@@ -21,6 +21,15 @@ export function useParentProfile() {
     gcTime: 30 * 60 * 1000,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
+    // While no child is linked, poll the backend every 10s so that as soon
+    // as the admin attaches a child to this parent, the dashboard updates
+    // automatically without any manual refresh.
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const hasChildren = !!data && (data.children?.length ?? 0) > 0;
+      return hasChildren ? false : 10_000;
+    },
+    refetchIntervalInBackground: false,
   });
 }
 
