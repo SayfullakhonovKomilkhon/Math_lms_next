@@ -46,13 +46,23 @@ export interface Group {
   _count?: { students: number };
 }
 
+export interface ParentChildLink {
+  student: {
+    id: string;
+    fullName: string;
+    isActive?: boolean;
+    group?: { id: string; name: string } | null;
+  };
+}
+
 export interface Parent {
   id: string;
   fullName: string;
   phone?: string;
-  studentId: string;
-  user?: { id: string; email: string };
-  student?: { id: string; fullName: string };
+  createdAt?: string;
+  updatedAt?: string;
+  user?: { id: string; email: string; isActive?: boolean };
+  students?: ParentChildLink[];
 }
 
 export interface AttendanceRecord {
@@ -174,22 +184,29 @@ export interface StudentProfile {
   };
 }
 
+export interface ParentChild {
+  id: string;
+  fullName: string;
+  gender: Gender;
+  enrolledAt: string;
+  isActive?: boolean;
+  monthlyFee?: number;
+  group: {
+    id: string;
+    name: string;
+    schedule: GroupSchedule;
+    teacher: { fullName: string; phone?: string };
+  } | null;
+}
+
 export interface ParentProfile {
   id: string;
   fullName: string;
   phone?: string;
-  child: {
-    id: string;
-    fullName: string;
-    gender: Gender;
-    enrolledAt: string;
-    group: {
-      id: string;
-      name: string;
-      schedule: GroupSchedule;
-      teacher: { fullName: string; phone?: string };
-    };
-  };
+  email?: string;
+  // List of all children linked to this parent. Frontend should pick the
+  // active one via a selector when there is more than one.
+  children: ParentChild[];
 }
 
 export interface GroupSchedule {

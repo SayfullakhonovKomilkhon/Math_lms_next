@@ -6,11 +6,22 @@ import { ApiResponse, AttendanceRecord } from '@/types';
 import { AttendanceCalendar } from '@/components/attendance/AttendanceCalendar';
 import { ClipboardList, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import { ChildSelector } from '@/components/parent/ChildSelector';
 
 export default function ParentAttendancePage() {
+  const { data: profile } = useParentProfile();
+  const { children, selectedId, select } = useSelectedChild(profile);
+
   const { data: attendanceRes, isLoading } = useQuery({
-    queryKey: ['parent-child-attendance'],
-    queryFn: () => api.get<ApiResponse<AttendanceRecord[]>>('/parents/me/child/attendance').then(res => res.data),
+    queryKey: ['parent-child-attendance', selectedId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<AttendanceRecord[]>>('/parents/me/child/attendance', {
+          params: selectedId ? { studentId: selectedId } : {},
+        })
+        .then((res) => res.data),
+    enabled: !!selectedId,
   });
 
   if (isLoading) {
@@ -31,6 +42,7 @@ export default function ParentAttendancePage() {
 
   return (
     <div className="space-y-6">
+      <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
       <div>
         <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
           <ClipboardList className="h-8 w-8 text-blue-600" />

@@ -4,9 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, KeyRound, Pencil, UserPlus } from 'lucide-react';
 import api from '@/lib/api';
-import { Student, Group, Payment } from '@/types';
+import { Student, Group, Payment, Parent } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatCurrency } from '@/lib/utils';
@@ -28,6 +28,7 @@ export default function StudentProfilePage() {
     gender: 'MALE',
     monthlyFee: '0',
   });
+  const [creds, setCreds] = useState({ email: '', password: '' });
 
   const { data: student, isLoading } = useQuery({
     queryKey: ['student', id],
@@ -54,8 +55,25 @@ export default function StudentProfilePage() {
         gender: student.gender,
         monthlyFee: String(Number(student.monthlyFee ?? 0)),
       });
+      setCreds((prev) => ({
+        email: student.user?.email ?? '',
+        password: prev.password,
+      }));
     }
   }, [student]);
+
+  const { data: linkedParents = [] } = useQuery({
+    queryKey: ['student-parents', id],
+    queryFn: () =>
+      api
+        .get('/parents', { params: { search: '' } })
+        .then((r) => (r.data.data as Parent[])
+          .filter((p) =>
+            (p.students ?? []).some((s) => s.student.id === id),
+          ),
+        ),
+    enabled: !!id,
+  });
 
   const assignMutation = useMutation({
     mutationFn: (gid: string) => api.patch(`/students/${id}/group`, { groupId: gid }),
@@ -111,6 +129,29 @@ export default function StudentProfilePage() {
           ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
       toast(msg || 'Ошибка', 'error');
+    },
+  });
+
+  const updateCredsMutation = useMutation({
+    mutationFn: () => {
+      const payload: { email?: string; password?: string } = {};
+      if (creds.email && creds.email !== student?.user?.email)
+        payload.email = creds.email;
+      if (creds.password) payload.password = creds.password;
+      return api.patch(`/students/${id}/credentials`, payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student', id] });
+      qc.invalidateQueries({ queryKey: ['students'] });
+      toast('Логин и/или пароль обновлены');
+      setCreds((prev) => ({ ...prev, password: '' }));
+    },
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string | string[] } } }).response?.data?.message
+          : undefined;
+      toast(Array.isArray(msg) ? msg.join(', ') : msg || 'Ошибка', 'error');
     },
   });
 
@@ -246,6 +287,103 @@ export default function StudentProfilePage() {
               Сохранить изменения
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-blue-600" />
+            <h2 className="font-semibold text-slate-900">Логин и пароль для входа</h2>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Старый пароль вводить не нужно — задайте сразу новый.
+          </p>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Email (логин)
+            </label>
+            <InputField
+              accent="admin"
+              type="email"
+              value={creds.email}
+              onChange={(e) => setCreds((c) => ({ ...c, email: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Новый пароль
+            </label>
+            <InputField
+              accent="admin"
+              type="text"
+              value={creds.password}
+              onChange={(e) => setCreds((c) => ({ ...c, password: e.target.value }))}
+              placeholder="оставьте пустым, чтобы не менять"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Button
+              loading={updateCredsMutation.isPending}
+              disabled={
+                !creds.password &&
+                (!creds.email || creds.email === student.user?.email)
+              }
+              onClick={() => updateCredsMutation.mutate()}
+            >
+              Применить
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">Родители</h2>
+            <Link href="/admin/parents/new">
+              <Button variant="ghost" size="sm">
+                <UserPlus className="mr-1 h-4 w-4" />
+                Добавить
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {linkedParents.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              К ученику не привязан ни один родитель.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {linkedParents.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3"
+                >
+                  <div className="min-w-0">
+                    <Link
+                      href={`/admin/parents/${p.id}`}
+                      className="truncate font-semibold text-slate-900 hover:text-blue-600"
+                    >
+                      {p.fullName}
+                    </Link>
+                    <p className="truncate text-xs text-slate-500">
+                      {p.user?.email ?? '—'}
+                      {p.phone ? ` · ${p.phone}` : ''}
+                    </p>
+                  </div>
+                  <Link href={`/admin/parents/${p.id}`}>
+                    <Button variant="ghost" size="sm">
+                      Открыть
+                    </Button>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

@@ -2,23 +2,22 @@
 
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { ApiResponse, ParentProfile, PaymentSummary, GradeRecord, AttendanceRecord } from '@/types';
+import { ApiResponse, PaymentSummary, GradeRecord } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   User,
   Users,
   Calendar,
   BarChart,
   CreditCard,
-  CheckCircle2,
   AlertCircle,
-  Clock,
   ArrowRight,
   Trophy,
   Megaphone,
 } from 'lucide-react';
 import { useMyAnnouncements } from '@/hooks/useAnnouncements';
+import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import { ChildSelector } from '@/components/parent/ChildSelector';
 import Link from 'next/link';
 import { PaymentStatusBadge } from '@/components/payments/PaymentStatusBadge';
 import { format } from 'date-fns';
@@ -34,25 +33,41 @@ interface AchievementGridEntry {
 }
 
 export default function ParentDashboard() {
-  const { data: profileRes, isLoading: profileLoading, isError: profileError, refetch } = useQuery({
-    queryKey: ['parent-profile'],
-    queryFn: () => api.get<ApiResponse<ParentProfile>>('/parents/me').then(res => res.data),
-  });
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+    refetch,
+  } = useParentProfile();
+
+  const { children, selected, selectedId, select } = useSelectedChild(profile);
 
   const { data: announcementsData } = useMyAnnouncements({ limit: 3 });
   const latestAnnouncements = announcementsData?.data ?? [];
 
   const { data: paymentRes } = useQuery({
-    queryKey: ['parent-child-payment'],
-    queryFn: () => api.get<ApiResponse<PaymentSummary>>('/parents/me/child/payments').then(res => res.data),
+    queryKey: ['parent-child-payment', selectedId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<PaymentSummary>>('/parents/me/child/payments', {
+          params: selectedId ? { studentId: selectedId } : {},
+        })
+        .then((res) => res.data),
+    enabled: !!selectedId,
   });
 
   const { data: gradesRes } = useQuery({
-    queryKey: ['parent-child-grades-latest'],
-    queryFn: () => api.get<ApiResponse<GradeRecord[]>>('/parents/me/child/grades').then(res => res.data),
+    queryKey: ['parent-child-grades-latest', selectedId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<GradeRecord[]>>('/parents/me/child/grades', {
+          params: selectedId ? { studentId: selectedId } : {},
+        })
+        .then((res) => res.data),
+    enabled: !!selectedId,
   });
 
-  const childId = profileRes?.data?.child?.id;
+  const childId = selected?.id;
   const { data: achievementsRes } = useQuery({
     queryKey: ['child-achievements', childId],
     queryFn: () => api.get(`/achievements/student/${childId}`).then((r) => r.data.data),
@@ -85,7 +100,6 @@ export default function ParentDashboard() {
     );
   }
 
-  const profile = profileRes?.data;
   const payment = paymentRes?.data;
   const grades = (gradesRes?.data || []).slice(0, 3);
   const latestAchievement =
@@ -102,7 +116,7 @@ export default function ParentDashboard() {
     );
   }
 
-  const child = profile.child;
+  const child = selected;
   const group = child?.group;
   const teacher = group?.teacher;
 
@@ -128,6 +142,11 @@ export default function ParentDashboard() {
 
   return (
     <div className="space-y-6">
+      <ChildSelector
+        children={children}
+        selectedId={selectedId}
+        onSelect={select}
+      />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

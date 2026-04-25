@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Users,
+  UsersRound,
   BookOpen,
   CreditCard,
   ClipboardList,
@@ -37,6 +38,7 @@ type NavItem = {
 
 const ADMIN_NAV: NavItem[] = [
   { href: '/admin/students', label: 'Ученики', icon: Users },
+  { href: '/admin/parents', label: 'Родители', icon: UsersRound },
   { href: '/admin/groups', label: 'Группы', icon: BookOpen },
   { href: '/admin/payments', label: 'Оплаты', icon: CreditCard },
   { href: '/admin/attendance', label: 'Посещаемость', icon: ClipboardList },

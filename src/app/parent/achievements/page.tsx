@@ -6,19 +6,14 @@ import api from '@/lib/api';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { AchievementMonthGrid } from '@/components/achievements/AchievementMonthGrid';
 import { SpecialAchievements } from '@/components/achievements/SpecialAchievements';
-import { useAuth } from '@/hooks/useAuth';
+import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import { ChildSelector } from '@/components/parent/ChildSelector';
 
 export default function ParentAchievementsPage() {
-  const { user } = useAuth();
+  const { data: profile } = useParentProfile();
+  const { children, selectedId, select } = useSelectedChild(profile);
 
-  // Get parent's child ID first
-  const { data: parentData } = useQuery({
-    queryKey: ['parent-profile'],
-    queryFn: () => api.get('/parents/me').then((r) => r.data.data),
-    enabled: !!user,
-  });
-
-  const childId = parentData?.studentId;
+  const childId = selectedId;
 
   const { data, isLoading } = useQuery({
     queryKey: ['child-achievements', childId],
@@ -41,7 +36,7 @@ export default function ParentAchievementsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
       <Card>
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">

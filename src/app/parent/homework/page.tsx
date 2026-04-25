@@ -8,11 +8,22 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Calendar, Clock, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import { ChildSelector } from '@/components/parent/ChildSelector';
 
 export default function ParentHomeworkPage() {
+  const { data: profile } = useParentProfile();
+  const { children, selectedId, select } = useSelectedChild(profile);
+
   const { data: homeworksRes, isLoading } = useQuery({
-    queryKey: ['parent-child-homework'],
-    queryFn: () => api.get<ApiResponse<Homework[]>>('/parents/me/child/homework').then(res => res.data),
+    queryKey: ['parent-child-homework', selectedId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<Homework[]>>('/parents/me/child/homework', {
+          params: selectedId ? { studentId: selectedId } : {},
+        })
+        .then((res) => res.data),
+    enabled: !!selectedId,
   });
 
   if (isLoading) {
@@ -24,6 +35,7 @@ export default function ParentHomeworkPage() {
 
   return (
     <div className="space-y-8">
+      <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
       <div>
         <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
           <BookOpen className="h-8 w-8 text-blue-600" />

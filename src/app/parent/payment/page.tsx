@@ -2,7 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { ApiResponse, PaymentSummary, ParentProfile } from '@/types';
+import { ApiResponse, PaymentSummary } from '@/types';
+import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import { ChildSelector } from '@/components/parent/ChildSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, DataTableCell, DataTableHead, DataTableHeaderCell, DataTableRow } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -25,20 +27,28 @@ export default function ParentPaymentPage() {
   const [receiptPaymentId, setReceiptPaymentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: profileRes, isError: profileError, refetch: refetchProfile } = useQuery({
-    queryKey: ['parent-profile'],
-    queryFn: () => api.get<ApiResponse<ParentProfile>>('/parents/me').then(res => res.data),
-  });
+  const {
+    data: profile,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useParentProfile();
+  const { children, selected, selectedId, select } = useSelectedChild(profile);
 
   const { data: paymentRes, isLoading, isError, refetch } = useQuery({
-    queryKey: ['parent-child-payment'],
-    queryFn: () => api.get<ApiResponse<PaymentSummary>>('/parents/me/child/payments').then(res => res.data),
+    queryKey: ['parent-child-payment', selectedId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<PaymentSummary>>('/parents/me/child/payments', {
+          params: selectedId ? { studentId: selectedId } : {},
+        })
+        .then((res) => res.data),
+    enabled: !!selectedId,
   });
 
   const uploadMutation = useMutation({
-    mutationFn: (formData: FormData) => 
+    mutationFn: (formData: FormData) =>
       api.post('/parents/me/child/payments/receipt', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parent-child-payment'] });
@@ -61,6 +71,7 @@ export default function ParentPaymentPage() {
     if (!file) return;
     const formData = new FormData();
     formData.append('file', file);
+    if (selectedId) formData.append('studentId', selectedId);
     uploadMutation.mutate(formData);
   };
 
@@ -91,10 +102,15 @@ export default function ParentPaymentPage() {
 
   const payment = paymentRes?.data;
   const history = payment?.history || [];
-  const profile = profileRes?.data;
+  const childName = selected?.fullName ?? '—';
 
   return (
     <div className="space-y-6">
+      <ChildSelector
+        children={children}
+        selectedId={selectedId}
+        onSelect={select}
+      />
       <div>
         <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
           <CreditCard className="h-8 w-8 text-blue-600" />
@@ -102,7 +118,7 @@ export default function ParentPaymentPage() {
         </h1>
         <p className="text-slate-500 mt-1 ml-11">
           Управление платежами и загрузка чеков для:{' '}
-          <span className="font-bold text-slate-900">{profile?.child?.fullName ?? '—'}</span>
+          <span className="font-bold text-slate-900">{childName}</span>
         </p>
       </div>
 
@@ -133,7 +149,7 @@ export default function ParentPaymentPage() {
             
             <div className="flex justify-center flex-wrap gap-2">
               <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-100">MathCenter</Badge>
-              <Badge className="bg-slate-50 text-slate-600 hover:bg-slate-50">Ученик: {profile?.child?.fullName ?? '—'}</Badge>
+              <Badge className="bg-slate-50 text-slate-600 hover:bg-slate-50">Ученик: {childName}</Badge>
             </div>
 
             <div className="flex flex-col items-center gap-2 pt-4 border-t border-slate-100">

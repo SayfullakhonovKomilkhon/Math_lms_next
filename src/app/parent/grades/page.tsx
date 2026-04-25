@@ -9,11 +9,22 @@ import { ScoreChart } from '@/components/grades/ScoreChart';
 import { BarChart, TrendingUp, BookOpen, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useParentProfile, useSelectedChild } from '@/hooks/useParentProfile';
+import { ChildSelector } from '@/components/parent/ChildSelector';
 
 export default function ParentGradesPage() {
+  const { data: profile } = useParentProfile();
+  const { children, selectedId, select } = useSelectedChild(profile);
+
   const { data: gradesRes, isLoading } = useQuery({
-    queryKey: ['parent-child-grades'],
-    queryFn: () => api.get<ApiResponse<GradeRecord[]>>('/parents/me/child/grades').then(res => res.data),
+    queryKey: ['parent-child-grades', selectedId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<GradeRecord[]>>('/parents/me/child/grades', {
+          params: selectedId ? { studentId: selectedId } : {},
+        })
+        .then((res) => res.data),
+    enabled: !!selectedId,
   });
 
   if (isLoading) {
@@ -42,6 +53,7 @@ export default function ParentGradesPage() {
 
   return (
     <div className="space-y-6">
+      <ChildSelector children={children} selectedId={selectedId} onSelect={select} />
       <div>
         <h1 className="text-3xl font-bold text-slate-900 leading-tight flex items-center gap-3">
           <BarChart className="h-8 w-8 text-indigo-600" />

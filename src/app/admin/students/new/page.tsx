@@ -6,29 +6,69 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import api from '@/lib/api';
-import { Group } from '@/types';
+import { Group, Parent } from '@/types';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InputField, SelectField } from '@/components/ui/input-field';
 
-const schema = z.object({
-  fullName: z.string().min(2, 'Обязательное поле'),
-  email: z.string().email('Некорректный email'),
-  password: z.string().min(8, 'Минимум 8 символов'),
-  phone: z.string().optional(),
-  birthDate: z.string().optional(),
-  gender: z.enum(['MALE', 'FEMALE']),
-  groupId: z.string().optional(),
-  monthlyFee: z.number().min(0),
-  parentFullName: z.string().optional(),
-  parentPhone: z.string().optional(),
-  parentEmail: z.string().email('Некорректный email').optional().or(z.literal('')),
-});
+const schema = z
+  .object({
+    fullName: z.string().min(2, 'Обязательное поле'),
+    email: z.string().email('Некорректный email'),
+    password: z.string().min(8, 'Минимум 8 символов'),
+    phone: z.string().optional(),
+    birthDate: z.string().optional(),
+    gender: z.enum(['MALE', 'FEMALE']),
+    groupId: z.string().optional(),
+    monthlyFee: z.number().min(0),
+    parentMode: z.enum(['none', 'new', 'existing']),
+    parentFullName: z.string().optional(),
+    parentPhone: z.string().optional(),
+    parentEmail: z
+      .string()
+      .email('Некорректный email')
+      .optional()
+      .or(z.literal('')),
+    parentPassword: z.string().optional(),
+    existingParentId: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.parentMode === 'new') {
+      if (!data.parentFullName || data.parentFullName.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['parentFullName'],
+          message: 'Укажите ФИО родителя',
+        });
+      }
+      if (!data.parentEmail) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['parentEmail'],
+          message: 'Укажите email родителя',
+        });
+      }
+      if (!data.parentPassword || data.parentPassword.length < 8) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['parentPassword'],
+          message: 'Минимум 8 символов',
+        });
+      }
+    }
+    if (data.parentMode === 'existing' && !data.existingParentId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['existingParentId'],
+        message: 'Выберите родителя',
+      });
+    }
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -45,6 +85,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 export default function NewStudentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [parentSearch, setParentSearch] = useState('');
 
   const { data: groupsData } = useQuery({
     queryKey: ['groups'],
@@ -54,11 +95,32 @@ export default function NewStudentPage() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { monthlyFee: 500000, gender: 'MALE' },
+    defaultValues: { monthlyFee: 500000, gender: 'MALE', parentMode: 'none' },
   });
+
+  const parentMode = watch('parentMode');
+  const existingParentId = watch('existingParentId');
+
+  const { data: parents = [] } = useQuery({
+    queryKey: ['parents-search', parentSearch],
+    queryFn: () =>
+      api
+        .get('/parents', {
+          params: parentSearch ? { search: parentSearch } : {},
+        })
+        .then((r) => r.data.data as Parent[]),
+    enabled: parentMode === 'existing',
+  });
+
+  const visibleParents = useMemo(
+    () => parents.slice(0, 12),
+    [parents],
+  );
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -76,14 +138,16 @@ export default function NewStudentPage() {
 
       const studentId = studentRes.data.data.id;
 
-      if (data.parentFullName && data.parentEmail) {
+      if (data.parentMode === 'new' && data.parentEmail && data.parentPassword) {
         await api.post('/parents', {
           email: data.parentEmail,
-          password: 'Parent123!',
+          password: data.parentPassword,
           fullName: data.parentFullName,
           phone: data.parentPhone || undefined,
-          studentId,
+          studentIds: [studentId],
         });
+      } else if (data.parentMode === 'existing' && data.existingParentId) {
+        await api.post(`/parents/${data.existingParentId}/students/${studentId}`);
       }
 
       toast('Ученик успешно добавлен!');
@@ -91,9 +155,11 @@ export default function NewStudentPage() {
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string | string[] } } }).response
+              ?.data?.message
           : undefined;
-      toast(msg || 'Ошибка при создании ученика', 'error');
+      const text = Array.isArray(msg) ? msg.join(', ') : msg;
+      toast(text || 'Ошибка при создании ученика', 'error');
     } finally {
       setLoading(false);
     }
@@ -173,23 +239,113 @@ export default function NewStudentPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-slate-800">Данные родителя (необязательно)</h2>
+            <h2 className="font-semibold text-slate-800">Родитель</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Email и пароль родителя — это его данные для входа в систему.
+            </p>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="ФИО родителя" error={errors.parentFullName?.message}>
-              <InputField accent="admin" {...register('parentFullName')} placeholder="Каримов Шерзод" />
+          <CardContent className="space-y-4">
+            <Field label="Привязка родителя">
+              <SelectField accent="admin" {...register('parentMode')}>
+                <option value="none">Без родителя</option>
+                <option value="new">Создать нового</option>
+                <option value="existing">Привязать к существующему</option>
+              </SelectField>
             </Field>
-            <Field label="Email родителя" error={errors.parentEmail?.message}>
-              <InputField
-                accent="admin"
-                type="email"
-                {...register('parentEmail')}
-                placeholder="parent@mathcenter.uz"
-              />
-            </Field>
-            <Field label="Телефон родителя" error={errors.parentPhone?.message}>
-              <InputField accent="admin" {...register('parentPhone')} placeholder="+998901234567" />
-            </Field>
+
+            {parentMode === 'new' && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="ФИО родителя *" error={errors.parentFullName?.message}>
+                  <InputField
+                    accent="admin"
+                    {...register('parentFullName')}
+                    placeholder="Каримов Шерзод"
+                  />
+                </Field>
+                <Field label="Телефон" error={errors.parentPhone?.message}>
+                  <InputField
+                    accent="admin"
+                    {...register('parentPhone')}
+                    placeholder="+998901234567"
+                  />
+                </Field>
+                <Field label="Email (логин) *" error={errors.parentEmail?.message}>
+                  <InputField
+                    accent="admin"
+                    type="email"
+                    {...register('parentEmail')}
+                    placeholder="parent@mathcenter.uz"
+                  />
+                </Field>
+                <Field label="Пароль *" error={errors.parentPassword?.message}>
+                  <InputField
+                    accent="admin"
+                    type="text"
+                    {...register('parentPassword')}
+                    placeholder="Минимум 8 символов"
+                  />
+                </Field>
+              </div>
+            )}
+
+            {parentMode === 'existing' && (
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <InputField
+                    accent="admin"
+                    value={parentSearch}
+                    onChange={(e) => setParentSearch(e.target.value)}
+                    placeholder="Поиск по имени, email, телефону..."
+                    className="pl-9"
+                  />
+                </div>
+                {errors.existingParentId?.message && (
+                  <p className="text-xs text-red-600">
+                    {errors.existingParentId.message}
+                  </p>
+                )}
+                <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200">
+                  {visibleParents.length === 0 ? (
+                    <p className="p-4 text-center text-sm text-slate-400">
+                      Ничего не найдено
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {visibleParents.map((p) => {
+                        const checked = existingParentId === p.id;
+                        return (
+                          <li key={p.id}>
+                            <button
+                              type="button"
+                              onClick={() => setValue('existingParentId', p.id)}
+                              className={`flex w-full items-center justify-between gap-2 p-3 text-left text-sm hover:bg-slate-50 ${
+                                checked ? 'bg-blue-50' : ''
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-slate-900">
+                                  {p.fullName}
+                                </p>
+                                <p className="truncate text-xs text-slate-500">
+                                  {p.user?.email ?? '—'} ·{' '}
+                                  {(p.students ?? []).length} детей
+                                </p>
+                              </div>
+                              {checked && (
+                                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                                  Выбран
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
