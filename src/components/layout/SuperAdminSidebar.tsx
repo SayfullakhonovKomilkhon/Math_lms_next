@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useCenterBranding } from '@/hooks/useCenterBranding';
 import { AccountSettingsDialog } from '@/components/account/AccountSettingsDialog';
 import { AnnouncementsBadge } from '@/components/announcements/AnnouncementsBadge';
 
@@ -50,6 +51,7 @@ const NAV: NavItem[] = [
 export function SuperAdminSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const branding = useCenterBranding();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -59,8 +61,10 @@ export function SuperAdminSidebar() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
-          <div>
-            <span className="text-lg font-semibold tracking-tight">MathCenter</span>
+          <div className="min-w-0">
+            <span className="block truncate text-lg font-semibold tracking-tight">
+              {branding.centerName}
+            </span>
             <p className="text-xs font-medium text-white/80">Супер-Администратор</p>
           </div>
         </div>
