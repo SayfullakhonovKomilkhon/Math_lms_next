@@ -99,7 +99,7 @@
     #f5b544,
     #2650bb
   );
-  animation: sRotateRing 5s linear infinite;
+  /* rotation animation removed for calmer UI */
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;

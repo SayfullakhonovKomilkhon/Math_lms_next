@@ -269,10 +269,10 @@
 
 @keyframes sDetailFloat {
   0%, 100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-6px) rotate(12deg);
+    transform: translateY(-6px);
   }
 }
 

@@ -59,7 +59,7 @@
   filter: blur(6px);
   opacity: 0.45;
   z-index: -1;
-  animation: sRotateRing 8s linear infinite;
+  /* rotation animation removed for calmer UI */
 }
 
 .text {

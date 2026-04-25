@@ -230,19 +230,19 @@
 
 @keyframes sSpecialFloat {
   0%, 100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-4px) rotate(8deg);
+    transform: translateY(-4px);
   }
 }
 
 @keyframes sLockSway {
   0%, 100% {
-    transform: rotate(-8deg);
+    transform: translateY(0);
   }
   50% {
-    transform: rotate(8deg);
+    transform: translateY(-2px);
   }
 }
 

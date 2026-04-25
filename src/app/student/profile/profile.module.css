@@ -55,7 +55,7 @@
   filter: blur(10px);
   z-index: -1;
   opacity: 0.55;
-  animation: sRotateRing 7s linear infinite;
+  /* rotation animation removed for calmer UI */
 }
 
 .name {

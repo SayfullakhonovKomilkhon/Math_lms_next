@@ -63,8 +63,8 @@
 .decor span:nth-child(4) { top: 70%; right: 8%; animation-delay: 3.6s; font-size: 18px; }
 
 @keyframes sBannerFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-6px) rotate(14deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .left {
@@ -115,8 +115,8 @@
 }
 
 @keyframes sTrophyBob {
-  0%, 100% { transform: translateY(0) rotate(-4deg); }
-  50% { transform: translateY(-3px) rotate(4deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

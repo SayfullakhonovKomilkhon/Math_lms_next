@@ -124,8 +124,8 @@ function makeScene(anim: AnimationKey, seed: number): Scene {
           minDuration: 2.2,
           maxDuration: 4.4,
         }),
-        cardInitial: { rotate: 90, opacity: 0, scale: 0.8 },
-        cardAnimate: { rotate: 0, opacity: 1, scale: 1 },
+        cardInitial: { opacity: 0, scale: 0.8 },
+        cardAnimate: { opacity: 1, scale: 1 },
         cardTransition: { type: 'spring', stiffness: 150, damping: 18, delay: 0.15 },
       };
     case 'bloom':
@@ -217,8 +217,8 @@ function makeScene(anim: AnimationKey, seed: number): Scene {
           minSize: 16,
           maxSize: 32,
         }),
-        cardInitial: { rotate: 360, scale: 0.4, opacity: 0 },
-        cardAnimate: { rotate: 0, scale: 1, opacity: 1 },
+        cardInitial: { scale: 0.4, opacity: 0 },
+        cardAnimate: { scale: 1, opacity: 1 },
         cardTransition: { type: 'spring', stiffness: 120, damping: 16, delay: 0.3 },
       };
     case 'storm':
@@ -246,8 +246,8 @@ function makeScene(anim: AnimationKey, seed: number): Scene {
           minSize: 20,
           maxSize: 36,
         }),
-        cardInitial: { y: '-120%', opacity: 0, rotate: -6 },
-        cardAnimate: { y: 0, opacity: 1, rotate: 0 },
+        cardInitial: { y: '-120%', opacity: 0 },
+        cardAnimate: { y: 0, opacity: 1 },
         cardTransition: { type: 'spring', stiffness: 120, damping: 14, delay: 0.3 },
       };
   }
@@ -382,12 +382,9 @@ function CelebrationInner({
           {scene.rays ? (
             <motion.div
               className={styles.rays}
-              initial={{ opacity: 0, rotate: 0 }}
-              animate={{ opacity: 0.7, rotate: 360 }}
-              transition={{
-                opacity: { duration: 0.6 },
-                rotate: { duration: 22, repeat: Infinity, ease: 'linear' },
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.7 }}
+              transition={{ opacity: { duration: 0.6 } }}
             />
           ) : null}
 

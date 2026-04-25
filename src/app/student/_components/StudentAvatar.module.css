@@ -47,10 +47,10 @@
 
 @keyframes sCrownSway {
   0%, 100% {
-    transform: translateX(-50%) rotate(-6deg);
+    transform: translateX(-50%) translateY(0);
   }
   50% {
-    transform: translateX(-50%) rotate(6deg);
+    transform: translateX(-50%) translateY(-2px);
   }
 }
 
