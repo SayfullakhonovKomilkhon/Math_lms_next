@@ -8,16 +8,19 @@ import type { ApiResponse, ParentProfile } from '@/types';
 const STORAGE_KEY = 'mc:parent:selectedChildId';
 
 export function useParentProfile() {
-  // Profile rarely changes (name, linked children) so we keep it fresh for
-  // 5 minutes. Without this every parent sub-page re-fetched the profile on
-  // mount, which made navigation feel sluggish.
+  // Always trigger a background refetch on every mount so newly linked
+  // children appear immediately when the parent reloads / navigates back to
+  // the panel. Cached data is still shown instantly while the refetch runs,
+  // so the UI does not flash a skeleton when navigating between parent
+  // sub-pages — `gcTime` keeps the cache alive for 30 minutes.
   return useQuery({
     queryKey: ['parent-profile'],
     queryFn: () =>
       api.get<ApiResponse<ParentProfile>>('/parents/me').then((r) => r.data.data),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
