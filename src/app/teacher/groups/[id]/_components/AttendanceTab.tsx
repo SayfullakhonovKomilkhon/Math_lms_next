@@ -350,18 +350,43 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
 
   const persistTopic = async (topic: string) => {
     if (!selectedDate || !topic.trim()) return;
+    const trimmed = topic.trim();
     const existing = topics.find((t) => t.date.startsWith(selectedDate));
-    if (existing && existing.topic === topic.trim()) return;
+    if (existing && existing.topic === trimmed) return;
+
+    // Optimistically update the lesson-topics cache so the column header
+    // turns orange / shows the tooltip without waiting for a refetch.
+    const optimisticKey: ['lesson-topics', string] = ['lesson-topics', groupId];
+    qc.setQueryData<LessonTopic[]>(optimisticKey, (prev) => {
+      const list = prev ?? [];
+      const withoutDate = list.filter(
+        (t) => !t.date.startsWith(selectedDate),
+      );
+      return [
+        ...withoutDate,
+        {
+          id: existing?.id ?? `optimistic-${selectedDate}`,
+          date: existing?.date ?? `${selectedDate}T00:00:00.000Z`,
+          topic: trimmed,
+          materials: existing?.materials,
+          group: existing?.group,
+          teacher: existing?.teacher,
+        } satisfies LessonTopic,
+      ];
+    });
+
     try {
       await api.post('/lesson-topics', {
         groupId,
         date: selectedDate,
-        topic: topic.trim(),
+        topic: trimmed,
       });
       qc.invalidateQueries({ queryKey: ['lesson-topics', groupId] });
       qc.invalidateQueries({ queryKey: ['lesson-topic-suggestions'] });
       toast('Тема сохранена');
     } catch (e: unknown) {
+      // Roll back optimistic update on failure.
+      qc.invalidateQueries({ queryKey: ['lesson-topics', groupId] });
       const msg =
         e && typeof e === 'object' && 'response' in e
           ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -465,19 +490,16 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                       key={day.toISOString()}
                       onClick={() => setSelectedDate(dateStr)}
                       className={cn(
-                        'group relative cursor-pointer border-b border-slate-200 px-2 py-3 text-center text-xs font-medium transition-colors',
-                        isSelected ? 'text-emerald-700' : 'text-slate-600 hover:text-slate-900',
+                        'group relative cursor-pointer border-b border-slate-200 px-2 py-3 text-center text-xs font-bold transition-colors',
+                        isExam
+                          ? 'text-amber-600 hover:text-amber-700'
+                          : isSelected
+                            ? 'text-emerald-700'
+                            : 'text-slate-600 hover:text-slate-900',
                         topic && 'underline decoration-dotted underline-offset-4',
                       )}
                     >
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span>{format(day, 'dd.MM')}</span>
-                        {isExam ? (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">
-                            Экзамен
-                          </span>
-                        ) : null}
-                      </div>
+                      <span>{format(day, 'dd.MM')}</span>
                       <span
                         role="tooltip"
                         className="pointer-events-none absolute left-1/2 top-full z-30 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-within:block"
@@ -922,15 +944,15 @@ function TopicCombobox({
           }}
           onFocus={() => setOpen(true)}
           onBlur={(e) => {
-            // Auto-save typed topic (length >= 3) when focus leaves the field
-            // (and the click did not land on the popover itself — that case is
-            // handled by the popover's own click handlers). Wrapped in a small
-            // timeout so a click on a popover item still wins.
+            // Auto-save typed topic when focus leaves the field. We always
+            // commit (backend dedupes), because exactMatch can be true when
+            // the topic merely exists in the global suggestion list while
+            // still being unsaved for the currently selected date.
             const next = e.relatedTarget as Node | null;
             if (next && popoverRef.current?.contains(next)) return;
             if (next && rootRef.current?.contains(next)) return;
             const trimmed = value.trim();
-            if (trimmed.length >= 3 && !exactMatch) {
+            if (trimmed.length >= 3) {
               void onCommit(trimmed);
             }
           }}
