@@ -26,35 +26,47 @@ export function PanelPrefetcher({ variant }: { variant: PanelPrefetchVariant }) 
     }
 
     if (variant === 'student') {
+      // Match the unwrapping used in the actual page hooks (`r.data.data`),
+      // otherwise the cache holds an `ApiResponse` wrapper here while pages
+      // expect the inner payload, and the dashboard renders empty until a
+      // real fetch overwrites the cache.
       void queryClient.prefetchQuery({
         queryKey: ['student-profile'],
-        queryFn: () => api.get('/students/me').then((response) => response.data),
+        queryFn: () =>
+          api.get('/students/me').then((response) => response.data?.data ?? response.data),
         staleTime: PROFILE_STALE_TIME,
       });
       void queryClient.prefetchQuery({
         queryKey: ['student-homework-latest'],
-        queryFn: () => api.get('/homework/my/latest').then((response) => response.data),
+        queryFn: () =>
+          api.get('/homework/my/latest').then((response) => response.data?.data ?? null),
         staleTime: ACADEMIC_STALE_TIME,
       });
       void queryClient.prefetchQuery({
         queryKey: ['student-schedule'],
-        queryFn: () => api.get('/schedule/my').then((response) => response.data),
+        queryFn: () =>
+          api.get('/schedule/my').then((response) => response.data?.data ?? null),
         staleTime: SCHEDULE_STALE_TIME,
       });
       return;
     }
 
     if (variant === 'parent') {
+      // IMPORTANT: keep the cache shape identical to `useParentProfile`,
+      // otherwise the dashboard sees `{success, data: {...}}` here and
+      // `ParentProfile` from the hook, which makes `profile.children`
+      // undefined on first paint and forces the user to navigate away
+      // and back before real data shows up.
       void queryClient.prefetchQuery({
         queryKey: ['parent-profile'],
-        queryFn: () => api.get('/parents/me').then((response) => response.data),
+        queryFn: () =>
+          api.get('/parents/me').then((response) => response.data?.data ?? response.data),
         staleTime: PROFILE_STALE_TIME,
       });
-      void queryClient.prefetchQuery({
-        queryKey: ['parent-child-payment'],
-        queryFn: () => api.get('/parents/me/child/payments').then((response) => response.data),
-        staleTime: ACADEMIC_STALE_TIME,
-      });
+      // child-payment query is keyed by `['parent-child-payment', selectedId]`,
+      // so this shape-less prefetch never matches the real key. We just
+      // warm the HTTP layer so the next request is faster.
+      void api.get('/parents/me/child/payments').catch(() => {});
       return;
     }
 
