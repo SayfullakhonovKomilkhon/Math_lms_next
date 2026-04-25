@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { ApiResponse, StudentProfile } from '@/types';
+import { useStudentProgress } from './useStudentProgress';
 
 type StudentSummary = {
   fullName: string;
@@ -29,19 +30,10 @@ function toInitials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function computeLevel(totalLessons: number, attendancePercent: number) {
-  // Simple heuristic: 1 level per 8 completed lessons, bonus for high attendance.
-  const base = Math.max(1, Math.floor(totalLessons / 8) + 1);
-  const bonus = attendancePercent >= 90 ? 1 : 0;
-  const level = base + bonus;
-  const xp = (totalLessons % 8) * 180 + Math.floor(attendancePercent * 4);
-  const xpNeeded = 1440;
-  return { level, xp, xpNeeded };
-}
-
 /**
  * Hook that wraps the /students/me endpoint, producing a convenient summary
- * with game-like fields (level, xp, title) derived client-side.
+ * with game-like fields (level, xp, title) sourced from the backend
+ * progression endpoint (`/achievements/my/progress`).
  */
 export function useStudentSummary(): {
   summary: StudentSummary;
@@ -57,11 +49,11 @@ export function useStudentSummary(): {
     staleTime: 5 * 60 * 1000,
   });
 
+  // XP / level / streak are computed on the backend from real attendance,
+  // grades and achievements — see `GamificationService.computeStudentProgress`.
+  const progress = useStudentProgress();
+
   if (data) {
-    const { level, xp, xpNeeded } = computeLevel(
-      data.totalLessons ?? 0,
-      data.attendanceStats?.percentage ?? 0,
-    );
     const fullName = data.fullName ?? 'Ученик';
     const firstName = fullName.split(/\s+/)[0] ?? fullName;
     return {
@@ -74,12 +66,12 @@ export function useStudentSummary(): {
         centerName: 'MathCenter',
         totalLessons: data.totalLessons ?? 0,
         attendancePercent: data.attendanceStats?.percentage ?? 0,
-        level,
-        xp,
-        xpNeeded,
-        title: level >= 10 ? 'Легенда' : level >= 6 ? 'Умный боец' : 'Юный исследователь',
-        titleEmoji: level >= 10 ? '🏆' : level >= 6 ? '⚡' : '🌱',
-        streak: Math.min(30, Math.round((data.attendanceStats?.percentage ?? 0) / 8)),
+        level: progress.level,
+        xp: progress.xpInLevel,
+        xpNeeded: progress.xpForNextLevel,
+        title: progress.title,
+        titleEmoji: progress.titleEmoji,
+        streak: progress.streak,
         gender: data.gender === 'FEMALE' ? 'female' : 'male',
       },
       loading: false,
@@ -98,12 +90,12 @@ export function useStudentSummary(): {
       centerName: 'MathCenter',
       totalLessons: 0,
       attendancePercent: 0,
-      level: 1,
-      xp: 0,
-      xpNeeded: 1440,
-      title: 'Юный исследователь',
-      titleEmoji: '🌱',
-      streak: 0,
+      level: progress.level,
+      xp: progress.xpInLevel,
+      xpNeeded: progress.xpForNextLevel,
+      title: progress.title,
+      titleEmoji: progress.titleEmoji,
+      streak: progress.streak,
       gender: 'male',
     },
     loading: isLoading,

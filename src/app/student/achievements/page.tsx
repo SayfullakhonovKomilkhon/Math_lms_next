@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Award, Sparkles, Trophy, Users, Wand2 } from 'lucide-react';
+import { Award, Sparkles, Trophy, Users } from 'lucide-react';
 import { PageTitle } from '../_components/PageTitle';
 import { SectionHeading } from '../_components/Card';
 import { ChampionBanner } from '../_components/ChampionBanner';
@@ -22,11 +22,9 @@ import {
   AchievementCelebration,
   type CelebrationInput,
 } from '../_components/AchievementCelebration';
-import { SButton } from '../_components/SButton';
 import { useStudentSummary } from '../_lib/useStudentSummary';
 import { useMyAchievements } from '../_lib/useMyAchievements';
 import { deriveChampionship } from '../_lib/useChampionship';
-import { MONTHS } from '../_lib/achievementsCatalog';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { ApiResponse, MyRating } from '@/types';
@@ -43,6 +41,11 @@ export default function StudentAchievementsPage() {
 
   const [detail, setDetail] = useState<AchievementDetail | null>(null);
   const [celebrate, setCelebrate] = useState<CelebrationInput | null>(null);
+  // `celebrate` will be triggered automatically the first time a brand-new
+  // medal appears in the data (handled by the gamification flow). The page
+  // intentionally has no manual "demo" buttons so students experience the
+  // animation only when they actually earn an achievement.
+  void setCelebrate;
 
   const { data: ratingRes } = useQuery({
     queryKey: ['student-rating', 'month'],
@@ -81,11 +84,6 @@ export default function StudentAchievementsPage() {
       key: s.key,
       unlockedAt: s.unlockedAt,
     });
-  };
-
-  const demoCelebration = () => {
-    const month = new Date().getMonth() + 1;
-    setCelebrate({ month, place: 1 });
   };
 
   return (
@@ -166,34 +164,6 @@ export default function StudentAchievementsPage() {
               onSelect={openSpecial}
             />
           ))}
-        </div>
-      </div>
-
-      <div className={styles.section}>
-        <SectionHeading
-          icon={<Wand2 size={14} />}
-          label="Анимации вручения"
-        />
-        <p className={styles.hint}>
-          У каждого месяца — своя анимация. Нажми кнопку, чтобы посмотреть, как
-          открываются медали.
-        </p>
-        <div className={styles.celebRow}>
-          {MONTHS.map((m) => (
-            <SButton
-              key={m.month}
-              variant="ghost"
-              size="sm"
-              onClick={() => setCelebrate({ month: m.month, place: 1 })}
-            >
-              {m.emoji} {m.short}
-            </SButton>
-          ))}
-        </div>
-        <div className={styles.demoBtn}>
-          <SButton variant="gold" onClick={demoCelebration}>
-            ✨ Эпичное вручение прямо сейчас
-          </SButton>
         </div>
       </div>
 
