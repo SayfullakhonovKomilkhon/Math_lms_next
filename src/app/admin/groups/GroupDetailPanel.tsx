@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Group, AttendanceSummary, Student } from '@/types';
@@ -20,6 +20,8 @@ import {
   UserMinus,
   Search,
   X,
+  Wallet,
+  Save,
 } from 'lucide-react';
 
 interface GroupStudent {
@@ -28,8 +30,9 @@ interface GroupStudent {
   phone?: string;
   gender: string;
   isActive: boolean;
+  /** Fee for THIS group only (returned by /groups/:id/students). */
   monthlyFee: number;
-  user?: { email: string };
+  user?: { phone: string };
 }
 
 interface GroupDetailPanelProps {
@@ -44,9 +47,36 @@ const DAY_LABELS: Record<string, string> = {
   THU: 'Чт', FRI: 'Пт', SAT: 'Сб', SUN: 'Вс',
 };
 
+type Slot = { days: string[]; time: string; duration: number };
+
 function ScheduleInfo({ schedule }: { schedule: Record<string, unknown> }) {
   if (!schedule) return <span className="text-slate-400">—</span>;
 
+  // Newest format: an array of slots (multiple days+time blocks per group).
+  if (Array.isArray(schedule.slots) && schedule.slots.length > 0) {
+    const slots = schedule.slots as Slot[];
+    return (
+      <div className="space-y-1.5">
+        {slots.map((s, i) => {
+          const days = (s.days ?? []).map((d) => DAY_LABELS[d] ?? d).join(', ');
+          return (
+            <div key={i} className="flex items-center gap-2 text-sm text-slate-700">
+              <span className="font-medium text-slate-900">{days || '—'}</span>
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              <span>
+                {s.time}
+                {!!s.duration && (
+                  <span className="text-slate-500"> ({s.duration} мин)</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Legacy flat per-day list with explicit start/end (used by student/parent UIs).
   if (Array.isArray(schedule.days) && schedule.days.length > 0 && typeof schedule.days[0] === 'object') {
     return (
       <div className="space-y-1">
@@ -61,6 +91,7 @@ function ScheduleInfo({ schedule }: { schedule: Record<string, unknown> }) {
     );
   }
 
+  // Original single-slot format kept for groups created before slots existed.
   if (Array.isArray(schedule.days)) {
     const days = (schedule.days as string[]).map((d) => DAY_LABELS[d] ?? d).join(', ');
     return (
@@ -113,22 +144,45 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
 
   const assignMutation = useMutation({
     mutationFn: (studentId: string) =>
-      api.patch(`/students/${studentId}/group`, { groupId: group!.id }),
+      api.post(`/students/${studentId}/groups`, { groupId: group!.id }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group-students', group?.id] });
       qc.invalidateQueries({ queryKey: ['groups'] });
+      qc.invalidateQueries({ queryKey: ['students'] });
       toast('Ученик добавлен в группу');
       setSearch('');
     },
     onError: () => toast('Ошибка при добавлении', 'error'),
   });
 
+  // Track the editable "default monthly fee" for this group. We seed it from
+  // the loaded group and keep edits local until the admin hits "Сохранить".
+  const [feeInput, setFeeInput] = useState<string>('');
+  useEffect(() => {
+    if (group) {
+      setFeeInput(String(group.defaultMonthlyFee ?? 0));
+    }
+  }, [group?.id, group?.defaultMonthlyFee]);
+
+  const updateFeeMutation = useMutation({
+    mutationFn: (defaultMonthlyFee: number) =>
+      api.patch(`/groups/${group!.id}`, { defaultMonthlyFee }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] });
+      toast('Базовая цена группы обновлена');
+    },
+    onError: () => toast('Не удалось обновить цену', 'error'),
+  });
+
+  // Removes the link only for THIS group; the student stays in any other
+  // groups they already belonged to.
   const removeMutation = useMutation({
     mutationFn: (studentId: string) =>
-      api.patch(`/students/${studentId}/remove-group`),
+      api.delete(`/students/${studentId}/groups/${group!.id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group-students', group?.id] });
       qc.invalidateQueries({ queryKey: ['groups'] });
+      qc.invalidateQueries({ queryKey: ['students'] });
       toast('Ученик удалён из группы');
     },
     onError: () => toast('Ошибка при удалении', 'error'),
@@ -214,6 +268,49 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
                       <ScheduleInfo schedule={group.schedule} />
                     </div>
                   </div>
+
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
+                      Базовая цена группы
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 shrink-0 text-slate-400" />
+                      <div className="flex flex-1 items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={1000}
+                          value={feeInput}
+                          onChange={(e) => setFeeInput(e.target.value)}
+                          disabled={!group.isActive}
+                          className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-50"
+                        />
+                        <span className="text-sm text-slate-500">сум/мес</span>
+                        <Button
+                          size="sm"
+                          accent="admin"
+                          variant="outline"
+                          className="ml-auto gap-1.5"
+                          loading={updateFeeMutation.isPending}
+                          disabled={
+                            !group.isActive ||
+                            Number(feeInput) === Number(group.defaultMonthlyFee ?? 0) ||
+                            Number.isNaN(Number(feeInput))
+                          }
+                          onClick={() => updateFeeMutation.mutate(Number(feeInput))}
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          Сохранить
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="mt-1 pl-6 text-xs text-slate-400">
+                      Эта цена подставляется по умолчанию при добавлении нового
+                      ученика. Цену конкретного ученика можно изменить в его
+                      карточке.
+                    </p>
+                  </div>
+
                   {group.archivedAt && (
                     <InfoRow
                       icon={Calendar}
@@ -271,8 +368,13 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
                                 <li key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
                                   <div className="min-w-0">
                                     <p className="truncate text-sm font-medium text-slate-900">{s.fullName}</p>
-                                    {s.group && (
-                                      <p className="text-xs text-slate-400">Сейчас: {(s.group as { name: string }).name}</p>
+                                    {(s.groups ?? []).length > 0 && (
+                                      <p className="truncate text-xs text-slate-400">
+                                        Сейчас:{' '}
+                                        {(s.groups ?? [])
+                                          .map((g) => g.groupName)
+                                          .join(', ')}
+                                      </p>
                                     )}
                                   </div>
                                   <Button
@@ -307,12 +409,17 @@ export function GroupDetailPanel({ group, onClose }: GroupDetailPanelProps) {
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-slate-900">{s.fullName}</p>
-                            {s.phone && (
-                              <p className="flex items-center gap-1 text-xs text-slate-500">
-                                <Phone className="h-3 w-3" />
-                                {s.phone}
-                              </p>
-                            )}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              {s.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {s.phone}
+                                </span>
+                              )}
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
+                                {Number(s.monthlyFee).toLocaleString('ru-RU')} сум/мес
+                              </span>
+                            </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
                             <Badge variant={s.isActive ? 'green' : 'gray'} className="text-xs">

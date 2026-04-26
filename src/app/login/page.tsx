@@ -12,8 +12,23 @@ import { Role } from '@/types';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 
+// Strip everything except digits and a leading "+", so "+998 90 962 51 46",
+// "90-962-51-46", or "(90) 962 51 46" all reduce to the same canonical form
+// before we hand it off to the backend (which then prepends +998 if absent).
+const normalizePhoneInput = (raw: string) => {
+  const trimmed = raw.trim();
+  const plus = trimmed.startsWith('+') ? '+' : '';
+  return plus + trimmed.replace(/\D+/g, '');
+};
+
 const schema = z.object({
-  email: z.string().email('Введите корректный email'),
+  phone: z
+    .string()
+    .trim()
+    .transform(normalizePhoneInput)
+    .refine((v) => /^\+?[0-9]{9,15}$/.test(v), {
+      message: 'Введите номер телефона. Префикс +998 можно опустить.',
+    }),
   password: z.string().min(6, 'Минимум 6 символов'),
 });
 
@@ -29,14 +44,14 @@ const PORTAL_COPY: Record<Portal, { title: string; subtitle: string; placeholder
   student: {
     title: 'Student Login',
     subtitle: 'Вход для учеников и родителей',
-    placeholder: 'you@example.com',
+    placeholder: '901234567',
     wrongRole:
       'Этот аккаунт не относится к ученикам или родителям. Вернитесь назад и выберите «Staff».',
   },
   staff: {
     title: 'Staff Login',
     subtitle: 'Вход для учителей, администраторов и супер-администраторов',
-    placeholder: 'admin@mathcenter.uz',
+    placeholder: '901234567',
     wrongRole:
       'Этот аккаунт не относится к сотрудникам. Вернитесь назад и выберите «Student».',
   },
@@ -71,7 +86,7 @@ export default function LoginPage() {
   const onSubmit = async (portal: Portal, data: FormData) => {
     setLoading(true);
     try {
-      await storeLogin(data.email, data.password);
+      await storeLogin(data.phone, data.password);
       const user = useAuthStore.getState().user;
       const role = user?.role;
       if (!role) throw new Error('No role in auth response');
@@ -89,7 +104,7 @@ export default function LoginPage() {
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
-      toast(msg || 'Неверный email или пароль', 'error');
+      toast(msg || 'Неверный номер телефона или пароль', 'error');
     } finally {
       setLoading(false);
     }
@@ -166,16 +181,16 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit((data) => onSubmit(step, data))} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-[#0E1541] mb-2">Email address</label>
+                  <label className="block text-sm font-semibold text-[#0E1541] mb-2">Номер телефона</label>
                   <input
-                    {...register('email')}
-                    type="email"
-                    autoComplete="email"
+                    {...register('phone')}
+                    type="tel"
+                    autoComplete="tel"
                     placeholder={PORTAL_COPY[step].placeholder}
                     className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[15px] text-[#0E1541] placeholder:text-gray-400 bg-white focus:ring-2 focus:ring-[#0E1541] focus:border-[#0E1541] outline-none transition-all"
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1.5">{errors.email.message}</p>
+                  {errors.phone && (
+                    <p className="text-red-500 text-sm mt-1.5">{errors.phone.message}</p>
                   )}
                 </div>
 

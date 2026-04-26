@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   TrendingUp,
   UserCog,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ const NAV: NavItem[] = [
   { href: '/superadmin/staff', label: 'Персонал', icon: UserCog },
   { href: '/superadmin/groups', label: 'Группы', icon: BookOpen },
   { href: '/superadmin/finance', label: 'Финансы', icon: DollarSign },
+  { href: '/superadmin/expenses', label: 'Расходы центра', icon: Wallet },
   { href: '/superadmin/analytics', label: 'Аналитика', icon: BarChart2 },
   { href: '/superadmin/salary', label: 'Зарплаты', icon: TrendingUp },
   {
@@ -98,7 +100,7 @@ export function SuperAdminSidebar() {
       <div className="shrink-0 p-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm">
           <p className="truncate text-xs font-medium text-slate-500">Вошли как</p>
-          <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.email}</p>
+          <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.phone}</p>
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}

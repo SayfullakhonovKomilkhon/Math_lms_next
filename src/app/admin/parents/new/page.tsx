@@ -18,9 +18,14 @@ import { toast } from '@/components/ui/toast';
 
 const schema = z.object({
   fullName: z.string().min(2, 'Обязательное поле'),
-  email: z.string().email('Некорректный email'),
+  phone: z
+    .string()
+    .trim()
+    .regex(
+      /^\+?[0-9]{9,15}$/,
+      'Введите номер телефона в международном формате (например, +998901234567)',
+    ),
   password: z.string().min(8, 'Минимум 8 символов'),
-  phone: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -41,7 +46,7 @@ export default function NewParentPage() {
     if (!q) return students.slice(0, 10);
     return students
       .filter((s) =>
-        [s.fullName, s.user?.email, s.phone, s.group?.name]
+        [s.fullName, s.user?.phone, s.phone, s.group?.name]
           .filter(Boolean)
           .some((field) => String(field).toLowerCase().includes(q)),
       )
@@ -67,7 +72,6 @@ export default function NewParentPage() {
     try {
       await api.post('/parents', {
         ...data,
-        phone: data.phone || undefined,
         studentIds: selected.map((s) => s.id),
       });
       toast('Родитель добавлен');
@@ -102,7 +106,7 @@ export default function NewParentPage() {
           <CardHeader>
             <h2 className="font-semibold text-slate-800">Данные родителя</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Email и пароль будут использоваться родителем для входа в систему.
+              Номер телефона и пароль будут использоваться родителем для входа в систему.
             </p>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -121,16 +125,16 @@ export default function NewParentPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
-                Email (логин) *
+                Телефон (логин) *
               </label>
               <InputField
                 accent="admin"
-                type="email"
-                {...register('email')}
-                placeholder="parent@mathcenter.uz"
+                type="tel"
+                {...register('phone')}
+                placeholder="+998901234567"
               />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+              {errors.phone && (
+                <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>
               )}
             </div>
             <div>
@@ -146,16 +150,6 @@ export default function NewParentPage() {
               {errors.password && (
                 <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
               )}
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Телефон
-              </label>
-              <InputField
-                accent="admin"
-                {...register('phone')}
-                placeholder="+998901234567"
-              />
             </div>
           </CardContent>
         </Card>
@@ -190,7 +184,7 @@ export default function NewParentPage() {
                 accent="admin"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Поиск ученика по имени, email, группе..."
+                placeholder="Поиск ученика по имени, телефону, группе..."
                 className="pl-9"
               />
             </div>
@@ -218,7 +212,7 @@ export default function NewParentPage() {
                               {s.fullName}
                             </p>
                             <p className="truncate text-xs text-slate-500">
-                              {s.user?.email ?? '—'}
+                              {s.user?.phone ?? s.phone ?? '—'}
                               {s.group?.name ? ` · ${s.group.name}` : ''}
                             </p>
                           </div>

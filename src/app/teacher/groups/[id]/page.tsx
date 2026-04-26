@@ -25,7 +25,7 @@ interface GroupStudent {
   isActive: boolean;
   monthlyFee: number | string;
   hasPaidThisMonth?: boolean;
-  user?: { email: string };
+  user?: { phone: string };
 }
 
 type TabId = 'davomat' | 'homework' | 'practice' | 'online';

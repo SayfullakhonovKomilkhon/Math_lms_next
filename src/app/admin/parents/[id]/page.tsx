@@ -18,7 +18,7 @@ export default function EditParentPage() {
   const qc = useQueryClient();
 
   const [profile, setProfile] = useState({ fullName: '', phone: '' });
-  const [creds, setCreds] = useState({ email: '', password: '' });
+  const [creds, setCreds] = useState({ phone: '', password: '' });
   const [studentSearch, setStudentSearch] = useState('');
 
   const { data: parent, isLoading } = useQuery({
@@ -39,7 +39,7 @@ export default function EditParentPage() {
         phone: parent.phone ?? '',
       });
       setCreds((prev) => ({
-        email: parent.user?.email ?? '',
+        phone: parent.user?.phone ?? parent.phone ?? '',
         password: prev.password,
       }));
     }
@@ -56,7 +56,7 @@ export default function EditParentPage() {
     if (!q) return candidates.slice(0, 8);
     return candidates
       .filter((s) =>
-        [s.fullName, s.user?.email, s.phone, s.group?.name]
+        [s.fullName, s.user?.phone, s.phone, s.group?.name]
           .filter(Boolean)
           .some((field) => String(field).toLowerCase().includes(q)),
       )
@@ -82,9 +82,10 @@ export default function EditParentPage() {
 
   const updateCredsMutation = useMutation({
     mutationFn: () => {
-      const payload: { email?: string; password?: string } = {};
-      if (creds.email && creds.email !== parent?.user?.email)
-        payload.email = creds.email;
+      const payload: { phone?: string; password?: string } = {};
+      const currentPhone = parent?.user?.phone ?? parent?.phone ?? '';
+      if (creds.phone && creds.phone !== currentPhone)
+        payload.phone = creds.phone;
       if (creds.password) payload.password = creds.password;
       return api.patch(`/parents/${id}/credentials`, payload);
     },
@@ -132,9 +133,10 @@ export default function EditParentPage() {
     );
   }
 
+  const currentLoginPhone = parent.user?.phone ?? parent.phone ?? '';
   const credsChanged =
     Boolean(creds.password) ||
-    (creds.email && creds.email !== parent.user?.email);
+    (creds.phone && creds.phone !== currentLoginPhone);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -150,14 +152,10 @@ export default function EditParentPage() {
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
-            <span className="text-slate-500">Email</span>
+            <span className="text-slate-500">Телефон (логин)</span>
             <p className="font-medium text-slate-900">
-              {parent.user?.email ?? '—'}
+              {parent.user?.phone ?? parent.phone ?? '—'}
             </p>
-          </div>
-          <div>
-            <span className="text-slate-500">Телефон</span>
-            <p className="font-medium text-slate-900">{parent.phone ?? '—'}</p>
           </div>
         </CardContent>
       </Card>
@@ -219,15 +217,16 @@ export default function EditParentPage() {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">
-              Email (логин)
+              Телефон (логин)
             </label>
             <InputField
               accent="admin"
-              type="email"
-              value={creds.email}
+              type="tel"
+              value={creds.phone}
               onChange={(e) =>
-                setCreds((c) => ({ ...c, email: e.target.value }))
+                setCreds((c) => ({ ...c, phone: e.target.value }))
               }
+              placeholder="+998901234567"
             />
           </div>
           <div>
@@ -316,7 +315,7 @@ export default function EditParentPage() {
               accent="admin"
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
-              placeholder="Поиск по имени, email, группе..."
+              placeholder="Поиск по имени, телефону, группе..."
             />
             <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-slate-200">
               {filteredStudents.length === 0 ? (
@@ -337,7 +336,7 @@ export default function EditParentPage() {
                             {s.fullName}
                           </p>
                           <p className="truncate text-xs text-slate-500">
-                            {s.user?.email ?? '—'}
+                            {s.user?.phone ?? s.phone ?? '—'}
                             {s.group?.name ? ` · ${s.group.name}` : ''}
                           </p>
                         </div>

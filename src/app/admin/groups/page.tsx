@@ -29,10 +29,31 @@ const DAYS = [
   { key: 'SUNDAY', label: 'Вс' },
 ];
 
-type Schedule = { days: string[]; time: string; duration: number };
-type FormState = { name: string; teacherId: string; maxStudents: number; schedule: Schedule };
+// One scheduling block: a chosen set of days that all share the same time +
+// duration. A group can have many of these (e.g. Mon/Wed/Fri 15:00 +
+// Tue/Thu/Sat 13:00).
+type Slot = { days: string[]; time: string; duration: number };
+type FormState = {
+  name: string;
+  teacherId: string;
+  maxStudents: number;
+  defaultMonthlyFee: number;
+  slots: Slot[];
+};
 
-const DEFAULT_SCHEDULE: Schedule = { days: ['MONDAY', 'WEDNESDAY', 'FRIDAY'], time: '09:00', duration: 90 };
+const DEFAULT_SLOT: Slot = {
+  days: ['MONDAY', 'WEDNESDAY', 'FRIDAY'],
+  time: '09:00',
+  duration: 90,
+};
+
+const EMPTY_FORM: FormState = {
+  name: '',
+  teacherId: '',
+  maxStudents: 20,
+  defaultMonthlyFee: 0,
+  slots: [DEFAULT_SLOT],
+};
 
 function DayPicker({ value, onChange }: { value: string[]; onChange: (days: string[]) => void }) {
   const toggle = (day: string) =>
@@ -57,12 +78,144 @@ function DayPicker({ value, onChange }: { value: string[]; onChange: (days: stri
   );
 }
 
+// Read whatever shape sits in DB and turn it into a list of editable slots.
+// Older groups use {days, time, duration}; we wrap them into a single slot.
+function readSlots(raw: unknown): Slot[] {
+  if (!raw || typeof raw !== 'object') return [{ ...DEFAULT_SLOT }];
+  const obj = raw as Record<string, unknown>;
+  if (Array.isArray(obj.slots) && obj.slots.length > 0) {
+    return (obj.slots as Slot[]).map((s) => ({
+      days: Array.isArray(s.days) ? s.days : [],
+      time: typeof s.time === 'string' ? s.time : '09:00',
+      duration: typeof s.duration === 'number' ? s.duration : 90,
+    }));
+  }
+  if (Array.isArray(obj.days) && typeof obj.days[0] === 'string') {
+    return [
+      {
+        days: obj.days as string[],
+        time: typeof obj.time === 'string' ? obj.time : '09:00',
+        duration: typeof obj.duration === 'number' ? obj.duration : 90,
+      },
+    ];
+  }
+  return [{ ...DEFAULT_SLOT }];
+}
+
+// Compose what we send back to the API. We keep the new `slots` array but
+// also flatten it into the legacy per-day structure that the student/parent
+// schedule pages already understand, so existing readers keep working.
+function buildSchedulePayload(slots: Slot[]) {
+  const DAY_SHORT: Record<string, string> = {
+    MONDAY: 'MON', TUESDAY: 'TUE', WEDNESDAY: 'WED',
+    THURSDAY: 'THU', FRIDAY: 'FRI', SATURDAY: 'SAT', SUNDAY: 'SUN',
+  };
+  const flat: { day: string; startTime: string; endTime: string }[] = [];
+  for (const slot of slots) {
+    const [hh, mm] = (slot.time ?? '09:00').split(':').map(Number);
+    const total = hh * 60 + mm + (slot.duration ?? 0);
+    const endHh = Math.floor(total / 60) % 24;
+    const endMm = total % 60;
+    const endTime = `${String(endHh).padStart(2, '0')}:${String(endMm).padStart(2, '0')}`;
+    for (const day of slot.days ?? []) {
+      flat.push({ day: DAY_SHORT[day] ?? day, startTime: slot.time, endTime });
+    }
+  }
+  return { slots, days: flat };
+}
+
+function ScheduleSlotsEditor({
+  slots,
+  onChange,
+}: {
+  slots: Slot[];
+  onChange: (slots: Slot[]) => void;
+}) {
+  const update = (i: number, patch: Partial<Slot>) =>
+    onChange(slots.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const remove = (i: number) =>
+    onChange(slots.filter((_, idx) => idx !== i));
+  const add = () => onChange([...slots, { days: [], time: '13:00', duration: 90 }]);
+
+  return (
+    <div className="space-y-3">
+      {slots.map((slot, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-slate-200 bg-slate-50/50 p-3"
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Расписание {slots.length > 1 ? `№${i + 1}` : ''}
+            </span>
+            {slots.length > 1 && (
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="rounded-md px-2 py-0.5 text-xs font-medium text-red-500 hover:bg-red-50"
+              >
+                Удалить
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto]">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Дни недели
+              </label>
+              <DayPicker
+                value={slot.days}
+                onChange={(days) => update(i, { days })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Время начала
+              </label>
+              <InputField
+                accent="admin"
+                type="time"
+                value={slot.time}
+                onChange={(e) => update(i, { time: e.target.value })}
+                className="w-32"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Длит. (мин)
+              </label>
+              <InputField
+                accent="admin"
+                type="number"
+                value={slot.duration}
+                onChange={(e) => update(i, { duration: Number(e.target.value) })}
+                className="w-24"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+      <Button
+        type="button"
+        accent="admin"
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        onClick={add}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Добавить расписание
+      </Button>
+    </div>
+  );
+}
+
 export default function GroupsPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [editForm, setEditForm] = useState<FormState>({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
+  const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
 
   const { data: groups = [], isLoading } = useQuery({
@@ -76,12 +229,19 @@ export default function GroupsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post('/groups', { ...form }),
+    mutationFn: () =>
+      api.post('/groups', {
+        name: form.name,
+        teacherId: form.teacherId,
+        maxStudents: form.maxStudents,
+        defaultMonthlyFee: form.defaultMonthlyFee,
+        schedule: buildSchedulePayload(form.slots),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['groups'] });
       toast('Группа создана');
       setShowForm(false);
-      setForm({ name: '', teacherId: '', maxStudents: 20, schedule: DEFAULT_SCHEDULE });
+      setForm(EMPTY_FORM);
     },
     onError: (e: unknown) => {
       const msg =
@@ -98,7 +258,8 @@ export default function GroupsPage() {
         name: editForm.name,
         teacherId: editForm.teacherId,
         maxStudents: editForm.maxStudents,
-        schedule: editForm.schedule,
+        defaultMonthlyFee: editForm.defaultMonthlyFee,
+        schedule: buildSchedulePayload(editForm.slots),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['groups'] });
@@ -125,16 +286,12 @@ export default function GroupsPage() {
 
   function openEdit(group: Group) {
     setEditingGroup(group);
-    const s = group.schedule as Partial<Schedule>;
     setEditForm({
       name: group.name,
       teacherId: group.teacher?.id ?? '',
       maxStudents: group.maxStudents,
-      schedule: {
-        days: Array.isArray(s?.days) ? s.days : DEFAULT_SCHEDULE.days,
-        time: typeof s?.time === 'string' ? s.time : DEFAULT_SCHEDULE.time,
-        duration: typeof s?.duration === 'number' ? s.duration : DEFAULT_SCHEDULE.duration,
-      },
+      defaultMonthlyFee: Number(group.defaultMonthlyFee ?? 0),
+      slots: readSlots(group.schedule),
     });
   }
 
@@ -157,7 +314,7 @@ export default function GroupsPage() {
             <h2 className="font-semibold text-slate-900">Редактировать группу</h2>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Название</label>
                 <InputField
@@ -191,35 +348,33 @@ export default function GroupsPage() {
                   onChange={(e) => setEditForm((f) => ({ ...f, maxStudents: Number(e.target.value) }))}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Дни недели</label>
-                <DayPicker
-                  value={editForm.schedule.days}
-                  onChange={(days) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, days } }))}
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Цена группы (сум/мес)
+                </label>
+                <InputField
+                  accent="admin"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={editForm.defaultMonthlyFee}
+                  onChange={(e) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      defaultMonthlyFee: Number(e.target.value),
+                    }))
+                  }
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Время начала</label>
-                  <InputField
-                    accent="admin"
-                    type="time"
-                    value={editForm.schedule.time}
-                    onChange={(e) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, time: e.target.value } }))}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Длит. (мин)</label>
-                  <InputField
-                    accent="admin"
-                    type="number"
-                    value={editForm.schedule.duration}
-                    onChange={(e) => setEditForm((f) => ({ ...f, schedule: { ...f.schedule, duration: Number(e.target.value) } }))}
-                  />
-                </div>
-              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Расписание
+              </label>
+              <ScheduleSlotsEditor
+                slots={editForm.slots}
+                onChange={(slots) => setEditForm((f) => ({ ...f, slots }))}
+              />
             </div>
             <div className="flex gap-3">
               <Button
@@ -242,7 +397,7 @@ export default function GroupsPage() {
             <h2 className="font-semibold text-slate-900">Новая группа</h2>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Название</label>
                 <InputField
@@ -276,35 +431,33 @@ export default function GroupsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, maxStudents: Number(e.target.value) }))}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Дни недели</label>
-                <DayPicker
-                  value={form.schedule.days}
-                  onChange={(days) => setForm((f) => ({ ...f, schedule: { ...f.schedule, days } }))}
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Цена группы (сум/мес)
+                </label>
+                <InputField
+                  accent="admin"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={form.defaultMonthlyFee}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      defaultMonthlyFee: Number(e.target.value),
+                    }))
+                  }
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Время начала</label>
-                  <InputField
-                    accent="admin"
-                    type="time"
-                    value={form.schedule.time}
-                    onChange={(e) => setForm((f) => ({ ...f, schedule: { ...f.schedule, time: e.target.value } }))}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Длит. (мин)</label>
-                  <InputField
-                    accent="admin"
-                    type="number"
-                    value={form.schedule.duration}
-                    onChange={(e) => setForm((f) => ({ ...f, schedule: { ...f.schedule, duration: Number(e.target.value) } }))}
-                  />
-                </div>
-              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Расписание
+              </label>
+              <ScheduleSlotsEditor
+                slots={form.slots}
+                onChange={(slots) => setForm((f) => ({ ...f, slots }))}
+              />
             </div>
             <div className="flex gap-3">
               <Button loading={createMutation.isPending} onClick={() => createMutation.mutate()}>

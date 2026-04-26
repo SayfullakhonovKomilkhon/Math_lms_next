@@ -150,7 +150,7 @@ export default function ParentDashboard() {
   const teacher = group?.teacher;
 
   const greetName =
-    (profile.fullName && profile.fullName.trim()) || profile.email || 'родитель';
+    (profile.fullName && profile.fullName.trim()) || profile.phone || 'родитель';
   const firstName = greetName.split(' ')[0] || greetName;
 
   if (!child) {

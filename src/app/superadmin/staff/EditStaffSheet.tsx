@@ -13,15 +13,16 @@ export type EditStaffTarget =
   | {
       kind: 'teacher';
       id: string;
+      userId?: string | null;
       fullName: string;
       phone?: string | null;
       ratePerStudent: number;
-      email?: string | null;
+      loginPhone?: string | null;
     }
   | {
       kind: 'admin';
       id: string;
-      email: string;
+      phone: string;
     };
 
 interface Props {
@@ -63,7 +64,7 @@ export function EditStaffSheet({ target, onClose }: Props) {
   const [phone, setPhone] = useState('');
   const [rate, setRate] = useState<number>(0);
 
-  const [email, setEmail] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
   const [password, setPassword] = useState('');
   const [changePassword, setChangePassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -80,9 +81,9 @@ export function EditStaffSheet({ target, onClose }: Props) {
       setFullName(target.fullName);
       setPhone(target.phone ?? '');
       setRate(Number(target.ratePerStudent) || 0);
-      setEmail(target.email ?? '');
+      setLoginPhone(target.loginPhone ?? '');
     } else {
-      setEmail(target.email);
+      setLoginPhone(target.phone);
       setFullName('');
       setPhone('');
       setRate(0);
@@ -99,9 +100,9 @@ export function EditStaffSheet({ target, onClose }: Props) {
   });
 
   const userCredsMutation = useMutation({
-    mutationFn: (payload: { id: string; email?: string; password?: string }) =>
+    mutationFn: (payload: { id: string; phone?: string; password?: string }) =>
       api.patch(`/users/${payload.id}`, {
-        email: payload.email,
+        phone: payload.phone,
         password: payload.password,
       }),
   });
@@ -115,8 +116,9 @@ export function EditStaffSheet({ target, onClose }: Props) {
       if (Number.isNaN(rate) || rate < 0) e.rate = 'Некорректная ставка';
     }
     if (target?.kind === 'admin') {
-      if (!email.trim()) e.email = 'Обязательное поле';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Некорректный email';
+      if (!loginPhone.trim()) e.loginPhone = 'Обязательное поле';
+      else if (!/^\+?[0-9]{9,15}$/.test(loginPhone.trim()))
+        e.loginPhone = 'Некорректный номер телефона';
       if (changePassword && (!password || password.length < 8)) e.password = 'Минимум 8 символов';
     }
     setErrors(e);
@@ -139,7 +141,7 @@ export function EditStaffSheet({ target, onClose }: Props) {
       } else {
         await userCredsMutation.mutateAsync({
           id: target.id,
-          email: email.trim() !== target.email ? email.trim() : undefined,
+          phone: loginPhone.trim() !== target.phone ? loginPhone.trim() : undefined,
           password: changePassword ? password : undefined,
         });
         qc.invalidateQueries({ queryKey: ['sa-admins'] });
@@ -170,7 +172,7 @@ export function EditStaffSheet({ target, onClose }: Props) {
             <p className="mt-0.5 text-sm text-slate-500">
               {target?.kind === 'teacher'
                 ? 'Измените профиль, телефон и ставку за ученика.'
-                : 'Измените email и, при необходимости, сбросьте пароль.'}
+                : 'Измените номер телефона и, при необходимости, сбросьте пароль.'}
             </p>
           </div>
           <button
@@ -213,26 +215,27 @@ export function EditStaffSheet({ target, onClose }: Props) {
                 />
               </Field>
 
-              {target.email && (
+              {target.loginPhone && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-600">
                   <span className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Email (логин)
+                    Телефон (логин)
                   </span>
-                  <span className="mt-1 block font-medium text-slate-800">{target.email}</span>
+                  <span className="mt-1 block font-medium text-slate-800">{target.loginPhone}</span>
                   <span className="mt-2 block text-xs text-slate-500">
-                    Смена email и пароля учителя выполняется вручную — обратитесь к разработчику.
+                    Смена логина и пароля учителя выполняется вручную — обратитесь к разработчику.
                   </span>
                 </div>
               )}
             </>
           ) : (
             <>
-              <Field label="Email (логин)" error={errors.email}>
+              <Field label="Телефон (логин)" error={errors.loginPhone}>
                 <InputField
                   accent="admin"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="tel"
+                  placeholder="+998901234567"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
                 />
               </Field>
 

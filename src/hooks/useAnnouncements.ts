@@ -55,7 +55,7 @@ export interface AnnouncementReader {
   userId: string;
   fullName: string;
   role: 'STUDENT' | 'PARENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN';
-  email: string;
+  phone: string;
   group: { id: string; name: string } | null;
   extra: string | null;
   readAt: string;

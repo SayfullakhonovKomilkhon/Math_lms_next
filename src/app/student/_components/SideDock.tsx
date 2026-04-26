@@ -121,7 +121,7 @@ export function SideDock({
 
       <div className={styles.footer}>
         <div className={styles.footerName}>Вы вошли как</div>
-        <div className={styles.footerEmail}>{user?.email ?? '—'}</div>
+        <div className={styles.footerEmail}>{user?.phone ?? '—'}</div>
         <button type="button" className={styles.logoutBtn} onClick={logout}>
           <LogOut size={14} /> Выйти
         </button>

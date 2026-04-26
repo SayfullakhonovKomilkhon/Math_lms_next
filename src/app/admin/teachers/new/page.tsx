@@ -16,10 +16,15 @@ import { InputField } from '@/components/ui/input-field';
 import { useAuth } from '@/hooks/useAuth';
 
 const schema = z.object({
-  email: z.string().email('Некорректный email'),
+  phone: z
+    .string()
+    .trim()
+    .regex(
+      /^\+?[0-9]{9,15}$/,
+      'Введите номер телефона в международном формате (например, +998901234567)',
+    ),
   password: z.string().min(8, 'Минимум 8 символов'),
   fullName: z.string().min(2, 'Обязательное поле'),
-  phone: z.string().optional(),
   ratePerStudent: z.coerce.number().min(0),
 });
 
@@ -60,10 +65,9 @@ export default function NewTeacherPage() {
     setLoading(true);
     try {
       await api.post('/teachers', {
-        email: data.email,
+        phone: data.phone,
         password: data.password,
         fullName: data.fullName,
-        phone: data.phone || undefined,
         ratePerStudent: data.ratePerStudent,
       });
       toast('Учитель добавлен');
@@ -104,17 +108,14 @@ export default function NewTeacherPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-xl">
-            <Field label="Email" error={errors.email?.message}>
-              <InputField accent="admin" type="email" placeholder="teacher@math.com" {...register('email')} />
+            <Field label="Телефон (логин)" error={errors.phone?.message}>
+              <InputField accent="admin" type="tel" placeholder="+998901234567" {...register('phone')} />
             </Field>
             <Field label="Пароль" error={errors.password?.message}>
               <InputField accent="admin" type="password" {...register('password')} />
             </Field>
             <Field label="ФИО" error={errors.fullName?.message}>
               <InputField accent="admin" {...register('fullName')} placeholder="Иван Иванов" />
-            </Field>
-            <Field label="Телефон" error={errors.phone?.message}>
-              <InputField accent="admin" {...register('phone')} placeholder="+998901234567" />
             </Field>
             <Field label="Ставка за ученика (сум)" error={errors.ratePerStudent?.message}>
               <InputField accent="admin" type="number" {...register('ratePerStudent')} />

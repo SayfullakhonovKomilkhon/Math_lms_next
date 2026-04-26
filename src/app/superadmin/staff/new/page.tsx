@@ -35,9 +35,8 @@ export default function NewStaffPage() {
   const [form, setForm] = useState({
     role: 'TEACHER' as Role,
     fullName: '',
-    email: '',
-    password: generatePassword(),
     phone: '',
+    password: generatePassword(),
     ratePerStudent: 50000,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -47,9 +46,11 @@ export default function NewStaffPage() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.fullName.trim()) e.fullName = 'Обязательное поле';
-    if (!form.email.trim()) e.email = 'Обязательное поле';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Некорректный email';
+    if (form.role === 'TEACHER' && !form.fullName.trim())
+      e.fullName = 'Обязательное поле';
+    if (!form.phone.trim()) e.phone = 'Обязательное поле';
+    else if (!/^\+?[0-9]{9,15}$/.test(form.phone.trim()))
+      e.phone = 'Некорректный номер телефона';
     if (!form.password || form.password.length < 8) e.password = 'Минимум 8 символов';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -61,11 +62,10 @@ export default function NewStaffPage() {
     setLoading(true);
     try {
       await api.post('/users/staff', {
-        email: form.email,
+        phone: form.phone.trim(),
         password: form.password,
         role: form.role,
         fullName: form.role === 'TEACHER' ? form.fullName : undefined,
-        phone: form.role === 'TEACHER' && form.phone ? form.phone : undefined,
       });
       toast('Сотрудник добавлен');
       router.push('/superadmin/staff');
@@ -124,13 +124,13 @@ export default function NewStaffPage() {
               </Field>
             )}
 
-            <Field label="Email (логин)" error={errors.email}>
+            <Field label="Телефон (логин)" error={errors.phone}>
               <InputField
                 accent="admin"
-                type="email"
-                placeholder="staff@mathcenter.uz"
-                value={form.email}
-                onChange={(e) => set('email', e.target.value)}
+                type="tel"
+                placeholder="+998901234567"
+                value={form.phone}
+                onChange={(e) => set('phone', e.target.value)}
               />
             </Field>
 
@@ -165,24 +165,14 @@ export default function NewStaffPage() {
             </Field>
 
             {form.role === 'TEACHER' && (
-              <>
-                <Field label="Телефон">
-                  <InputField
-                    accent="admin"
-                    placeholder="+998901234567"
-                    value={form.phone}
-                    onChange={(e) => set('phone', e.target.value)}
-                  />
-                </Field>
-                <Field label="Ставка за ученика (сум)">
-                  <InputField
-                    accent="admin"
-                    type="number"
-                    value={form.ratePerStudent}
-                    onChange={(e) => set('ratePerStudent', Number(e.target.value))}
-                  />
-                </Field>
-              </>
+              <Field label="Ставка за ученика (сум)">
+                <InputField
+                  accent="admin"
+                  type="number"
+                  value={form.ratePerStudent}
+                  onChange={(e) => set('ratePerStudent', Number(e.target.value))}
+                />
+              </Field>
             )}
 
             <div className="flex gap-3 pt-2">

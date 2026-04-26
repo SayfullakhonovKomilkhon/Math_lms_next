@@ -204,7 +204,7 @@ function ReaderRow({ reader }: { reader: AnnouncementReader }) {
           {reader.group ? `Группа: ${reader.group.name}` : null}
           {reader.group && reader.extra ? ' · ' : null}
           {reader.extra}
-          {!reader.group && !reader.extra ? reader.email : null}
+          {!reader.group && !reader.extra ? reader.phone : null}
         </p>
       </div>
       <div className="shrink-0 text-right text-xs text-slate-400">

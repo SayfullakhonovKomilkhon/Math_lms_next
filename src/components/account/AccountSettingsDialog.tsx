@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { AtSign, Eye, EyeOff, KeyRound, Lock, Save, ShieldCheck } from 'lucide-react';
+import { Phone, Eye, EyeOff, KeyRound, Lock, Save, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { syncAuthCookie } from '@/lib/auth-cookie';
@@ -12,13 +12,13 @@ import { InputField } from '@/components/ui/input-field';
 import { toast } from '@/components/ui/toast';
 
 interface UpdateMePayload {
-  email?: string;
+  phone?: string;
   newPassword?: string;
   currentPassword: string;
 }
 
 interface UpdateMeResponse {
-  user: { id: string; email: string; role: string; isActive: boolean };
+  user: { id: string; phone: string; role: string; isActive: boolean };
   accessToken: string;
   refreshToken: string;
 }
@@ -76,9 +76,9 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
   const setTokens = useAuthStore((s) => s.setTokens);
   const a = accentStyles[accent];
 
-  const initialEmail = user?.email ?? '';
+  const initialPhone = user?.phone ?? '';
 
-  const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState(initialPhone);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -93,7 +93,7 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
         .then((r) => r.data.data),
     onSuccess: (res) => {
       if (user) {
-        const nextUser = { ...user, email: res.user.email };
+        const nextUser = { ...user, phone: res.user.phone };
         useAuthStore.setState({ user: nextUser });
         syncAuthCookie(nextUser, true);
       }
@@ -114,10 +114,11 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
   const validate = (): { ok: boolean; payload?: UpdateMePayload } => {
     const e: Record<string, string> = {};
 
-    const emailChanged = email.trim() !== initialEmail.trim();
-    if (emailChanged) {
-      if (!email.trim()) e.email = 'Обязательное поле';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = 'Некорректный email';
+    const phoneChanged = phone.trim() !== initialPhone.trim();
+    if (phoneChanged) {
+      if (!phone.trim()) e.phone = 'Обязательное поле';
+      else if (!/^\+?[0-9]{9,15}$/.test(phone.trim()))
+        e.phone = 'Некорректный номер телефона';
     }
 
     if (changePassword) {
@@ -125,7 +126,7 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
       if (newPassword !== confirmPassword) e.confirmPassword = 'Пароли не совпадают';
     }
 
-    if (!emailChanged && !changePassword) {
+    if (!phoneChanged && !changePassword) {
       e._form = 'Нет изменений для сохранения';
     }
 
@@ -140,7 +141,7 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
       ok: true,
       payload: {
         currentPassword,
-        email: emailChanged ? email.trim() : undefined,
+        phone: phoneChanged ? phone.trim() : undefined,
         newPassword: changePassword ? newPassword : undefined,
       },
     };
@@ -164,20 +165,21 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Настройки аккаунта</h2>
           <p className="mt-0.5 text-sm text-slate-500">
-            Измените email (логин) и, при необходимости, пароль. Для подтверждения введите текущий пароль.
+            Измените номер телефона (логин) и, при необходимости, пароль. Для подтверждения введите текущий пароль.
           </p>
         </div>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-        <Field label="Email (логин)" error={errors.email}>
+        <Field label="Телефон (логин)" error={errors.phone}>
           <div className="relative">
-            <AtSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Phone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <InputField
               accent="admin"
-              type="email"
-              value={email}
-              onChange={(ev) => setEmail(ev.target.value)}
+              type="tel"
+              placeholder="+998901234567"
+              value={phone}
+              onChange={(ev) => setPhone(ev.target.value)}
               className="pl-9"
             />
           </div>

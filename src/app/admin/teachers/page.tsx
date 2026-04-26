@@ -65,8 +65,7 @@ export default function AdminTeachersPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="font-semibold text-slate-900">{t.fullName}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{t.user?.email}</p>
-                    {t.phone && <p className="text-sm text-slate-500">{t.phone}</p>}
+                    <p className="mt-1 text-sm text-slate-600">{t.user?.phone ?? t.phone ?? '—'}</p>
                   </div>
                   <Badge variant={t.isActive ? 'green' : 'gray'}>
                     {t.isActive ? 'Активен' : 'Неактивен'}

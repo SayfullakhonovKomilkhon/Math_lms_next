@@ -19,6 +19,7 @@ import {
   Calendar,
   Megaphone,
   Settings,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/parents', label: 'Родители', icon: UsersRound },
   { href: '/admin/groups', label: 'Группы', icon: BookOpen },
   { href: '/admin/payments', label: 'Оплаты', icon: CreditCard },
+  { href: '/admin/expenses', label: 'Расходы центра', icon: Wallet },
   { href: '/admin/attendance', label: 'Посещаемость', icon: ClipboardList },
   { href: '/admin/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
 ];
@@ -179,7 +181,7 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
       <div className="shrink-0 p-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm">
           <p className="truncate text-xs font-medium text-slate-500">Вошли как</p>
-          <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.email}</p>
+          <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{user?.phone}</p>
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}

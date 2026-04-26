@@ -6,9 +6,23 @@ export type PaymentRecordStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED';
 
 export interface User {
   id: string;
-  email: string;
+  phone: string;
   role: Role;
   isActive: boolean;
+}
+
+/**
+ * A single student↔group enrollment with its own price. Backend returns one
+ * of these per row in `Student.groups`. Frontend uses `linkId` to address a
+ * specific enrollment when editing or removing it.
+ */
+export interface StudentGroupLink {
+  linkId: string;
+  groupId: string;
+  groupName: string;
+  teacherId?: string | null;
+  monthlyFee: number;
+  joinedAt: string;
 }
 
 export interface Student {
@@ -18,12 +32,20 @@ export interface Student {
   birthDate?: string;
   gender: Gender;
   enrolledAt: string;
-  groupId?: string;
+  /** Sum of `monthlyFee` across all groups (kept for backwards compatibility). */
   monthlyFee: number;
+  /** Same as `monthlyFee`, named explicitly so callers can pick the clearer
+   *  name when they want to emphasise it's an aggregate. */
+  monthlyFeeTotal?: number;
+  /** All groups the student is enrolled in, with per-group price. */
+  groups?: StudentGroupLink[];
+  /** Primary group id (first joined) — kept for legacy single-group UIs. */
+  groupId?: string | null;
+  /** Primary group summary (first joined) — kept for legacy UIs. */
+  group?: { id: string; name: string } | null;
   isActive: boolean;
   createdAt: string;
-  user?: { id: string; email: string; role: Role };
-  group?: { id: string; name: string };
+  user?: { id: string; phone: string; role: Role };
 }
 
 export interface Teacher {
@@ -32,7 +54,7 @@ export interface Teacher {
   phone?: string;
   ratePerStudent: number;
   isActive: boolean;
-  user?: { id: string; email: string };
+  user?: { id: string; phone: string };
 }
 
 export interface Group {
@@ -40,6 +62,7 @@ export interface Group {
   name: string;
   maxStudents: number;
   schedule: Record<string, unknown>;
+  defaultMonthlyFee?: number;
   isActive: boolean;
   archivedAt?: string;
   teacher?: { id: string; fullName: string };
@@ -61,7 +84,7 @@ export interface Parent {
   phone?: string;
   createdAt?: string;
   updatedAt?: string;
-  user?: { id: string; email: string; isActive?: boolean };
+  user?: { id: string; phone: string; isActive?: boolean };
   students?: ParentChildLink[];
 }
 
@@ -206,7 +229,6 @@ export interface ParentProfile {
   id: string;
   fullName: string;
   phone?: string;
-  email?: string;
   // List of all children linked to this parent. Frontend should pick the
   // active one via a selector when there is more than one.
   children: ParentChild[];

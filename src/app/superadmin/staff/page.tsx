@@ -21,7 +21,7 @@ import { MoreVertical } from 'lucide-react';
 import { EditStaffSheet, type EditStaffTarget } from './EditStaffSheet';
 
 interface AdminUser {
-  id: string; email: string; role: string; isActive: boolean;
+  id: string; phone: string; role: string; isActive: boolean;
   createdAt: string;
   teacher?: { id: string; fullName: string; phone?: string; ratePerStudent: number } | null;
 }
@@ -127,7 +127,7 @@ export default function StaffPage() {
                       <tr key={t.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                         <td className="px-4 py-3">
                           <p className="font-medium text-slate-900">{t.fullName}</p>
-                          <p className="text-xs text-slate-400">{t.user?.email}</p>
+                          <p className="text-xs text-slate-400">{t.user?.phone ?? t.phone ?? '—'}</p>
                         </td>
                         <td className="px-4 py-3 text-slate-500">
                           {t.phone ? (
@@ -201,7 +201,7 @@ export default function StaffPage() {
                                       fullName: t.fullName,
                                       phone: t.phone,
                                       ratePerStudent: Number(t.ratePerStudent),
-                                      email: t.user?.email ?? null,
+                                      loginPhone: t.user?.phone ?? t.phone ?? null,
                                     })
                                   }
                                 />
@@ -238,7 +238,7 @@ export default function StaffPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 text-xs text-slate-500">
-                    <th className="px-4 py-3 text-left font-medium">Email</th>
+                    <th className="px-4 py-3 text-left font-medium">Телефон (логин)</th>
                     <th className="px-4 py-3 text-center font-medium">Статус</th>
                     <th className="px-4 py-3 text-right font-medium">Дата создания</th>
                     <th className="px-4 py-3" />
@@ -247,7 +247,7 @@ export default function StaffPage() {
                 <tbody>
                   {admins.map((u) => (
                     <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{u.email}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{u.phone}</td>
                       <td className="px-4 py-3 text-center">
                         <Badge variant={u.isActive ? 'green' : 'gray'}>
                           {u.isActive ? 'Активен' : 'Неактивен'}
@@ -267,10 +267,10 @@ export default function StaffPage() {
                                 accent="admin"
                                 icon={Settings2}
                                 label="Редактировать"
-                                description="Email и пароль"
+                                description="Телефон и пароль"
                                 iconClassName="border-violet-200 bg-violet-50 text-violet-600"
                                 onSelect={() =>
-                                  setEditTarget({ kind: 'admin', id: u.id, email: u.email })
+                                  setEditTarget({ kind: 'admin', id: u.id, phone: u.phone })
                                 }
                               />
                               <DropdownMenuSeparator />

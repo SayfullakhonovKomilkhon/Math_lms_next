@@ -10,7 +10,6 @@ import {
   CalendarDays,
   Cake,
   CircleUser,
-  Mail,
   Phone,
   Users,
   Wallet,
@@ -149,16 +148,10 @@ export default function TeacherStudentProfilePage() {
         <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           <div className="divide-y divide-slate-100">
             <InfoRow
-              icon={<Mail className="h-4 w-4" />}
-              tint="bg-slate-100 text-slate-600"
-              label="Email"
-              value={student.user?.email ?? '—'}
-            />
-            <InfoRow
               icon={<Phone className="h-4 w-4" />}
               tint="bg-emerald-100 text-emerald-600"
-              label="Телефон"
-              value={formatPhone(student.phone) ?? '—'}
+              label="Телефон (логин)"
+              value={formatPhone(student.user?.phone ?? student.phone) ?? '—'}
             />
             <InfoRow
               icon={<Cake className="h-4 w-4" />}

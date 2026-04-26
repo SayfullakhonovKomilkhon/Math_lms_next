@@ -99,7 +99,7 @@ export default function EditTeacherPage() {
           К списку учителей
         </Link>
         <h1 className="text-2xl font-semibold text-slate-900">Редактирование учителя</h1>
-        <p className="mt-1 text-sm text-slate-600">{teacher.user?.email}</p>
+        <p className="mt-1 text-sm text-slate-600">{teacher.user?.phone ?? teacher.phone ?? '—'}</p>
       </div>
 
       <Card>

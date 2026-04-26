@@ -7,10 +7,10 @@ import { syncAuthCookie } from '@/lib/auth-cookie';
 import { Role } from '@/types';
 
 interface AuthState {
-  user: { id: string; email: string; role: Role } | null;
+  user: { id: string; phone: string; role: Role } | null;
   accessToken: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (phone: string, password: string) => Promise<void>;
   logout: () => void;
   setTokens: (access: string, refresh: string) => void;
 }
@@ -22,8 +22,8 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       isAuthenticated: false,
 
-      login: async (email, password) => {
-        const res = await api.post('/auth/login', { email, password });
+      login: async (phone, password) => {
+        const res = await api.post('/auth/login', { phone, password });
         const { accessToken, refreshToken, user } = res.data.data;
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);

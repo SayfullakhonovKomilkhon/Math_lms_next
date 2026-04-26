@@ -3,7 +3,7 @@ const MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
 export interface AuthCookieUser {
   id: string;
-  email: string;
+  phone: string;
   role: string;
 }
 

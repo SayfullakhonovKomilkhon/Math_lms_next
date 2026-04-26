@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Plus, Search, User, UserX } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, User, UserX, Wallet } from 'lucide-react';
 import api from '@/lib/api';
 import { Student, Group, Debtor } from '@/types';
+import { ManualPaymentDialog } from '@/components/payments/ManualPaymentDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
@@ -42,6 +43,7 @@ export default function StudentsPage() {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [page, setPage] = useState(1);
   const [pendingDeactivate, setPendingDeactivate] = useState<Student | null>(null);
+  const [payingStudent, setPayingStudent] = useState<Student | null>(null);
   const PER_PAGE = 20;
 
   const debouncedSearch = useDebounce(search, 300);
@@ -94,7 +96,11 @@ export default function StudentsPage() {
         ? s.fullName.toLowerCase().includes(debouncedSearch.toLowerCase())
         : true,
     )
-    .filter((s) => (groupFilter ? s.groupId === groupFilter : true))
+    .filter((s) =>
+      groupFilter
+        ? (s.groups ?? []).some((g) => g.groupId === groupFilter)
+        : true,
+    )
     .filter((s) => {
       if (paymentFilter === 'paid') return s.isActive && !debtorIds.has(s.id);
       if (paymentFilter === 'unpaid') return debtorIds.has(s.id);
@@ -213,11 +219,26 @@ export default function StudentsPage() {
                 <DataTableRow key={student.id}>
                   <DataTableCell>
                     <div className="font-medium text-slate-900">{student.fullName}</div>
-                    <div className="text-xs text-slate-500">{student.user?.email}</div>
+                    <div className="text-xs text-slate-500">{student.user?.phone}</div>
                   </DataTableCell>
-                  <DataTableCell>{student.group?.name ?? '—'}</DataTableCell>
+                  <DataTableCell>
+                    {(student.groups ?? []).length === 0
+                      ? '—'
+                      : (student.groups ?? [])
+                          .map((g) => g.groupName)
+                          .join(', ')}
+                  </DataTableCell>
                   <DataTableCell>{student.phone ?? '—'}</DataTableCell>
-                  <DataTableCell>{formatCurrency(Number(student.monthlyFee))}</DataTableCell>
+                  <DataTableCell>
+                    <div className="font-medium text-slate-900">
+                      {formatCurrency(Number(student.monthlyFee))}
+                    </div>
+                    {(student.groups ?? []).length > 1 && (
+                      <div className="text-[11px] text-slate-500">
+                        {(student.groups ?? []).length} групп
+                      </div>
+                    )}
+                  </DataTableCell>
                   <DataTableCell>
                     {student.isActive ? (
                       debtorIds.has(student.id) ? (
@@ -259,6 +280,16 @@ export default function StudentsPage() {
                         {student.isActive && (
                           <IconMenuItem
                             accent="admin"
+                            icon={Wallet}
+                            label="Оплата"
+                            description="Записать оплату вручную"
+                            iconClassName="border-emerald-200 bg-emerald-50 text-emerald-700"
+                            onSelect={() => setPayingStudent(student)}
+                          />
+                        )}
+                        {student.isActive && (
+                          <IconMenuItem
+                            accent="admin"
                             icon={UserX}
                             label="Деактивировать"
                             description="Отключить доступ"
@@ -280,7 +311,13 @@ export default function StudentsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-slate-900">{student.fullName}</p>
-                  <p className="text-sm text-slate-500">{student.group?.name ?? 'Без группы'}</p>
+                  <p className="text-sm text-slate-500">
+                    {(student.groups ?? []).length === 0
+                      ? 'Без группы'
+                      : (student.groups ?? [])
+                          .map((g) => g.groupName)
+                          .join(', ')}
+                  </p>
                 </div>
                 <Badge variant={student.isActive ? 'green' : 'gray'}>
                   {student.isActive ? 'Активен' : 'Неактивен'}
@@ -291,10 +328,27 @@ export default function StudentsPage() {
                 <p>{formatCurrency(Number(student.monthlyFee))}</p>
                 <p>{debtorIds.has(student.id) ? 'Не оплачен' : 'Оплачен'}</p>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" className="flex-1" onClick={() => router.push(`/admin/students/${student.id}`)}>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={() =>
+                    router.push(`/admin/students/${student.id}`)
+                  }
+                >
                   Профиль
                 </Button>
+                {student.isActive ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setPayingStudent(student)}
+                  >
+                    <Wallet className="mr-1 h-4 w-4" />
+                    Оплата
+                  </Button>
+                ) : null}
                 {student.isActive ? (
                   <Button
                     size="sm"
@@ -329,6 +383,14 @@ export default function StudentsPage() {
           ))}
         </div>
       )}
+
+      <ManualPaymentDialog
+        open={payingStudent !== null}
+        onOpenChange={(open) => !open && setPayingStudent(null)}
+        studentId={payingStudent?.id ?? null}
+        studentName={payingStudent?.fullName}
+        suggestedAmount={Number(payingStudent?.monthlyFee ?? 0)}
+      />
 
       <ConfirmDialog
         isOpen={pendingDeactivate !== null}

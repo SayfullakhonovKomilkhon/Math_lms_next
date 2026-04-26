@@ -14,7 +14,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 interface AuditRecord {
   id: string; action: string; entity: string; entityId: string | null;
   details: unknown; createdAt: string;
-  user: { email: string; role: string };
+  user: { phone: string; role: string };
 }
 interface AuditResponse { total: number; records: AuditRecord[] }
 
@@ -128,7 +128,7 @@ export default function AuditPage() {
                     <td className="whitespace-nowrap px-4 py-2.5 text-xs text-slate-500">
                       {formatDate(r.createdAt)}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-800">{r.user.email}</td>
+                    <td className="px-4 py-2.5 text-slate-800">{r.user.phone}</td>
                     <td className="px-4 py-2.5">
                       <Badge variant="gray" className="text-xs">{r.user.role}</Badge>
                     </td>

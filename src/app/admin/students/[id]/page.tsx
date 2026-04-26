@@ -4,9 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, KeyRound, Pencil, UserPlus } from 'lucide-react';
+import { ArrowLeft, KeyRound, Pencil, Plus, Trash2, UserPlus, Wallet } from 'lucide-react';
 import api from '@/lib/api';
-import { Student, Group, Payment, Parent } from '@/types';
+import { Student, Group, Payment, Parent, StudentGroupLink } from '@/types';
+import { ManualPaymentDialog } from '@/components/payments/ManualPaymentDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatCurrency } from '@/lib/utils';
@@ -20,15 +21,18 @@ export default function StudentProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
-  const [groupId, setGroupId] = useState('');
+  const [newGroup, setNewGroup] = useState({ groupId: '', monthlyFee: '' });
+  const [manualPaymentOpen, setManualPaymentOpen] = useState(false);
+  // Local edits for per-group monthly fees so the admin can tweak each price
+  // independently without losing focus on every keystroke.
+  const [feeEdits, setFeeEdits] = useState<Record<string, string>>({});
   const [editForm, setEditForm] = useState({
     fullName: '',
     phone: '',
     birthDate: '',
     gender: 'MALE',
-    monthlyFee: '0',
   });
-  const [creds, setCreds] = useState({ email: '', password: '' });
+  const [creds, setCreds] = useState({ phone: '', password: '' });
 
   const { data: student, isLoading } = useQuery({
     queryKey: ['student', id],
@@ -53,12 +57,21 @@ export default function StudentProfilePage() {
         phone: student.phone ?? '',
         birthDate: student.birthDate ? new Date(student.birthDate).toISOString().slice(0, 10) : '',
         gender: student.gender,
-        monthlyFee: String(Number(student.monthlyFee ?? 0)),
       });
       setCreds((prev) => ({
-        email: student.user?.email ?? '',
+        phone: student.user?.phone ?? student.phone ?? '',
         password: prev.password,
       }));
+      // Sync server fees into local edit fields when student data refreshes,
+      // but don't clobber a value the user is actively editing.
+      setFeeEdits((prev) => {
+        const next: Record<string, string> = {};
+        for (const link of student.groups ?? []) {
+          next[link.linkId] =
+            prev[link.linkId] ?? String(Number(link.monthlyFee ?? 0));
+        }
+        return next;
+      });
     }
   }, [student]);
 
@@ -75,21 +88,51 @@ export default function StudentProfilePage() {
     enabled: !!id,
   });
 
-  const assignMutation = useMutation({
-    mutationFn: (gid: string) => api.patch(`/students/${id}/group`, { groupId: gid }),
+  const extractMessage = (e: unknown) => {
+    const msg =
+      e && typeof e === 'object' && 'response' in e
+        ? (e as { response?: { data?: { message?: string | string[] } } })
+            .response?.data?.message
+        : undefined;
+    return Array.isArray(msg) ? msg.join(', ') : msg;
+  };
+
+  const addGroupMutation = useMutation({
+    mutationFn: () =>
+      api.post(`/students/${id}/groups`, {
+        groupId: newGroup.groupId,
+        monthlyFee: newGroup.monthlyFee
+          ? Number(newGroup.monthlyFee)
+          : undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['student', id] });
       qc.invalidateQueries({ queryKey: ['students'] });
-      toast('Группа обновлена');
-      setGroupId('');
+      toast('Ученик добавлен в группу');
+      setNewGroup({ groupId: '', monthlyFee: '' });
     },
-    onError: (e: unknown) => {
-      const msg =
-        e && typeof e === 'object' && 'response' in e
-          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      toast(msg || 'Ошибка', 'error');
+    onError: (e) => toast(extractMessage(e) || 'Ошибка', 'error'),
+  });
+
+  const updateFeeMutation = useMutation({
+    mutationFn: ({ gid, fee }: { gid: string; fee: number }) =>
+      api.patch(`/students/${id}/groups/${gid}`, { monthlyFee: fee }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student', id] });
+      qc.invalidateQueries({ queryKey: ['students'] });
+      toast('Цена в группе обновлена');
     },
+    onError: (e) => toast(extractMessage(e) || 'Ошибка', 'error'),
+  });
+
+  const removeGroupMutation = useMutation({
+    mutationFn: (gid: string) => api.delete(`/students/${id}/groups/${gid}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student', id] });
+      qc.invalidateQueries({ queryKey: ['students'] });
+      toast('Ученик удалён из группы');
+    },
+    onError: (e) => toast(extractMessage(e) || 'Ошибка', 'error'),
   });
 
   const updateMutation = useMutation({
@@ -99,21 +142,14 @@ export default function StudentProfilePage() {
         phone: editForm.phone || undefined,
         birthDate: editForm.birthDate || undefined,
         gender: editForm.gender,
-        monthlyFee: Number(editForm.monthlyFee || 0),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['student', id] });
       qc.invalidateQueries({ queryKey: ['students'] });
       toast('Данные ученика обновлены');
     },
-    onError: (e: unknown) => {
-      const msg =
-        e && typeof e === 'object' && 'response' in e
-          ? (e as { response?: { data?: { message?: string | string[] } } }).response?.data?.message
-          : undefined;
-      const text = Array.isArray(msg) ? msg.join(', ') : msg;
-      toast(text || 'Ошибка при обновлении ученика', 'error');
-    },
+    onError: (e) =>
+      toast(extractMessage(e) || 'Ошибка при обновлении ученика', 'error'),
   });
 
   const deactivateMutation = useMutation({
@@ -134,9 +170,10 @@ export default function StudentProfilePage() {
 
   const updateCredsMutation = useMutation({
     mutationFn: () => {
-      const payload: { email?: string; password?: string } = {};
-      if (creds.email && creds.email !== student?.user?.email)
-        payload.email = creds.email;
+      const payload: { phone?: string; password?: string } = {};
+      const currentPhone = student?.user?.phone ?? student?.phone ?? '';
+      if (creds.phone && creds.phone !== currentPhone)
+        payload.phone = creds.phone;
       if (creds.password) payload.password = creds.password;
       return api.patch(`/students/${id}/credentials`, payload);
     },
@@ -183,6 +220,12 @@ export default function StudentProfilePage() {
   }
 
   const pendingPayments = payments.filter((p) => p.status === 'PENDING');
+  const studentGroups: StudentGroupLink[] = student.groups ?? [];
+  const enrolledGroupIds = new Set(studentGroups.map((g) => g.groupId));
+  const monthlyFeeTotal = studentGroups.reduce(
+    (sum, g) => sum + Number(g.monthlyFee || 0),
+    0,
+  );
 
   return (
     <div className="max-w-4xl space-y-8">
@@ -202,20 +245,29 @@ export default function StudentProfilePage() {
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
-            <span className="text-slate-500">Email</span>
-            <p className="font-medium text-slate-900">{student.user?.email ?? '—'}</p>
+            <span className="text-slate-500">Телефон (логин)</span>
+            <p className="font-medium text-slate-900">
+              {student.user?.phone ?? student.phone ?? '—'}
+            </p>
           </div>
           <div>
-            <span className="text-slate-500">Телефон</span>
-            <p className="font-medium text-slate-900">{student.phone ?? '—'}</p>
+            <span className="text-slate-500">Группы</span>
+            <p className="font-medium text-slate-900">
+              {studentGroups.length === 0
+                ? '—'
+                : studentGroups.map((g) => g.groupName).join(', ')}
+            </p>
           </div>
           <div>
-            <span className="text-slate-500">Группа</span>
-            <p className="font-medium text-slate-900">{student.group?.name ?? '—'}</p>
-          </div>
-          <div>
-            <span className="text-slate-500">Абонемент / мес</span>
-            <p className="font-medium text-slate-900">{formatCurrency(Number(student.monthlyFee))}</p>
+            <span className="text-slate-500">Абонемент (всего за мес.)</span>
+            <p className="font-medium text-slate-900">
+              {formatCurrency(monthlyFeeTotal)}
+            </p>
+            {studentGroups.length > 1 && (
+              <p className="mt-0.5 text-xs text-slate-500">
+                Сумма по {studentGroups.length} группам
+              </p>
+            )}
           </div>
           <div>
             <span className="text-slate-500">Дата поступления</span>
@@ -268,14 +320,11 @@ export default function StudentProfilePage() {
               <option value="FEMALE">Женский</option>
             </SelectField>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Абонемент / мес</label>
-            <InputField
-              accent="admin"
-              type="number"
-              value={editForm.monthlyFee}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, monthlyFee: e.target.value }))}
-            />
+          <div className="sm:col-span-2">
+            <p className="text-xs text-slate-500">
+              Абонемент задаётся отдельно для каждой группы ниже. Общая сумма
+              за месяц считается автоматически.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <Button
@@ -303,13 +352,14 @@ export default function StudentProfilePage() {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">
-              Email (логин)
+              Телефон (логин)
             </label>
             <InputField
               accent="admin"
-              type="email"
-              value={creds.email}
-              onChange={(e) => setCreds((c) => ({ ...c, email: e.target.value }))}
+              type="tel"
+              value={creds.phone}
+              onChange={(e) => setCreds((c) => ({ ...c, phone: e.target.value }))}
+              placeholder="+998901234567"
             />
           </div>
           <div>
@@ -329,7 +379,8 @@ export default function StudentProfilePage() {
               loading={updateCredsMutation.isPending}
               disabled={
                 !creds.password &&
-                (!creds.email || creds.email === student.user?.email)
+                (!creds.phone ||
+                  creds.phone === (student.user?.phone ?? student.phone ?? ''))
               }
               onClick={() => updateCredsMutation.mutate()}
             >
@@ -371,8 +422,7 @@ export default function StudentProfilePage() {
                       {p.fullName}
                     </Link>
                     <p className="truncate text-xs text-slate-500">
-                      {p.user?.email ?? '—'}
-                      {p.phone ? ` · ${p.phone}` : ''}
+                      {p.user?.phone ?? p.phone ?? '—'}
                     </p>
                   </div>
                   <Link href={`/admin/parents/${p.id}`}>
@@ -389,40 +439,191 @@ export default function StudentProfilePage() {
 
       <Card>
         <CardHeader>
-          <h2 className="font-semibold text-slate-900">Перевести в другую группу</h2>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="mb-1 block text-xs text-slate-500">Группа</label>
-            <SelectField
-              accent="admin"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-              className="min-w-[200px]"
-            >
-              <option value="">Выберите группу</option>
-              {groups
-                .filter((g) => g.isActive)
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-            </SelectField>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">
+              Группы и абонементы
+            </h2>
+            <span className="text-xs text-slate-500">
+              Итого: {formatCurrency(monthlyFeeTotal)} / мес
+            </span>
           </div>
-          <Button
-            size="sm"
-            disabled={!groupId}
-            loading={assignMutation.isPending}
-            onClick={() => groupId && assignMutation.mutate(groupId)}
-          >
-            Сохранить
-          </Button>
+          <p className="mt-1 text-xs text-slate-500">
+            Ученик может состоять в нескольких группах одновременно. Цена
+            абонемента указывается отдельно для каждой группы.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {studentGroups.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-500">
+              Ученик пока не добавлен ни в одну группу.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {studentGroups.map((link) => {
+                const draft = feeEdits[link.linkId] ?? String(link.monthlyFee);
+                const draftNum = Number(draft);
+                const dirty =
+                  Number.isFinite(draftNum) &&
+                  draftNum !== Number(link.monthlyFee);
+                return (
+                  <li
+                    key={link.linkId}
+                    className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-slate-900">
+                        {link.groupName}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        В группе с {formatDate(link.joinedAt)}
+                      </p>
+                    </div>
+                    <div className="w-40">
+                      <label className="mb-1 block text-xs text-slate-500">
+                        Цена / мес
+                      </label>
+                      <InputField
+                        accent="admin"
+                        type="number"
+                        min={0}
+                        value={draft}
+                        onChange={(e) =>
+                          setFeeEdits((prev) => ({
+                            ...prev,
+                            [link.linkId]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={
+                        !dirty ||
+                        !Number.isFinite(draftNum) ||
+                        draftNum < 0 ||
+                        updateFeeMutation.isPending
+                      }
+                      loading={
+                        updateFeeMutation.isPending &&
+                        updateFeeMutation.variables?.gid === link.groupId
+                      }
+                      onClick={() =>
+                        updateFeeMutation.mutate({
+                          gid: link.groupId,
+                          fee: draftNum,
+                        })
+                      }
+                    >
+                      Сохранить
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      disabled={removeGroupMutation.isPending}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Удалить ученика из группы «${link.groupName}»?`,
+                          )
+                        ) {
+                          removeGroupMutation.mutate(link.groupId);
+                        }
+                      }}
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Убрать
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="mb-2 text-sm font-medium text-slate-700">
+              Добавить в новую группу
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[200px] flex-1">
+                <label className="mb-1 block text-xs text-slate-500">
+                  Группа
+                </label>
+                <SelectField
+                  accent="admin"
+                  value={newGroup.groupId}
+                  onChange={(e) => {
+                    const groupId = e.target.value;
+                    // Pre-fill the price from the group's configured default
+                    // so admins don't need to retype it for every student.
+                    const picked = groups.find((g) => g.id === groupId);
+                    setNewGroup((prev) => ({
+                      groupId,
+                      monthlyFee:
+                        groupId && picked?.defaultMonthlyFee
+                          ? String(picked.defaultMonthlyFee)
+                          : prev.monthlyFee,
+                    }));
+                  }}
+                >
+                  <option value="">Выберите группу</option>
+                  {groups
+                    .filter(
+                      (g) => g.isActive && !enrolledGroupIds.has(g.id),
+                    )
+                    .map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                </SelectField>
+              </div>
+              <div className="w-40">
+                <label className="mb-1 block text-xs text-slate-500">
+                  Цена / мес
+                </label>
+                <InputField
+                  accent="admin"
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={newGroup.monthlyFee}
+                  onChange={(e) =>
+                    setNewGroup((prev) => ({
+                      ...prev,
+                      monthlyFee: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <Button
+                size="sm"
+                disabled={!newGroup.groupId}
+                loading={addGroupMutation.isPending}
+                onClick={() => addGroupMutation.mutate()}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Добавить
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">История оплат</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-900">История оплат</h2>
+          {student.isActive && (
+            <Button
+              size="sm"
+              onClick={() => setManualPaymentOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Добавить оплату
+            </Button>
+          )}
+        </div>
         <PaymentsList
           payments={payments}
           showActions={pendingPayments.length > 0}
@@ -436,6 +637,14 @@ export default function StudentProfilePage() {
       </div>
 
       <ReceiptUploader studentId={student.id} />
+
+      <ManualPaymentDialog
+        open={manualPaymentOpen}
+        onOpenChange={setManualPaymentOpen}
+        studentId={student.id}
+        studentName={student.fullName}
+        suggestedAmount={monthlyFeeTotal}
+      />
 
       {student.isActive && (
         <div className="border-t border-slate-200 pt-4">

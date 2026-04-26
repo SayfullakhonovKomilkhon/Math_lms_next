@@ -3,7 +3,6 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  AtSign,
   Eye,
   EyeOff,
   KeyRound,
@@ -11,6 +10,7 @@ import {
   LogOut,
   Phone,
   Save,
+  ShieldCheck,
   User,
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -25,7 +25,6 @@ import styles from './profile.module.css';
 type UpdatePayload = {
   fullName?: string;
   phone?: string;
-  email?: string;
   currentPassword?: string;
   newPassword?: string;
 };
@@ -34,7 +33,7 @@ export default function StudentProfilePage() {
   const { summary, profile } = useStudentSummary();
   const { user, logout } = useAuth();
 
-  const formKey = `${profile?.id ?? 'mock'}:${user?.email ?? ''}`;
+  const formKey = `${profile?.id ?? 'mock'}:${user?.phone ?? ''}`;
 
   return (
     <div>
@@ -56,8 +55,7 @@ export default function StudentProfilePage() {
       <ProfileForm
         key={formKey}
         initialFullName={profile?.fullName ?? ''}
-        initialPhone={profile?.phone ?? ''}
-        initialEmail={user?.email ?? ''}
+        initialPhone={profile?.phone ?? user?.phone ?? ''}
       />
 
       <div className={styles.logoutBtn}>
@@ -72,20 +70,17 @@ export default function StudentProfilePage() {
 type ProfileFormProps = {
   initialFullName: string;
   initialPhone: string;
-  initialEmail: string;
 };
 
 function ProfileForm({
   initialFullName,
   initialPhone,
-  initialEmail,
 }: ProfileFormProps) {
   const qc = useQueryClient();
   const { user } = useAuth();
 
   const [fullName, setFullName] = useState(initialFullName);
   const [phone, setPhone] = useState(initialPhone);
-  const [email, setEmail] = useState(initialEmail);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -102,8 +97,8 @@ function ProfileForm({
       setNewPassword('');
       setConfirmPassword('');
 
-      if (variables.email && user) {
-        useAuthStore.setState({ user: { ...user, email: variables.email } });
+      if (variables.phone && user) {
+        useAuthStore.setState({ user: { ...user, phone: variables.phone } });
       }
     },
     onError: (err: unknown) => {
@@ -127,11 +122,6 @@ function ProfileForm({
       payload.phone = trimmedPhone;
     }
 
-    const trimmedEmail = email.trim();
-    if (trimmedEmail && trimmedEmail !== initialEmail.trim()) {
-      payload.email = trimmedEmail;
-    }
-
     const wantsPasswordChange = newPassword.length > 0 || confirmPassword.length > 0;
     if (wantsPasswordChange) {
       if (newPassword.length < 8) {
@@ -145,7 +135,7 @@ function ProfileForm({
       payload.newPassword = newPassword;
     }
 
-    const needsCurrentPassword = !!payload.email || !!payload.newPassword;
+    const needsCurrentPassword = !!payload.phone || !!payload.newPassword;
     if (needsCurrentPassword) {
       if (!currentPassword) {
         toast('Введите текущий пароль для подтверждения', 'error');
@@ -180,30 +170,21 @@ function ProfileForm({
         />
 
         <Field
-          label="Телефон"
+          label="Телефон (логин)"
           icon={<Phone size={16} />}
           type="tel"
           value={phone}
           onChange={setPhone}
           placeholder="+998 90 123 45 67"
           autoComplete="tel"
+          hint="Используется как логин для входа в кабинет"
         />
       </div>
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>
-          <AtSign size={16} /> Логин и безопасность
+          <ShieldCheck size={16} /> Безопасность
         </div>
-
-        <Field
-          label="Email (логин)"
-          icon={<AtSign size={16} />}
-          type="email"
-          value={email}
-          onChange={setEmail}
-          placeholder="name@example.com"
-          autoComplete="email"
-        />
 
         <Field
           label="Текущий пароль"
@@ -223,7 +204,7 @@ function ProfileForm({
               {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           }
-          hint="Нужен только при смене email или пароля"
+          hint="Нужен только при смене телефона или пароля"
         />
 
         <Field

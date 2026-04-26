@@ -67,7 +67,7 @@ export default function ParentsPage() {
               accent="admin"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск по имени, email или телефону"
+              placeholder="Поиск по имени или телефону"
               className="pl-9"
             />
           </div>
@@ -98,8 +98,7 @@ export default function ParentsPage() {
                   <table className="w-full text-sm">
                     <DataTableHead>
                       <DataTableHeaderCell>ФИО</DataTableHeaderCell>
-                      <DataTableHeaderCell>Email</DataTableHeaderCell>
-                      <DataTableHeaderCell>Телефон</DataTableHeaderCell>
+                      <DataTableHeaderCell>Телефон (логин)</DataTableHeaderCell>
                       <DataTableHeaderCell>Дети</DataTableHeaderCell>
                       <DataTableHeaderCell className="text-right">
                         Действия
@@ -122,10 +121,7 @@ export default function ParentsPage() {
                             </Link>
                           </DataTableCell>
                           <DataTableCell className="text-slate-700">
-                            {p.user?.email ?? '—'}
-                          </DataTableCell>
-                          <DataTableCell className="text-slate-600">
-                            {p.phone ?? '—'}
+                            {p.user?.phone ?? p.phone ?? '—'}
                           </DataTableCell>
                           <DataTableCell>
                             <div className="flex flex-wrap gap-1.5">
@@ -171,8 +167,7 @@ export default function ParentsPage() {
                         {p.fullName}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {p.user?.email ?? '—'}
-                        {p.phone ? ` · ${p.phone}` : ''}
+                        {p.user?.phone ?? p.phone ?? '—'}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {(p.students ?? []).length === 0 ? (

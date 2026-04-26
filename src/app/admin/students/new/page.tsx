@@ -16,12 +16,19 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InputField, SelectField } from '@/components/ui/input-field';
 
+const phoneRegex = /^\+?[0-9]{9,15}$/;
+
 const schema = z
   .object({
     fullName: z.string().min(2, 'Обязательное поле'),
-    email: z.string().email('Некорректный email'),
+    phone: z
+      .string()
+      .trim()
+      .regex(
+        phoneRegex,
+        'Введите номер телефона в международном формате (например, +998901234567)',
+      ),
     password: z.string().min(8, 'Минимум 8 символов'),
-    phone: z.string().optional(),
     birthDate: z.string().optional(),
     gender: z.enum(['MALE', 'FEMALE']),
     groupId: z.string().optional(),
@@ -29,11 +36,6 @@ const schema = z
     parentMode: z.enum(['none', 'new', 'existing']),
     parentFullName: z.string().optional(),
     parentPhone: z.string().optional(),
-    parentEmail: z
-      .string()
-      .email('Некорректный email')
-      .optional()
-      .or(z.literal('')),
     parentPassword: z.string().optional(),
     existingParentId: z.string().optional(),
   })
@@ -46,11 +48,11 @@ const schema = z
           message: 'Укажите ФИО родителя',
         });
       }
-      if (!data.parentEmail) {
+      if (!data.parentPhone || !phoneRegex.test(data.parentPhone.trim())) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['parentEmail'],
-          message: 'Укажите email родителя',
+          path: ['parentPhone'],
+          message: 'Укажите телефон родителя в формате +998901234567',
         });
       }
       if (!data.parentPassword || data.parentPassword.length < 8) {
@@ -126,10 +128,9 @@ export default function NewStudentPage() {
     setLoading(true);
     try {
       const studentRes = await api.post('/students', {
-        email: data.email,
+        phone: data.phone,
         password: data.password,
         fullName: data.fullName,
-        phone: data.phone || undefined,
         birthDate: data.birthDate || undefined,
         gender: data.gender,
         groupId: data.groupId || undefined,
@@ -138,12 +139,11 @@ export default function NewStudentPage() {
 
       const studentId = studentRes.data.data.id;
 
-      if (data.parentMode === 'new' && data.parentEmail && data.parentPassword) {
+      if (data.parentMode === 'new' && data.parentPhone && data.parentPassword) {
         await api.post('/parents', {
-          email: data.parentEmail,
+          phone: data.parentPhone,
           password: data.parentPassword,
           fullName: data.parentFullName,
-          phone: data.parentPhone || undefined,
           studentIds: [studentId],
         });
       } else if (data.parentMode === 'existing' && data.existingParentId) {
@@ -186,12 +186,12 @@ export default function NewStudentPage() {
             <Field label="ФИО *" error={errors.fullName?.message}>
               <InputField accent="admin" {...register('fullName')} placeholder="Алишер Каримов" />
             </Field>
-            <Field label="Email *" error={errors.email?.message}>
+            <Field label="Телефон (логин) *" error={errors.phone?.message}>
               <InputField
                 accent="admin"
-                type="email"
-                {...register('email')}
-                placeholder="student@mathcenter.uz"
+                type="tel"
+                {...register('phone')}
+                placeholder="+998901234567"
               />
             </Field>
             <Field label="Пароль *" error={errors.password?.message}>
@@ -202,9 +202,6 @@ export default function NewStudentPage() {
                 placeholder="Минимум 8 символов"
               />
             </Field>
-            <Field label="Телефон" error={errors.phone?.message}>
-              <InputField accent="admin" {...register('phone')} placeholder="+998901234567" />
-            </Field>
             <Field label="Дата рождения" error={errors.birthDate?.message}>
               <InputField accent="admin" type="date" {...register('birthDate')} />
             </Field>
@@ -214,7 +211,7 @@ export default function NewStudentPage() {
                 <option value="FEMALE">Женский</option>
               </SelectField>
             </Field>
-            <Field label="Группа" error={errors.groupId?.message}>
+            <Field label="Стартовая группа" error={errors.groupId?.message}>
               <SelectField accent="admin" {...register('groupId')}>
                 <option value="">Без группы</option>
                 {(groupsData ?? [])
@@ -226,7 +223,10 @@ export default function NewStudentPage() {
                   ))}
               </SelectField>
             </Field>
-            <Field label="Оплата в месяц (сум)" error={errors.monthlyFee?.message}>
+            <Field
+              label="Оплата в этой группе (сум / мес)"
+              error={errors.monthlyFee?.message}
+            >
               <InputField
                 accent="admin"
                 type="number"
@@ -234,6 +234,10 @@ export default function NewStudentPage() {
                 placeholder="500000"
               />
             </Field>
+            <p className="text-xs text-slate-500 sm:col-span-2">
+              Дополнительные группы и индивидуальные цены можно добавить позже
+              в карточке ученика.
+            </p>
           </CardContent>
         </Card>
 
@@ -241,7 +245,7 @@ export default function NewStudentPage() {
           <CardHeader>
             <h2 className="font-semibold text-slate-800">Родитель</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Email и пароль родителя — это его данные для входа в систему.
+              Номер телефона и пароль родителя — это его данные для входа в систему.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -262,19 +266,12 @@ export default function NewStudentPage() {
                     placeholder="Каримов Шерзод"
                   />
                 </Field>
-                <Field label="Телефон" error={errors.parentPhone?.message}>
+                <Field label="Телефон (логин) *" error={errors.parentPhone?.message}>
                   <InputField
                     accent="admin"
+                    type="tel"
                     {...register('parentPhone')}
                     placeholder="+998901234567"
-                  />
-                </Field>
-                <Field label="Email (логин) *" error={errors.parentEmail?.message}>
-                  <InputField
-                    accent="admin"
-                    type="email"
-                    {...register('parentEmail')}
-                    placeholder="parent@mathcenter.uz"
                   />
                 </Field>
                 <Field label="Пароль *" error={errors.parentPassword?.message}>
@@ -296,7 +293,7 @@ export default function NewStudentPage() {
                     accent="admin"
                     value={parentSearch}
                     onChange={(e) => setParentSearch(e.target.value)}
-                    placeholder="Поиск по имени, email, телефону..."
+                    placeholder="Поиск по имени или телефону..."
                     className="pl-9"
                   />
                 </div>
@@ -328,7 +325,7 @@ export default function NewStudentPage() {
                                   {p.fullName}
                                 </p>
                                 <p className="truncate text-xs text-slate-500">
-                                  {p.user?.email ?? '—'} ·{' '}
+                                  {p.user?.phone ?? p.phone ?? '—'} ·{' '}
                                   {(p.students ?? []).length} детей
                                 </p>
                               </div>
