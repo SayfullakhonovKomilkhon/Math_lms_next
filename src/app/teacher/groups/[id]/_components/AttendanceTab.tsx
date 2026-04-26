@@ -35,6 +35,10 @@ import { InputField, SelectField } from '@/components/ui/input-field';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import {
+  GroupSchedule,
+  getScheduleWeekdayIndexes,
+} from '@/lib/group-schedule';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -52,22 +56,6 @@ function isExamTopic(topic?: string | null): boolean {
   const lowered = topic.toLowerCase();
   return lowered.includes('экзамен') || lowered.includes('exam');
 }
-
-interface GroupSchedule {
-  days?: string[];
-  time?: string;
-  duration?: number;
-}
-
-const DAY_MAP: Record<string, number> = {
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
-  SUNDAY: 0,
-};
 
 export interface AttendanceTabStudent {
   id: string;
@@ -95,16 +83,22 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
   const monthStart = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
   const monthEnd = useMemo(() => endOfMonth(currentMonth), [currentMonth]);
 
+  // Take every weekday the group meets — supports both the legacy single-slot
+  // shape (`schedule.days`) and the new multi-slot shape (`schedule.slots`).
+  // If nothing is configured we fall back to "every day", otherwise the
+  // calendar would be empty.
+  const scheduleWeekdayIndexes = useMemo(
+    () => getScheduleWeekdayIndexes(schedule),
+    [schedule],
+  );
+
   const lessonDays: Date[] = useMemo(() => {
     const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    const days = schedule?.days ?? [];
-    if (days.length === 0) return allDays;
-    const indexes = days
-      .map((d) => DAY_MAP[d])
-      .filter((n) => n !== undefined);
-    if (indexes.length === 0) return allDays;
-    return allDays.filter((date) => indexes.includes(date.getDay()));
-  }, [monthStart, monthEnd, schedule?.days]);
+    if (scheduleWeekdayIndexes.length === 0) return allDays;
+    return allDays.filter((date) =>
+      scheduleWeekdayIndexes.includes(date.getDay()),
+    );
+  }, [monthStart, monthEnd, scheduleWeekdayIndexes]);
 
   // Lesson days that the teacher is actually allowed to pick in the date
   // selector — those that are not in the future. Returned as yyyy-MM-dd
@@ -502,7 +496,16 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 min-w-[180px] border-b border-slate-200 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th
+                  className={cn(
+                    // The sticky names column needs a SOLID background +
+                    // higher z-index than the date columns; otherwise the
+                    // attendance circles slide visibly under the column when
+                    // the user scrolls horizontally.
+                    'sticky left-0 z-20 min-w-[180px] border-b border-slate-200 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                    'shadow-[1px_0_0_0_rgb(226_232_240)]',
+                  )}
+                >
                   ИМЕНА
                 </th>
                 {lessonDays.map((day, idx) => {
@@ -566,17 +569,28 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
               </tr>
             </thead>
             <tbody>
-              {activeStudents.map((student, idx) => (
-                <tr
-                  key={student.id}
-                  className={cn(
-                    'border-t border-slate-100',
-                    idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40',
-                  )}
-                >
-                  <td className="sticky left-0 z-10 whitespace-nowrap bg-inherit px-4 py-2.5 text-sm font-medium text-slate-800">
-                    {student.fullName}
-                  </td>
+              {activeStudents.map((student, idx) => {
+                // IMPORTANT: row background MUST be fully opaque, otherwise
+                // the sticky names column (which inherits this background)
+                // shows through to the horizontally-scrolling attendance
+                // cells beneath. We pass the same color explicitly to the
+                // sticky <td> so it doesn't depend on `bg-inherit` (some
+                // Safari builds don't propagate <tr> backgrounds reliably).
+                const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+                return (
+                  <tr
+                    key={student.id}
+                    className={cn('border-t border-slate-100', rowBg)}
+                  >
+                    <td
+                      className={cn(
+                        'sticky left-0 z-10 whitespace-nowrap px-4 py-2.5 text-sm font-medium text-slate-800',
+                        rowBg,
+                        'shadow-[1px_0_0_0_rgb(226_232_240)]',
+                      )}
+                    >
+                      {student.fullName}
+                    </td>
                   {lessonDays.map((day) => {
                     const status = getUiStatus(student.id, day);
                     const isFuture = isAfter(startOfDay(day), todayStart);
@@ -601,11 +615,12 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                             persistExamScore(student.id, day, next)
                           }
                         />
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

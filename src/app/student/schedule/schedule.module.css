@@ -2,6 +2,43 @@
   margin-top: 22px;
 }
 
+.slotBlock {
+  margin-bottom: 18px;
+}
+
+.slotBlock:last-child {
+  margin-bottom: 0;
+}
+
+.slotHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--s-text-secondary);
+}
+
+.slotHeaderTime {
+  font-family: var(--s-font-display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--s-brand-blue);
+  text-transform: none;
+}
+
+.slotHeaderDuration {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--s-text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .scheduleGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

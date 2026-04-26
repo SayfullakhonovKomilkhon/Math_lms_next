@@ -16,6 +16,10 @@ import { AttendanceTab } from './_components/AttendanceTab';
 import { HomeworkTab } from './_components/HomeworkTab';
 import { PracticeTab } from './_components/PracticeTab';
 import { TopicsTab } from './_components/TopicsTab';
+import {
+  GroupSchedule,
+  formatScheduleLabel,
+} from '@/lib/group-schedule';
 
 interface GroupStudent {
   id: string;
@@ -36,19 +40,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'practice', label: 'Практика' },
   { id: 'online', label: 'Темы уроков' },
 ];
-
-const RU_DAY_LABELS: Record<string, string> = {
-  MONDAY: 'Понедельник',
-  TUESDAY: 'Вторник',
-  WEDNESDAY: 'Среда',
-  THURSDAY: 'Четверг',
-  FRIDAY: 'Пятница',
-  SATURDAY: 'Суббота',
-  SUNDAY: 'Воскресенье',
-};
-
-const ODD_DAYS = new Set(['MONDAY', 'WEDNESDAY', 'FRIDAY']);
-const EVEN_DAYS = new Set(['TUESDAY', 'THURSDAY', 'SATURDAY']);
 
 export default function TeacherGroupHubPage() {
   const { id: groupId } = useParams<{ id: string }>();
@@ -74,17 +65,12 @@ export default function TeacherGroupHubPage() {
     queryFn: () =>
       api
         .get(`/schedule/group/${groupId}`)
-        .then(
-          (r) =>
-            r.data.data as {
-              schedule: { days?: string[]; time?: string; duration?: number };
-            },
-        ),
+        .then((r) => r.data.data as { schedule: GroupSchedule }),
     enabled: !!groupId,
   });
 
-  const schedule = scheduleWrap?.schedule ??
-    (group?.schedule as { days?: string[]; time?: string; duration?: number } | undefined);
+  const schedule =
+    scheduleWrap?.schedule ?? (group?.schedule as GroupSchedule | undefined);
 
   const scheduleLabel = useMemo(() => formatScheduleLabel(schedule), [schedule]);
 
@@ -216,17 +202,3 @@ function Breadcrumb({ groupName }: { groupName: string }) {
   );
 }
 
-function formatScheduleLabel(
-  schedule?: { days?: string[]; time?: string },
-): string {
-  if (!schedule?.days || schedule.days.length === 0) return '—';
-  const days = schedule.days;
-  const allOdd = days.every((d) => ODD_DAYS.has(d));
-  const allEven = days.every((d) => EVEN_DAYS.has(d));
-  let daysLabel: string;
-  if (allOdd && days.length === ODD_DAYS.size) daysLabel = 'Нечётные дни';
-  else if (allEven && days.length === EVEN_DAYS.size) daysLabel = 'Чётные дни';
-  else daysLabel = days.map((d) => RU_DAY_LABELS[d] ?? d).join(', ');
-  if (schedule.time) return `${daysLabel} · ${schedule.time}`;
-  return daysLabel;
-}
