@@ -29,6 +29,11 @@ export const CONTACTS = {
   phoneHref: 'tel:+998943265225',
   instagram: 'https://www.instagram.com/khanov_math_academy/',
   telegram: 'https://t.me/SkhanovMathAcademy',
+  yandexMaps: 'https://yandex.uz/maps/-/CPG-NZYg',
+  addressRu: 'Ташкент, ул. Шахрисабз, 5А',
+  addressUz: "Toshkent, Shahrisabz ko'chasi, 5A",
+  addressShortRu: 'Ташкент, Мирабадский район',
+  addressShortUz: 'Toshkent, Mirobod tumani',
 } as const;
 
 function TelegramIcon({ className }: { className?: string }) {
@@ -630,11 +635,17 @@ export function Landing({ locale }: { locale: Locale }) {
                 </li>
                 <li className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#0E1541]/40" />
-                  <span>
-                    {locale === 'ru'
-                      ? 'Ташкент, Узбекистан'
-                      : "Toshkent, O'zbekiston"}
-                  </span>
+                  <a
+                    href={CONTACTS.yandexMaps}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#0E1541]"
+                  >
+                    {locale === 'ru' ? CONTACTS.addressRu : CONTACTS.addressUz}
+                    <span className="ml-1.5 text-xs text-[#0E1541]/50 underline-offset-2 hover:underline">
+                      {locale === 'ru' ? '— на Яндекс.Картах' : "— Yandex xaritada"}
+                    </span>
+                  </a>
                 </li>
               </ul>
             </div>

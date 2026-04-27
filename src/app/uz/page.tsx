@@ -38,9 +38,18 @@ const organizationJsonLd = {
   areaServed: 'UZ',
   inLanguage: ['ru', 'uz'],
   telephone: '+998943265225',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: "Shahrisabz ko'chasi, 5A",
+    addressLocality: 'Toshkent',
+    addressRegion: 'Mirobod tumani',
+    addressCountry: 'UZ',
+  },
+  hasMap: 'https://yandex.uz/maps/-/CPG-NZYg',
   sameAs: [
     'https://www.instagram.com/khanov_math_academy/',
     'https://t.me/SkhanovMathAcademy',
+    'https://yandex.uz/maps/-/CPG-NZYg',
   ],
   contactPoint: {
     '@type': 'ContactPoint',

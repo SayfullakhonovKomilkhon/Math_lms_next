@@ -38,9 +38,18 @@ const organizationJsonLd = {
   areaServed: 'UZ',
   inLanguage: ['ru', 'uz'],
   telephone: '+998943265225',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'ул. Шахрисабз, 5А',
+    addressLocality: 'Ташкент',
+    addressRegion: 'Мирабадский район',
+    addressCountry: 'UZ',
+  },
+  hasMap: 'https://yandex.uz/maps/-/CPG-NZYg',
   sameAs: [
     'https://www.instagram.com/khanov_math_academy/',
     'https://t.me/SkhanovMathAcademy',
+    'https://yandex.uz/maps/-/CPG-NZYg',
   ],
   contactPoint: {
     '@type': 'ContactPoint',
