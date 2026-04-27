@@ -13,12 +13,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified,
       changeFrequency: 'weekly',
       priority: 1,
+      alternates: {
+        languages: {
+          ru: `${SITE_URL}/`,
+          uz: `${SITE_URL}/uz`,
+        },
+      },
+    },
+    {
+      url: `${SITE_URL}/uz`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+      alternates: {
+        languages: {
+          ru: `${SITE_URL}/`,
+          uz: `${SITE_URL}/uz`,
+        },
+      },
     },
     {
       url: `${SITE_URL}/login`,
       lastModified,
       changeFrequency: 'monthly',
-      priority: 0.6,
+      priority: 0.5,
     },
   ];
 }

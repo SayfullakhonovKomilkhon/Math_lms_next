@@ -28,10 +28,10 @@ export function proxy(request: NextRequest) {
   const authData = request.cookies.get('auth-storage')?.value;
   const role = readRoleFromCookie(authData);
 
-  // Public landing page — must stay crawlable by search engines and visible
-  // to anonymous visitors. Logged-in users still see it (they can navigate to
-  // their dashboard via the CTA on the page).
-  if (pathname === '/') {
+  // Public landing pages — must stay crawlable by search engines and visible
+  // to anonymous visitors regardless of locale. Logged-in users still see
+  // them (they can navigate to their dashboard via the CTA on the page).
+  if (pathname === '/' || pathname === '/uz' || pathname === '/uz/') {
     return NextResponse.next();
   }
 

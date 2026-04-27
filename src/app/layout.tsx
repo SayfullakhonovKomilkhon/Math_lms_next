@@ -43,6 +43,7 @@ export const metadata: Metadata = {
     canonical: '/',
     languages: {
       ru: '/',
+      uz: '/uz',
       'x-default': '/',
     },
   },
