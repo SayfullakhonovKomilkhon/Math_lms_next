@@ -28,6 +28,13 @@ export function proxy(request: NextRequest) {
   const authData = request.cookies.get('auth-storage')?.value;
   const role = readRoleFromCookie(authData);
 
+  // Public landing page — must stay crawlable by search engines and visible
+  // to anonymous visitors. Logged-in users still see it (they can navigate to
+  // their dashboard via the CTA on the page).
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith('/login')) {
     if (role) {
       return NextResponse.redirect(new URL(ROLE_HOME_PATHS[role], request.url));
@@ -37,10 +44,6 @@ export function proxy(request: NextRequest) {
 
   if (!role) {
     return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL(ROLE_HOME_PATHS[role], request.url));
   }
 
   if (!isRoleAllowedPath(role, pathname)) {
