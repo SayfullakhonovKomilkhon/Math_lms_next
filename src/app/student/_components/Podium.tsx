@@ -6,6 +6,9 @@ export type PodiumEntry = {
   id: string;
   fullName: string;
   score: number;
+  /** Optional ceiling so the podium can render "X / Y балл." when exam
+   *  ceilings vary. */
+  maxScore?: number;
   place: 1 | 2 | 3;
   isMe?: boolean;
 };
@@ -48,7 +51,13 @@ export function Podium({ entries }: PodiumProps) {
               {e?.fullName ?? '—'}
             </div>
             {e?.isMe ? <span className={styles.meLabel}>ВЫ</span> : null}
-            <div className={styles.score}>{e ? `${e.score} балл.` : ''}</div>
+            <div className={styles.score}>
+              {e
+                ? e.maxScore && e.maxScore > 0
+                  ? `${e.score} / ${e.maxScore} балл.`
+                  : `${e.score} балл.`
+                : ''}
+            </div>
             <div className={styles.pedestal}>{place}</div>
           </div>
         ))}

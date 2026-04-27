@@ -127,9 +127,11 @@ export interface RatingEntry {
   place: number;
   studentId: string;
   fullName: string;
-  /** Sum of raw score across all grades in the period — primary ranking metric. */
+  /** Sum of raw score across all grades in the period. */
   totalPoints: number;
-  /** Average percentage (totalScore / totalMax * 100), kept for charts/backcompat. */
+  /** Sum of `maxScore` across all graded works in the same period. */
+  totalMax: number;
+  /** Average percentage (totalScore / totalMax * 100), used for ranking. */
   averageScore: number;
   totalWorks: number;
   attendancePercent: number;
@@ -265,6 +267,7 @@ export interface MyRating {
   totalStudents: number;
   myAverageScore: number;
   myTotalPoints: number;
+  myTotalMax: number;
   isVisible: boolean;
   rating: RatingEntry[];
 }

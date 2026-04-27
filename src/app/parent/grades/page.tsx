@@ -58,17 +58,29 @@ export default function ParentGradesPage() {
 
   const grades = gradesRes?.data || [];
   const totalPoints = grades.reduce((acc, g) => acc + Number(g.score || 0), 0);
-  const avgRaw = grades.length > 0 ? Math.round(totalPoints / grades.length) : 0;
+  const totalMax = grades.reduce(
+    (acc, g) => acc + Number(g.maxScore || 0),
+    0,
+  );
+  // Show the average as a percentage so it stays meaningful when exam
+  // ceilings vary (e.g. 50/50 should rank above 60/100).
+  const avgPct =
+    totalMax > 0 ? Math.round((totalPoints / totalMax) * 100) : 0;
 
-  const months: Record<string, { total: number; count: number }> = {};
+  const months: Record<string, { total: number; max: number; count: number }> = {};
   grades.forEach((g) => {
     const month = g.date.substring(0, 7);
-    if (!months[month]) months[month] = { total: 0, count: 0 };
+    if (!months[month]) months[month] = { total: 0, max: 0, count: 0 };
     months[month].total += Number(g.score || 0);
+    months[month].max += Number(g.maxScore || 0);
     months[month].count += 1;
   });
   const chartData = Object.entries(months)
-    .map(([month, data]) => ({ month, averageScore: Math.round(data.total / data.count) }))
+    .map(([month, data]) => ({
+      month,
+      averageScore:
+        data.max > 0 ? Math.round((data.total / data.max) * 100) : 0,
+    }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
   return (
@@ -98,16 +110,21 @@ export default function ParentGradesPage() {
             </p>
             <p className="mt-1 text-5xl font-black tracking-tight sm:text-6xl">
               {totalPoints}
+              {totalMax > 0 ? (
+                <span className="ml-1 text-xl font-semibold text-indigo-100/80 sm:text-2xl">
+                  / {totalMax}
+                </span>
+              ) : null}
             </p>
             <p className="mt-2 text-xs text-indigo-100/85">
-              {grades.length} {pluralWorks(grades.length)} · средний {avgRaw}
+              {grades.length} {pluralWorks(grades.length)} · средний {avgPct}%
             </p>
           </div>
           <div className="rounded-2xl bg-white/15 px-3 py-2 text-center backdrop-blur-sm">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-100/80">
               Средний
             </p>
-            <p className="mt-0.5 text-xl font-black">{avgRaw}</p>
+            <p className="mt-0.5 text-xl font-black">{avgPct}%</p>
           </div>
         </div>
       </div>

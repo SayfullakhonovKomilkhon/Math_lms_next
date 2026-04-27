@@ -65,6 +65,8 @@ export default function StudentGradesPage() {
     id: string;
     fullName: string;
     score: number;
+    maxScore: number;
+    averageScore: number;
     place: number;
     change?: number;
     isMe?: boolean;
@@ -72,6 +74,8 @@ export default function StudentGradesPage() {
     id: r.studentId,
     fullName: r.fullName,
     score: Math.round(r.totalPoints ?? 0),
+    maxScore: Math.round(r.totalMax ?? 0),
+    averageScore: r.averageScore ?? 0,
     place: r.place ?? i + 1,
     isMe: r.studentId === profile?.id,
   }));
@@ -83,6 +87,7 @@ export default function StudentGradesPage() {
     id: r.id,
     fullName: r.fullName,
     score: r.score,
+    maxScore: r.maxScore,
     place: r.place as 1 | 2 | 3,
     isMe: r.isMe,
   }));
@@ -195,7 +200,11 @@ export default function StudentGradesPage() {
                     {r.fullName}
                     {r.isMe ? ' · ВЫ' : ''}
                   </span>
-                  <span className={styles.score}>{r.score} балл.</span>
+                  <span className={styles.score}>
+                    {r.maxScore > 0
+                      ? `${r.score} / ${r.maxScore} балл.`
+                      : `${r.score} балл.`}
+                  </span>
                   <span className={`${styles.change} ${chCls}`}>
                     {ch > 0 ? `▲${ch}` : ch === 0 ? '—' : `▼${Math.abs(ch)}`}
                   </span>

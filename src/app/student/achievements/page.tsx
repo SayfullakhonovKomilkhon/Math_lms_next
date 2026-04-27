@@ -73,6 +73,7 @@ export default function StudentAchievementsPage() {
     id: r.studentId,
     fullName: r.fullName,
     score: Math.round(r.totalPoints ?? 0),
+    maxScore: Math.round(r.totalMax ?? 0),
     place: (r.place ?? i + 1) as 1 | 2 | 3,
     isMe: false,
   }));

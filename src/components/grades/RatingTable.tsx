@@ -90,8 +90,13 @@ export function RatingTable({ data, period, onPeriodChange }: Props) {
                   >
                     {entry.totalPoints}
                   </span>
+                  {entry.totalMax > 0 ? (
+                    <span className="ml-1 text-xs font-medium text-slate-400">
+                      / {entry.totalMax}
+                    </span>
+                  ) : null}
                   <span className="ml-1 text-xs font-medium text-slate-400">
-                    балл.
+                    ({entry.averageScore}%)
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-slate-600">{entry.totalWorks}</td>

@@ -48,7 +48,9 @@ import {
 type UiStatus = AttendanceStatus; // 'PRESENT' | 'ABSENT' | 'LATE'
 type AttendanceMap = Record<string, Record<string, UiStatus>>;
 
-const EXAM_MAX_SCORE = 100;
+// Default upper bound used when the teacher hasn't picked an explicit one
+// for the given exam date yet.
+const DEFAULT_EXAM_MAX_SCORE = 100;
 const EXAM_LESSON_TYPE = 'TEST';
 
 function isExamTopic(topic?: string | null): boolean {
@@ -227,8 +229,22 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
       const dateStr = format(new Date(g.date), 'yyyy-MM-dd');
       map.set(`${g.studentId}__${dateStr}`, {
         score: Number(g.score),
-        maxScore: Number(g.maxScore) || EXAM_MAX_SCORE,
+        maxScore: Number(g.maxScore) || DEFAULT_EXAM_MAX_SCORE,
       });
+    });
+    return map;
+  }, [monthGrades]);
+
+  // yyyy-MM-dd -> max score from the server (most common value across the
+  // students of that date). Used as a starting point for the per-date max
+  // input shown inside the cell popover.
+  const remoteMaxByDate = useMemo(() => {
+    const map = new Map<string, number>();
+    monthGrades.forEach((g) => {
+      const dateStr = format(new Date(g.date), 'yyyy-MM-dd');
+      const next = Number(g.maxScore) || DEFAULT_EXAM_MAX_SCORE;
+      // First write wins — backend already keeps it consistent per date.
+      if (!map.has(dateStr)) map.set(dateStr, next);
     });
     return map;
   }, [monthGrades]);
@@ -237,6 +253,21 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
   const [scoreMap, setScoreMap] = useState<
     Record<string, Record<string, number | null>>
   >({});
+
+  // Local override of the per-date max score. Persists in-memory until
+  // the next bulk save, which propagates the new max to all existing
+  // grades for that date so they stay consistent.
+  const [localMaxByDate, setLocalMaxByDate] = useState<
+    Record<string, number>
+  >({});
+
+  const getExamMaxScore = (dateStr: string): number => {
+    const local = localMaxByDate[dateStr];
+    if (typeof local === 'number' && local > 0) return local;
+    const remote = remoteMaxByDate.get(dateStr);
+    if (remote && remote > 0) return remote;
+    return DEFAULT_EXAM_MAX_SCORE;
+  };
 
   const getExamScore = (studentId: string, dateStr: string): number | null => {
     const local = scoreMap[studentId]?.[dateStr];
@@ -314,6 +345,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
     next: number | null,
   ) => {
     const dateStr = format(date, 'yyyy-MM-dd');
+    const maxScore = getExamMaxScore(dateStr);
     setScoreMap((prev) => {
       const studentMap = { ...(prev[studentId] ?? {}) };
       studentMap[dateStr] = next;
@@ -324,7 +356,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
         groupId,
         date: dateStr,
         lessonType: EXAM_LESSON_TYPE,
-        maxScore: EXAM_MAX_SCORE,
+        maxScore,
         records: [{ studentId, score: next }],
       });
       qc.invalidateQueries({
@@ -348,6 +380,78 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
         const studentMap = { ...(prev[studentId] ?? {}) };
         delete studentMap[dateStr];
         return { ...prev, [studentId]: studentMap };
+      });
+    }
+  };
+
+  // Updates the per-date max score and re-saves any existing grades for
+  // that date so they stay consistent (back-end stores `maxScore` per
+  // grade, not per date, so we have to push the new ceiling to every
+  // record that already exists).
+  const persistExamMaxScore = async (date: Date, nextMax: number) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const safe = Math.max(1, Math.round(nextMax));
+    if (safe === getExamMaxScore(dateStr)) return;
+
+    const previousMax = getExamMaxScore(dateStr);
+    setLocalMaxByDate((prev) => ({ ...prev, [dateStr]: safe }));
+
+    // Collect all currently-known scores for this date and clamp them to
+    // the new ceiling so the teacher can shrink the maximum without
+    // invalid records being left in the DB.
+    const records = activeStudents
+      .map((s) => {
+        const score = getExamScore(s.id, dateStr);
+        if (score == null) return null;
+        return { studentId: s.id, score: Math.min(score, safe) };
+      })
+      .filter(
+        (r): r is { studentId: string; score: number } => r !== null,
+      );
+
+    // Reflect any clamping locally so the UI updates immediately.
+    if (records.length > 0) {
+      setScoreMap((prev) => {
+        const next = { ...prev };
+        for (const r of records) {
+          const studentMap = { ...(next[r.studentId] ?? {}) };
+          studentMap[dateStr] = r.score;
+          next[r.studentId] = studentMap;
+        }
+        return next;
+      });
+    }
+
+    try {
+      if (records.length > 0) {
+        await api.post('/grades/bulk', {
+          groupId,
+          date: dateStr,
+          lessonType: EXAM_LESSON_TYPE,
+          maxScore: safe,
+          records,
+        });
+      }
+      qc.invalidateQueries({
+        queryKey: [
+          'grades-month',
+          groupId,
+          format(monthStart, 'yyyy-MM-dd'),
+          format(monthEnd, 'yyyy-MM-dd'),
+          EXAM_LESSON_TYPE,
+        ],
+      });
+    } catch (e: unknown) {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : undefined;
+      toast(msg || 'Не удалось сохранить макс. балл', 'error');
+      setLocalMaxByDate((prev) => {
+        const next = { ...prev };
+        next[dateStr] = previousMax;
+        return next;
       });
     }
   };
@@ -610,9 +714,12 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                           onSelect={(next) => setCellStatus(student.id, day, next)}
                           isExam={isExam}
                           examScore={examScore}
-                          examMaxScore={EXAM_MAX_SCORE}
+                          examMaxScore={getExamMaxScore(dateStr)}
                           onSaveScore={(next) =>
                             persistExamScore(student.id, day, next)
+                          }
+                          onSaveMaxScore={(nextMax) =>
+                            persistExamMaxScore(day, nextMax)
                           }
                         />
                         </td>
@@ -693,6 +800,7 @@ function AttendanceCell({
   examScore,
   examMaxScore,
   onSaveScore,
+  onSaveMaxScore,
 }: {
   status: UiStatus | null;
   disabled?: boolean;
@@ -701,6 +809,7 @@ function AttendanceCell({
   examScore?: number | null;
   examMaxScore?: number;
   onSaveScore?: (next: number | null) => void;
+  onSaveMaxScore?: (nextMax: number) => void;
 }) {
   const showScoreBadge = isExam && examScore != null;
 
@@ -759,8 +868,9 @@ function AttendanceCell({
           <ExamScoreInput
             disabled={status === 'ABSENT' || status == null}
             score={examScore ?? null}
-            maxScore={examMaxScore ?? EXAM_MAX_SCORE}
+            maxScore={examMaxScore ?? DEFAULT_EXAM_MAX_SCORE}
             onSave={onSaveScore ?? (() => undefined)}
+            onSaveMax={onSaveMaxScore}
           />
         ) : null}
       </DropdownMenuContent>
@@ -773,19 +883,30 @@ function ExamScoreInput({
   maxScore,
   disabled,
   onSave,
+  onSaveMax,
 }: {
   score: number | null;
   maxScore: number;
   disabled?: boolean;
   onSave: (next: number | null) => void;
+  onSaveMax?: (nextMax: number) => void;
 }) {
   const [value, setValue] = useState<string>(score == null ? '' : String(score));
+  const [maxValue, setMaxValue] = useState<string>(String(maxScore));
 
   // Resync if the prop score updates from elsewhere.
   const lastScoreRef = useRef<number | null>(score);
   if (lastScoreRef.current !== score) {
     lastScoreRef.current = score;
     setValue(score == null ? '' : String(score));
+  }
+
+  // Resync the max input when the parent's max changes (e.g. another
+  // teacher action updated it, or another date is opened).
+  const lastMaxRef = useRef<number>(maxScore);
+  if (lastMaxRef.current !== maxScore) {
+    lastMaxRef.current = maxScore;
+    setMaxValue(String(maxScore));
   }
 
   const commit = () => {
@@ -807,6 +928,27 @@ function ExamScoreInput({
     }
     if (parsed === score) return;
     onSave(parsed);
+  };
+
+  const commitMax = () => {
+    if (!onSaveMax) return;
+    const trimmed = maxValue.trim();
+    if (trimmed === '') {
+      setMaxValue(String(maxScore));
+      return;
+    }
+    const parsed = Number(trimmed.replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      toast('Макс. балл должен быть положительным числом', 'error');
+      setMaxValue(String(maxScore));
+      return;
+    }
+    const rounded = Math.max(1, Math.round(parsed));
+    if (rounded === maxScore) {
+      setMaxValue(String(maxScore));
+      return;
+    }
+    onSaveMax(rounded);
   };
 
   return (
@@ -847,7 +989,34 @@ function ExamScoreInput({
             disabled && 'cursor-not-allowed bg-slate-100 text-slate-400',
           )}
         />
-        <span className="text-xs text-slate-500">из {maxScore}</span>
+        <span className="text-xs text-slate-500">из</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          step="1"
+          disabled={!onSaveMax}
+          value={maxValue}
+          onChange={(e) => setMaxValue(e.target.value)}
+          onBlur={commitMax}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commitMax();
+              (e.target as HTMLInputElement).blur();
+            }
+            if (e.key === 'Escape') {
+              setMaxValue(String(maxScore));
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          aria-label="Максимальный балл за экзамен"
+          className={cn(
+            'w-16 rounded-md border border-slate-300 px-2 py-1 text-sm',
+            'focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200',
+            !onSaveMax && 'cursor-not-allowed bg-slate-100 text-slate-400',
+          )}
+        />
       </div>
       {disabled ? (
         <p className="mt-1 text-[10px] text-slate-400">
@@ -856,6 +1025,7 @@ function ExamScoreInput({
       ) : (
         <p className="mt-1 text-[10px] text-slate-400">
           Нажмите Enter или кликните вне поля — балл сохранится автоматически.
+          Макс. балл общий для всех учеников этой даты.
         </p>
       )}
     </div>

@@ -94,6 +94,7 @@ export default function ParentAchievementsPage() {
       studentId: string;
       fullName: string;
       totalPoints?: number;
+      totalMax?: number;
       place?: number;
     }>;
   } | null>({
@@ -121,6 +122,7 @@ export default function ParentAchievementsPage() {
       id: r.studentId,
       fullName: r.fullName,
       score: Math.round(r.totalPoints ?? 0),
+      maxScore: Math.round(r.totalMax ?? 0),
       place: (r.place ?? i + 1) as 1 | 2 | 3,
       isMe: r.studentId === childId,
     }));
