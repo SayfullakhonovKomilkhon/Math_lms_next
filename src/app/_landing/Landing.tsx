@@ -12,7 +12,6 @@ import {
   Brain,
   Award,
   Phone,
-  Mail,
   MapPin,
   Check,
 } from 'lucide-react';
@@ -23,6 +22,46 @@ import {
   LOCALE_HOMES,
 } from '@/lib/i18n/landing';
 import { Faq } from './Faq';
+
+// Real contacts — single source of truth for the whole landing page.
+export const CONTACTS = {
+  phone: '+998 94 326 52 25',
+  phoneHref: 'tel:+998943265225',
+  instagram: 'https://www.instagram.com/khanov_math_academy/',
+  telegram: 'https://t.me/SkhanovMathAcademy',
+} as const;
+
+function TelegramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.073l3.928 1.310 1.853 5.557a1.5 1.5 0 0 0 2.585.43l2.244-2.532 4.328 3.193a2.25 2.25 0 0 0 3.51-1.262l3.5-15.5a2.25 2.25 0 0 0-2.552-2.984Z" />
+    </svg>
+  );
+}
+
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
 
 const FEATURE_ICONS = [
   BookOpen,
@@ -93,6 +132,24 @@ export function Landing({ locale }: { locale: Locale }) {
           </nav>
 
           <div className="flex items-center gap-2">
+            <a
+              href={CONTACTS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-[#0E1541]/10 bg-white text-[#0E1541]/70 transition hover:border-[#0E1541]/25 hover:text-[#0E1541] sm:inline-flex"
+            >
+              <InstagramIcon className="h-4 w-4" />
+            </a>
+            <a
+              href={CONTACTS.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Telegram"
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-[#0E1541]/10 bg-white text-[#0E1541]/70 transition hover:border-[#0E1541]/25 hover:text-[#0E1541] sm:inline-flex"
+            >
+              <TelegramIcon className="h-4 w-4" />
+            </a>
             <Link
               href={LOCALE_HOMES[otherLocale]}
               className="hidden rounded-full border border-[#0E1541]/15 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0E1541] transition hover:border-[#0E1541]/30 sm:inline-flex"
@@ -434,11 +491,11 @@ export function Landing({ locale }: { locale: Locale }) {
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
                 <a
-                  href="tel:+998000000000"
+                  href={CONTACTS.phoneHref}
                   className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur transition hover:bg-white/10"
                 >
                   <Phone className="h-4 w-4" />
-                  {t.cta.secondary}
+                  {CONTACTS.phone}
                 </a>
               </div>
             </div>
@@ -545,20 +602,30 @@ export function Landing({ locale }: { locale: Locale }) {
               <ul className="mt-5 space-y-3 text-sm text-[#0E1541]/70">
                 <li className="flex items-start gap-3">
                   <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#0E1541]/40" />
-                  <a
-                    href="tel:+998000000000"
-                    className="hover:text-[#0E1541]"
-                  >
-                    +998 (00) 000-00-00
+                  <a href={CONTACTS.phoneHref} className="hover:text-[#0E1541]">
+                    {CONTACTS.phone}
                   </a>
                 </li>
                 <li className="flex items-start gap-3">
-                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#0E1541]/40" />
+                  <InstagramIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#0E1541]/40" />
                   <a
-                    href="mailto:hello@khanovmathacademy.uz"
+                    href={CONTACTS.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="hover:text-[#0E1541]"
                   >
-                    hello@khanovmathacademy.uz
+                    @khanov_math_academy
+                  </a>
+                </li>
+                <li className="flex items-start gap-3">
+                  <TelegramIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#0E1541]/40" />
+                  <a
+                    href={CONTACTS.telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#0E1541]"
+                  >
+                    {locale === 'ru' ? 'Telegram канал' : 'Telegram kanali'}
                   </a>
                 </li>
                 <li className="flex items-start gap-3">

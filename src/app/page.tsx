@@ -37,6 +37,18 @@ const organizationJsonLd = {
   description: landingT.ru.metaDescription,
   areaServed: 'UZ',
   inLanguage: ['ru', 'uz'],
+  telephone: '+998943265225',
+  sameAs: [
+    'https://www.instagram.com/khanov_math_academy/',
+    'https://t.me/SkhanovMathAcademy',
+  ],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    telephone: '+998943265225',
+    contactType: 'customer service',
+    areaServed: 'UZ',
+    availableLanguage: ['Russian', 'Uzbek'],
+  },
 };
 
 const websiteJsonLd = {
