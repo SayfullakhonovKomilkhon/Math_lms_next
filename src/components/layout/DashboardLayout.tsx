@@ -2,6 +2,7 @@ import { AppSidebar, type PanelVariant } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { PanelPrefetcher } from '@/components/layout/PanelPrefetcher';
 import { TopBarAccount } from '@/components/account/TopBarAccount';
+import { TelegramLinkPrompt } from '@/components/telegram/TelegramLinkPrompt';
 
 const accentByVariant = {
   admin: 'indigo',
@@ -33,6 +34,7 @@ export function DashboardLayout({
         </main>
         <MobileNav variant={variant} />
       </div>
+      <TelegramLinkPrompt />
     </div>
   );
 }

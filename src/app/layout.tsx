@@ -57,7 +57,7 @@ export const metadata: Metadata = {
       'Онлайн академия математики Khanov Math Academy. Уроки, домашние задания, рейтинг и подготовка к олимпиадам.',
     images: [
       {
-        url: '/icon',
+        url: '/icon.png',
         width: 512,
         height: 512,
         alt: 'Khanov Math Academy',
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     title: 'Khanov Math Academy',
     description:
       'Онлайн академия математики. Уроки, домашние задания, рейтинг и подготовка к олимпиадам.',
-    images: ['/icon'],
+    images: ['/icon.png'],
   },
   robots: {
     index: true,
@@ -81,10 +81,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
       'max-video-preview': -1,
     },
-  },
-  icons: {
-    icon: '/icon',
-    apple: '/apple-icon',
   },
 };
 

@@ -7,7 +7,12 @@ import { syncAuthCookie } from '@/lib/auth-cookie';
 import { Role } from '@/types';
 
 interface AuthState {
-  user: { id: string; phone: string; role: Role } | null;
+  user: {
+    id: string;
+    phone: string;
+    role: Role;
+    telegramChatId?: string | null;
+  } | null;
   accessToken: string | null;
   isAuthenticated: boolean;
   login: (phone: string, password: string) => Promise<void>;

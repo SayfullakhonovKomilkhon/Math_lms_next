@@ -33,7 +33,7 @@ const organizationJsonLd = {
   name: 'Khanov Math Academy',
   alternateName: ['Khanov Math', 'Khanov'],
   url: SITE_URL,
-  logo: `${SITE_URL}/icon`,
+  logo: `${SITE_URL}/icon.png`,
   description: landingT.uz.metaDescription,
   areaServed: 'UZ',
   inLanguage: ['ru', 'uz'],

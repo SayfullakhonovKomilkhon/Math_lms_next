@@ -15,6 +15,7 @@ import { PullToRefresh } from './PullToRefresh';
 import { SwipeNavigator } from './SwipeNavigator';
 import { SplashScreen } from './SplashScreen';
 import { LevelUpCelebration, type LevelUpInput } from './LevelUpCelebration';
+import { TelegramLinkPrompt } from '@/components/telegram/TelegramLinkPrompt';
 import styles from './StudentShell.module.css';
 
 type NotifCountResponse = { data: { unread: number } };
@@ -118,6 +119,8 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
       <SplashScreen />
 
       <LevelUpCelebration input={levelUp} onClose={() => setLevelUp(null)} />
+
+      <TelegramLinkPrompt />
     </div>
   );
 }
