@@ -37,6 +37,13 @@ export default function FinancePage() {
   const [groupId, setGroupId] = useState('');
   const [status, setStatus] = useState('');
 
+  // Debtor month filter (YYYY-MM). Defaults to the current month.
+  const currentMonth = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+  const [debtorsMonth, setDebtorsMonth] = useState<string>(currentMonth);
+
   const { data: groups = [] } = useQuery<Group[]>({
     queryKey: ['groups'],
     queryFn: () => api.get('/groups').then((r) => r.data.data),
@@ -58,8 +65,11 @@ export default function FinancePage() {
   });
 
   const { data: debtors = [], isLoading: debtorsLoading } = useQuery<Debtor[]>({
-    queryKey: ['sa-debtors'],
-    queryFn: () => api.get('/analytics/debtors').then((r) => r.data.data),
+    queryKey: ['sa-debtors', debtorsMonth],
+    queryFn: () =>
+      api
+        .get(`/analytics/debtors?month=${encodeURIComponent(debtorsMonth)}`)
+        .then((r) => r.data.data),
     enabled: tab === 'debtors',
   });
 
@@ -285,24 +295,48 @@ export default function FinancePage() {
       {/* ── Должники ── */}
       {tab === 'debtors' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={exporting === 'debtors-excel'}
-              onClick={() =>
-                handleExport(
-                  'debtors-excel',
-                  '/reports/students/excel',
-                  `debtors-${new Date().toISOString().slice(0, 10)}.xlsx`,
-                  { isActive: 'true' },
-                )
-              }
-            >
-              <FileSpreadsheet className="mr-1.5 h-4 w-4 text-green-600" />
-              Экспорт Excel
-            </Button>
-          </div>
+          <Card>
+            <CardContent className="flex flex-wrap items-end gap-3 p-4">
+              <div>
+                <label className="mb-1 block text-xs text-slate-500">Месяц</label>
+                <InputField
+                  accent="admin"
+                  type="month"
+                  value={debtorsMonth}
+                  max={currentMonth}
+                  onChange={(e) => setDebtorsMonth(e.target.value || currentMonth)}
+                  className="w-44"
+                />
+              </div>
+              {debtorsMonth !== currentMonth && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDebtorsMonth(currentMonth)}
+                >
+                  Текущий месяц
+                </Button>
+              )}
+              <div className="ml-auto">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={exporting === 'debtors-excel'}
+                  onClick={() =>
+                    handleExport(
+                      'debtors-excel',
+                      '/reports/students/excel',
+                      `debtors-${debtorsMonth}.xlsx`,
+                      { isActive: 'true', month: debtorsMonth },
+                    )
+                  }
+                >
+                  <FileSpreadsheet className="mr-1.5 h-4 w-4 text-green-600" />
+                  Экспорт Excel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             {debtorsLoading ? (
               <CardContent className="py-10 text-center text-sm text-slate-400">Загрузка...</CardContent>
@@ -347,7 +381,13 @@ export default function FinancePage() {
                       </tr>
                     ))}
                     {debtors.length === 0 && (
-                      <tr><td colSpan={7} className="py-10 text-center text-green-600">Должников нет!</td></tr>
+                      <tr>
+                        <td colSpan={7} className="py-10 text-center text-green-600">
+                          {debtorsMonth === currentMonth
+                            ? 'Должников нет!'
+                            : 'В этом месяце должников не было'}
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
