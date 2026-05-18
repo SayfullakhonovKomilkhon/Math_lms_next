@@ -1,8 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Phone, Eye, EyeOff, KeyRound, Lock, Save, ShieldCheck } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Lock,
+  MessageCircle,
+  Phone,
+  Save,
+  ShieldCheck,
+  Unlink,
+} from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { syncAuthCookie } from '@/lib/auth-cookie';
@@ -10,6 +21,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { InputField } from '@/components/ui/input-field';
 import { toast } from '@/components/ui/toast';
+import { useTelegramLink, useTelegramStatus } from '@/hooks/useTelegramLink';
 
 interface UpdateMePayload {
   phone?: string;
@@ -242,6 +254,8 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
           )}
         </div>
 
+        <TelegramSection accent={accent} />
+
         <div className="border-t border-slate-100 pt-5">
           <Field
             label="Текущий пароль"
@@ -286,5 +300,125 @@ function AccountSettingsForm({ accent, onClose }: { accent: Accent; onClose: () 
         </Button>
       </div>
     </>
+  );
+}
+
+function TelegramSection({ accent }: { accent: Accent }) {
+  const a = accentStyles[accent];
+  const qc = useQueryClient();
+  const { data: status, isLoading: statusLoading } = useTelegramStatus(true);
+  const linked = Boolean(status?.linked);
+
+  const { code, deepLink, linked: justLinked, polling, isGenerating, generateAndOpen, reset } =
+    useTelegramLink({
+      onLinked: () => {
+        // Refresh the badge to "Подключён" once the bot confirms.
+        qc.invalidateQueries({ queryKey: ['telegram-status'] });
+      },
+    });
+
+  const unlinkMutation = useMutation({
+    mutationFn: () => api.post('/telegram/unlink'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['telegram-status'] });
+      qc.invalidateQueries({ queryKey: ['auth-user'] });
+      toast('Telegram отключён');
+    },
+    onError: () => toast('Не удалось отключить Telegram', 'error'),
+  });
+
+  const isLinked = linked || justLinked;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-600">
+          <MessageCircle className="h-4.5 w-4.5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-slate-800">Telegram уведомления</span>
+            {statusLoading ? null : isLinked ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                <CheckCircle2 className="h-3 w-3" /> Подключён
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                Не подключён
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Напоминания об уроках, оценки, оплаты и объявления приходят прямо в Telegram.
+          </p>
+        </div>
+      </div>
+
+      {isLinked ? (
+        <div className="mt-3 flex justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => unlinkMutation.mutate()}
+            loading={unlinkMutation.isPending}
+          >
+            <Unlink className="mr-1.5 h-4 w-4" />
+            Отключить
+          </Button>
+        </div>
+      ) : !code ? (
+        <div className="mt-3">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => generateAndOpen()}
+            loading={isGenerating}
+            className={a.btn}
+          >
+            <MessageCircle className="mr-1.5 h-4 w-4" />
+            Подключить Telegram
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-2 rounded-lg border border-sky-100 bg-sky-50/60 p-3 text-xs text-sky-900">
+          <div className="font-medium">
+            {polling ? 'Ожидаем подтверждения в Telegram…' : 'Telegram открыт'}
+          </div>
+          <p className="text-sky-800/80">
+            В открывшемся чате нажмите <strong>«Запустить»</strong>. Если вкладка не открылась —
+            используйте ссылку ниже.
+          </p>
+          {deepLink ? (
+            <a
+              href={deepLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sky-700 underline-offset-2 hover:underline"
+            >
+              Открыть @{code.botUsername}
+            </a>
+          ) : null}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <details className="text-[11px] text-sky-900/80">
+              <summary className="cursor-pointer">Ввести код вручную</summary>
+              <div className="mt-1 space-y-0.5">
+                <div>Отправьте боту команду:</div>
+                <div className="rounded-md bg-white px-2 py-1 font-mono text-slate-800">
+                  /link {code.code}
+                </div>
+              </div>
+            </details>
+            <button
+              type="button"
+              onClick={reset}
+              className="text-[11px] text-sky-800 hover:underline"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
