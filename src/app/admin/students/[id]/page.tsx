@@ -172,6 +172,41 @@ export default function StudentProfilePage() {
     },
   });
 
+  const activateMutation = useMutation({
+    mutationFn: () => api.patch(`/students/${id}/activate`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student', id] });
+      qc.invalidateQueries({ queryKey: ['students'] });
+      toast('Ученик снова активен');
+    },
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast(msg || 'Ошибка при активации', 'error');
+    },
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: () => api.delete(`/students/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['students'] });
+      qc.invalidateQueries({ queryKey: ['debtors'] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      toast('Ученик удалён');
+      router.push('/admin/students');
+    },
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast(msg || 'Ошибка при удалении', 'error');
+    },
+  });
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const updateCredsMutation = useMutation({
     mutationFn: () => {
       const payload: { phone?: string; password?: string } = {};
@@ -688,8 +723,8 @@ export default function StudentProfilePage() {
         }}
       />
 
-      {student.isActive && (
-        <div className="border-t border-slate-200 pt-4">
+      <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+        {student.isActive ? (
           <Button
             variant="danger"
             loading={deactivateMutation.isPending}
@@ -699,8 +734,37 @@ export default function StudentProfilePage() {
           >
             Деактивировать ученика
           </Button>
-        </div>
-      )}
+        ) : (
+          <Button
+            variant="primary"
+            loading={activateMutation.isPending}
+            onClick={() => activateMutation.mutate()}
+          >
+            Активировать ученика
+          </Button>
+        )}
+        <Button
+          variant="danger"
+          loading={deleteStudentMutation.isPending}
+          onClick={() => setConfirmDelete(true)}
+        >
+          Удалить навсегда
+        </Button>
+      </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title="Удалить ученика безвозвратно?"
+        description={`${student.fullName}: будут удалены аккаунт, все посещения, оценки, оплаты и достижения. Это действие нельзя отменить.`}
+        confirmLabel="Удалить навсегда"
+        variant="danger"
+        confirmLoading={deleteStudentMutation.isPending}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          deleteStudentMutation.mutate();
+        }}
+      />
     </div>
   );
 }

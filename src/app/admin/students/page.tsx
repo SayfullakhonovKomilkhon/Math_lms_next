@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Plus, Search, User, UserX, Wallet } from 'lucide-react';
+import { MoreHorizontal, Plus, Search, Trash2, User, UserCheck, UserX, Wallet } from 'lucide-react';
 import api from '@/lib/api';
 import { Student, Group, Debtor } from '@/types';
 import { ManualPaymentDialog } from '@/components/payments/ManualPaymentDialog';
@@ -87,6 +87,7 @@ export default function StudentsPage() {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [page, setPage] = useState(1);
   const [pendingDeactivate, setPendingDeactivate] = useState<Student | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Student | null>(null);
   const [payingStudent, setPayingStudent] = useState<Student | null>(null);
   const PER_PAGE = 20;
 
@@ -141,6 +142,35 @@ export default function StudentsPage() {
       toast('Ученик деактивирован');
     },
     onError: () => toast('Ошибка при деактивации', 'error'),
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/students/${id}/activate`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['students'] });
+      qc.invalidateQueries({ queryKey: ['debtors'] });
+      toast('Ученик снова активен');
+    },
+    onError: () => toast('Ошибка при активации', 'error'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/students/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['students'] });
+      qc.invalidateQueries({ queryKey: ['debtors'] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      setPendingDelete(null);
+      toast('Ученик удалён');
+    },
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : undefined;
+      toast(msg || 'Ошибка при удалении', 'error');
+    },
   });
 
   const students = studentsData ?? [];
@@ -378,7 +408,7 @@ export default function StudentsPage() {
                             onSelect={() => setPayingStudent(student)}
                           />
                         )}
-                        {student.isActive && (
+                        {student.isActive ? (
                           <IconMenuItem
                             accent="admin"
                             icon={UserX}
@@ -387,7 +417,24 @@ export default function StudentsPage() {
                             destructive
                             onSelect={() => setPendingDeactivate(student)}
                           />
+                        ) : (
+                          <IconMenuItem
+                            accent="admin"
+                            icon={UserCheck}
+                            label="Активировать"
+                            description="Вернуть доступ к системе"
+                            iconClassName="border-emerald-200 bg-emerald-50 text-emerald-700"
+                            onSelect={() => activateMutation.mutate(student.id)}
+                          />
                         )}
+                        <IconMenuItem
+                          accent="admin"
+                          icon={Trash2}
+                          label="Удалить"
+                          description="Безвозвратно — со всеми оплатами и оценками"
+                          destructive
+                          onSelect={() => setPendingDelete(student)}
+                        />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </DataTableCell>
@@ -454,7 +501,30 @@ export default function StudentsPage() {
                   >
                     Деактивировать
                   </Button>
-                ) : null}
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => activateMutation.mutate(student.id)}
+                    loading={
+                      activateMutation.isPending &&
+                      activateMutation.variables === student.id
+                    }
+                  >
+                    <UserCheck className="mr-1 h-4 w-4" />
+                    Активировать
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  onClick={() => setPendingDelete(student)}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  Удалить
+                </Button>
               </div>
             </div>
           )}
@@ -500,6 +570,23 @@ export default function StudentsPage() {
           if (pendingDeactivate) {
             deactivateMutation.mutate(pendingDeactivate.id);
           }
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title="Удалить ученика безвозвратно?"
+        description={
+          pendingDelete
+            ? `${pendingDelete.fullName}: будут удалены аккаунт, все посещения, оценки, оплаты и достижения. Это действие нельзя отменить.`
+            : ''
+        }
+        confirmLabel="Удалить навсегда"
+        variant="danger"
+        confirmLoading={deleteMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) deleteMutation.mutate(pendingDelete.id);
         }}
       />
     </div>
