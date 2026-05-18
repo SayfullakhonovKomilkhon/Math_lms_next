@@ -8,6 +8,8 @@ import { ArrowLeft, KeyRound, Pencil, Plus, Trash2, UserPlus, Wallet } from 'luc
 import api from '@/lib/api';
 import { Student, Group, Payment, Parent, StudentGroupLink } from '@/types';
 import { ManualPaymentDialog } from '@/components/payments/ManualPaymentDialog';
+import { EditPaymentDialog } from '@/components/payments/EditPaymentDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatCurrency } from '@/lib/utils';
@@ -23,6 +25,8 @@ export default function StudentProfilePage() {
   const qc = useQueryClient();
   const [newGroup, setNewGroup] = useState({ groupId: '', monthlyFee: '' });
   const [manualPaymentOpen, setManualPaymentOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
   // Local edits for per-group monthly fees so the admin can tweak each price
   // independently without losing focus on every keystroke.
   const [feeEdits, setFeeEdits] = useState<Record<string, string>>({});
@@ -209,6 +213,19 @@ export default function StudentProfilePage() {
       qc.invalidateQueries({ queryKey: ['payments'] });
       toast('Оплата отклонена');
     },
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (paymentId: string) => api.delete(`/payments/${paymentId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student-payments', id] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['debtors'] });
+      qc.invalidateQueries({ queryKey: ['students'] });
+      toast('Оплата удалена');
+      setDeletingPayment(null);
+    },
+    onError: (e) => toast(extractMessage(e) || 'Ошибка при удалении', 'error'),
   });
 
   if (isLoading || !student) {
@@ -633,6 +650,8 @@ export default function StudentProfilePage() {
           onReject={async (pid, reason) => {
             await rejectMutation.mutateAsync({ paymentId: pid, reason });
           }}
+          onEdit={(p) => setEditingPayment(p)}
+          onDelete={(p) => setDeletingPayment(p)}
         />
       </div>
 
@@ -644,6 +663,29 @@ export default function StudentProfilePage() {
         studentId={student.id}
         studentName={student.fullName}
         suggestedAmount={monthlyFeeTotal}
+      />
+
+      <EditPaymentDialog
+        open={editingPayment !== null}
+        onOpenChange={(open) => !open && setEditingPayment(null)}
+        payment={editingPayment}
+      />
+
+      <ConfirmDialog
+        isOpen={deletingPayment !== null}
+        title="Удалить оплату?"
+        description={
+          deletingPayment
+            ? `${formatCurrency(Number(deletingPayment.amount))} от ${formatDate(deletingPayment.createdAt)}. Запись и прикреплённый чек будут удалены безвозвратно.`
+            : ''
+        }
+        confirmLabel="Удалить"
+        variant="danger"
+        confirmLoading={deletePaymentMutation.isPending}
+        onCancel={() => setDeletingPayment(null)}
+        onConfirm={() => {
+          if (deletingPayment) deletePaymentMutation.mutate(deletingPayment.id);
+        }}
       />
 
       {student.isActive && (

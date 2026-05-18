@@ -198,6 +198,7 @@ export default function StaffPage() {
                                     setEditTarget({
                                       kind: 'teacher',
                                       id: t.id,
+                                      userId: t.user?.id ?? null,
                                       fullName: t.fullName,
                                       phone: t.phone,
                                       ratePerStudent: Number(t.ratePerStudent),

@@ -1,13 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye } from 'lucide-react';
+import { Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Payment } from '@/types';
 import { PaymentStatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  IconMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { formatDate, formatCurrency } from '@/lib/utils';
 
 interface Props {
@@ -15,10 +21,25 @@ interface Props {
   onConfirm?: (id: string) => Promise<void>;
   onReject?: (id: string, reason: string) => Promise<void>;
   showActions?: boolean;
+  /**
+   * If provided, an "Изменить/Удалить" menu appears next to each row. Reserved
+   * for admin contexts — parent/student-facing pages should leave these
+   * undefined.
+   */
+  onEdit?: (payment: Payment) => void;
+  onDelete?: (payment: Payment) => void;
 }
 
-export function PaymentsList({ payments, onConfirm, onReject, showActions }: Props) {
+export function PaymentsList({
+  payments,
+  onConfirm,
+  onReject,
+  showActions,
+  onEdit,
+  onDelete,
+}: Props) {
   const [modalPaymentId, setModalPaymentId] = useState<string | null>(null);
+  const showAdminMenu = Boolean(onEdit || onDelete);
 
   return (
     <div className="space-y-3">
@@ -53,6 +74,46 @@ export function PaymentsList({ payments, onConfirm, onReject, showActions }: Pro
                   <Eye className="h-3.5 w-3.5" />
                   Чек
                 </Button>
+              )}
+              {showAdminMenu && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      accent="admin"
+                      aria-label="Действия с оплатой"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    accent="admin"
+                    className="min-w-[220px]"
+                  >
+                    {onEdit && (
+                      <IconMenuItem
+                        accent="admin"
+                        icon={Pencil}
+                        label="Изменить"
+                        description="Сумма, дата оплаты, дата следующей"
+                        iconClassName="border-indigo-200 bg-indigo-50 text-indigo-700"
+                        onSelect={() => onEdit(p)}
+                      />
+                    )}
+                    {onDelete && (
+                      <IconMenuItem
+                        accent="admin"
+                        icon={Trash2}
+                        label="Удалить"
+                        description="Запись и чек удалятся безвозвратно"
+                        destructive
+                        onSelect={() => onDelete(p)}
+                      />
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>

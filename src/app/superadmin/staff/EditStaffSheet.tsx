@@ -90,6 +90,74 @@ export function EditStaffSheet({ target, onClose }: Props) {
     }
   }, [target]);
 
+  /** Phone+password reset block. Identical for both teacher and admin branches. */
+  const credentialsSection = (
+    <>
+      <Field label="Телефон (логин)" error={errors.loginPhone}>
+        <InputField
+          accent="admin"
+          type="tel"
+          placeholder="+998901234567"
+          value={loginPhone}
+          onChange={(e) => setLoginPhone(e.target.value)}
+        />
+      </Field>
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+            checked={changePassword}
+            onChange={(e) => setChangePassword(e.target.checked)}
+          />
+          <span>
+            <span className="block text-sm font-medium text-slate-800">Сбросить пароль</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              Пользователь сможет войти только с новым паролем. Обязательно передайте его вручную.
+            </span>
+          </span>
+        </label>
+
+        {changePassword && (
+          <div className="mt-4">
+            <Field label="Новый пароль" error={errors.password} hint="Минимум 8 символов">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <InputField
+                    accent="admin"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-9"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    onClick={() => setShowPassword((v) => !v)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setPassword(generatePassword());
+                    setShowPassword(true);
+                  }}
+                  title="Сгенерировать новый пароль"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </Field>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   const teacherMutation = useMutation({
     mutationFn: (payload: { id: string; fullName: string; phone?: string; ratePerStudent: number }) =>
       api.patch(`/teachers/${payload.id}`, {
@@ -114,6 +182,16 @@ export function EditStaffSheet({ target, onClose }: Props) {
     if (target?.kind === 'teacher') {
       if (!fullName.trim()) e.fullName = 'Обязательное поле';
       if (Number.isNaN(rate) || rate < 0) e.rate = 'Некорректная ставка';
+      // Login phone is required only when the teacher actually has a user
+      // account behind them (always, in practice). Format-check matches the
+      // admin branch.
+      if (target.userId) {
+        if (!loginPhone.trim()) e.loginPhone = 'Обязательное поле';
+        else if (!/^\+?[0-9]{9,15}$/.test(loginPhone.trim()))
+          e.loginPhone = 'Некорректный номер телефона';
+        if (changePassword && (!password || password.length < 8))
+          e.password = 'Минимум 8 символов';
+      }
     }
     if (target?.kind === 'admin') {
       if (!loginPhone.trim()) e.loginPhone = 'Обязательное поле';
@@ -135,6 +213,21 @@ export function EditStaffSheet({ target, onClose }: Props) {
           phone: phone.trim() || undefined,
           ratePerStudent: Number(rate) || 0,
         });
+        // Credentials change only fires when the admin actually edited the
+        // login phone or chose to reset the password — saves a round-trip
+        // and an audit-log entry on every teacher edit.
+        if (target.userId) {
+          const phoneChanged =
+            loginPhone.trim() !== '' &&
+            loginPhone.trim() !== (target.loginPhone ?? '');
+          if (phoneChanged || changePassword) {
+            await userCredsMutation.mutateAsync({
+              id: target.userId,
+              phone: phoneChanged ? loginPhone.trim() : undefined,
+              password: changePassword ? password : undefined,
+            });
+          }
+        }
         qc.invalidateQueries({ queryKey: ['sa-teachers'] });
         qc.invalidateQueries({ queryKey: ['sa-teachers-load'] });
         toast('Изменения сохранены');
@@ -171,7 +264,7 @@ export function EditStaffSheet({ target, onClose }: Props) {
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">
               {target?.kind === 'teacher'
-                ? 'Измените профиль, телефон и ставку за ученика.'
+                ? 'Профиль, ставка и сброс пароля при необходимости.'
                 : 'Измените номер телефона и, при необходимости, сбросьте пароль.'}
             </p>
           </div>
@@ -215,83 +308,22 @@ export function EditStaffSheet({ target, onClose }: Props) {
                 />
               </Field>
 
-              {target.loginPhone && (
+              {target.userId ? (
+                <div className="border-t border-slate-200 pt-5">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-800">
+                    Учётные данные для входа
+                  </h3>
+                  {credentialsSection}
+                </div>
+              ) : (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-600">
-                  <span className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Телефон (логин)
-                  </span>
-                  <span className="mt-1 block font-medium text-slate-800">{target.loginPhone}</span>
-                  <span className="mt-2 block text-xs text-slate-500">
-                    Смена логина и пароля учителя выполняется вручную — обратитесь к разработчику.
-                  </span>
+                  У этого учителя нет привязанной учётной записи — смена логина
+                  и пароля недоступна.
                 </div>
               )}
             </>
           ) : (
-            <>
-              <Field label="Телефон (логин)" error={errors.loginPhone}>
-                <InputField
-                  accent="admin"
-                  type="tel"
-                  placeholder="+998901234567"
-                  value={loginPhone}
-                  onChange={(e) => setLoginPhone(e.target.value)}
-                />
-              </Field>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-                    checked={changePassword}
-                    onChange={(e) => setChangePassword(e.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-sm font-medium text-slate-800">Сбросить пароль</span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      Пользователь сможет войти только с новым паролем. Обязательно передайте его вручную.
-                    </span>
-                  </span>
-                </label>
-
-                {changePassword && (
-                  <div className="mt-4">
-                    <Field label="Новый пароль" error={errors.password} hint="Минимум 8 символов">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <InputField
-                            accent="admin"
-                            type={showPassword ? 'text' : 'password'}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="pr-9"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                            onClick={() => setShowPassword((v) => !v)}
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => {
-                            setPassword(generatePassword());
-                            setShowPassword(true);
-                          }}
-                          title="Сгенерировать новый пароль"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </Field>
-                  </div>
-                )}
-              </div>
-            </>
+            credentialsSection
           )}
         </div>
 

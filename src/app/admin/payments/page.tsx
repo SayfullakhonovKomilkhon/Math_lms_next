@@ -5,7 +5,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Payment, Student } from '@/types';
 import { PaymentsList } from '@/components/payments/PaymentsList';
+import { EditPaymentDialog } from '@/components/payments/EditPaymentDialog';
 import { ReceiptUploader } from '@/components/payments/ReceiptUploader';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { toast } from '@/components/ui/toast';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -14,6 +16,7 @@ import { TabsBar, TabsBarButton } from '@/components/ui/tabs-bar';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 const TABS = [
   { key: 'PENDING', label: 'Чеки на проверке' },
@@ -25,6 +28,8 @@ type TabKey = (typeof TABS)[number]['key'];
 export default function PaymentsPage() {
   const [tab, setTab] = useState<TabKey>('PENDING');
   const [uploadStudentId, setUploadStudentId] = useState('');
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
   const qc = useQueryClient();
 
   const {
@@ -67,6 +72,25 @@ export default function PaymentsPage() {
       toast('Оплата отклонена');
     },
     onError: () => toast('Ошибка', 'error'),
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/payments/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['debtors'] });
+      qc.invalidateQueries({ queryKey: ['students'] });
+      toast('Оплата удалена');
+      setDeletingPayment(null);
+    },
+    onError: (e: unknown) => {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : undefined;
+      toast(msg || 'Ошибка при удалении', 'error');
+    },
   });
 
   return (
@@ -159,8 +183,33 @@ export default function PaymentsPage() {
           onReject={async (id, reason) => {
             await rejectMutation.mutateAsync({ id, reason });
           }}
+          onEdit={(p) => setEditingPayment(p)}
+          onDelete={(p) => setDeletingPayment(p)}
         />
       )}
+
+      <EditPaymentDialog
+        open={editingPayment !== null}
+        onOpenChange={(open) => !open && setEditingPayment(null)}
+        payment={editingPayment}
+      />
+
+      <ConfirmDialog
+        isOpen={deletingPayment !== null}
+        title="Удалить оплату?"
+        description={
+          deletingPayment
+            ? `${deletingPayment.student?.fullName ?? ''} · ${formatCurrency(Number(deletingPayment.amount))} от ${formatDate(deletingPayment.createdAt)}. Запись и прикреплённый чек будут удалены безвозвратно.`
+            : ''
+        }
+        confirmLabel="Удалить"
+        variant="danger"
+        confirmLoading={deletePaymentMutation.isPending}
+        onCancel={() => setDeletingPayment(null)}
+        onConfirm={() => {
+          if (deletingPayment) deletePaymentMutation.mutate(deletingPayment.id);
+        }}
+      />
     </div>
   );
 }
