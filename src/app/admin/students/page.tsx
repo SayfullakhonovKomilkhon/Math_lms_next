@@ -35,6 +35,50 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
+const RU_MONTHS = [
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь',
+];
+
+interface MonthOption {
+  /** 1-12 */
+  month: number;
+  year: number;
+  label: string;
+  isCurrent: boolean;
+}
+
+/**
+ * Builds the list of selectable months for the payment filter — current month
+ * first, then the previous 11. Past months are essential when chasing students
+ * who have outstanding tuition from earlier in the year.
+ */
+function buildMonthOptions(now: Date = new Date()): MonthOption[] {
+  const out: MonthOption[] = [];
+  for (let i = 0; i < 12; i += 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    out.push({
+      month,
+      year,
+      label: `${RU_MONTHS[d.getMonth()]} ${year}`,
+      isCurrent: i === 0,
+    });
+  }
+  return out;
+}
+
 export default function StudentsPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -45,6 +89,14 @@ export default function StudentsPage() {
   const [pendingDeactivate, setPendingDeactivate] = useState<Student | null>(null);
   const [payingStudent, setPayingStudent] = useState<Student | null>(null);
   const PER_PAGE = 20;
+
+  const monthOptions = buildMonthOptions();
+  const [selectedMonthKey, setSelectedMonthKey] = useState(
+    `${monthOptions[0].year}-${monthOptions[0].month}`,
+  );
+  const selectedMonth =
+    monthOptions.find((m) => `${m.year}-${m.month}` === selectedMonthKey) ??
+    monthOptions[0];
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -72,8 +124,13 @@ export default function StudentsPage() {
     isError: debtorsError,
     refetch: refetchDebtors,
   } = useQuery({
-    queryKey: ['debtors'],
-    queryFn: () => api.get('/payments/debtors').then((r) => r.data.data as Debtor[]),
+    queryKey: ['debtors', selectedMonth.year, selectedMonth.month],
+    queryFn: () =>
+      api
+        .get('/payments/debtors', {
+          params: { year: selectedMonth.year, month: selectedMonth.month },
+        })
+        .then((r) => r.data.data as Debtor[]),
   });
 
   const deactivateMutation = useMutation({
@@ -90,6 +147,16 @@ export default function StudentsPage() {
   const groups = groupsData ?? [];
   const debtorIds = new Set((debtorsData ?? []).map((d) => d.studentId));
 
+  // Selected month, used to decide whether a student was even enrolled when
+  // we're inspecting a past month. End-of-month is the first day of the next.
+  const selectedMonthEnd = new Date(
+    selectedMonth.year,
+    selectedMonth.month,
+    1,
+  );
+  const wasEnrolledBy = (s: Student) =>
+    new Date(s.enrolledAt) < selectedMonthEnd;
+
   const filtered = students
     .filter((s) =>
       debouncedSearch
@@ -102,7 +169,9 @@ export default function StudentsPage() {
         : true,
     )
     .filter((s) => {
-      if (paymentFilter === 'paid') return s.isActive && !debtorIds.has(s.id);
+      if (paymentFilter === 'paid') {
+        return s.isActive && wasEnrolledBy(s) && !debtorIds.has(s.id);
+      }
       if (paymentFilter === 'unpaid') return debtorIds.has(s.id);
       return true;
     });
@@ -111,6 +180,19 @@ export default function StudentsPage() {
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.ceil(total / PER_PAGE);
   const hasQueryError = studentsError || groupsError || debtorsError;
+
+  function paymentBadge(student: Student): React.ReactNode {
+    if (!student.isActive) return <Badge variant="gray">—</Badge>;
+    const enrolled = new Date(student.enrolledAt);
+    if (enrolled >= selectedMonthEnd) {
+      return <Badge variant="gray">ещё не учился</Badge>;
+    }
+    return debtorIds.has(student.id) ? (
+      <Badge variant="red">Не оплачен</Badge>
+    ) : (
+      <Badge variant="green">Оплачен</Badge>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -161,6 +243,23 @@ export default function StudentsPage() {
           </SelectField>
           <SelectField
             accent="admin"
+            value={selectedMonthKey}
+            onChange={(e) => {
+              setSelectedMonthKey(e.target.value);
+              setPage(1);
+            }}
+            className="min-w-[200px]"
+            aria-label="Месяц для проверки оплаты"
+          >
+            {monthOptions.map((m) => (
+              <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+                {m.label}
+                {m.isCurrent ? ' (текущий)' : ''}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            accent="admin"
             value={paymentFilter}
             onChange={(e) => {
               setPaymentFilter(e.target.value as 'all' | 'paid' | 'unpaid');
@@ -169,8 +268,8 @@ export default function StudentsPage() {
             className="min-w-[220px]"
           >
             <option value="all">Оплата: все</option>
-            <option value="paid">Оплатил (тек. месяц)</option>
-            <option value="unpaid">Не оплатил (тек. месяц)</option>
+            <option value="paid">Оплатил ({selectedMonth.label})</option>
+            <option value="unpaid">Не оплатил ({selectedMonth.label})</option>
           </SelectField>
         </CardContent>
       </Card>
@@ -209,7 +308,9 @@ export default function StudentsPage() {
               <DataTableHeaderCell>Группа</DataTableHeaderCell>
               <DataTableHeaderCell>Телефон</DataTableHeaderCell>
               <DataTableHeaderCell>Оплата/мес</DataTableHeaderCell>
-              <DataTableHeaderCell>Оплата (мес.)</DataTableHeaderCell>
+              <DataTableHeaderCell>
+                Оплата ({selectedMonth.label})
+              </DataTableHeaderCell>
               <DataTableHeaderCell>Дата поступления</DataTableHeaderCell>
               <DataTableHeaderCell>Статус</DataTableHeaderCell>
               <DataTableHeaderCell>Действия</DataTableHeaderCell>
@@ -239,17 +340,7 @@ export default function StudentsPage() {
                       </div>
                     )}
                   </DataTableCell>
-                  <DataTableCell>
-                    {student.isActive ? (
-                      debtorIds.has(student.id) ? (
-                        <Badge variant="red">Не оплачен</Badge>
-                      ) : (
-                        <Badge variant="green">Оплачен</Badge>
-                      )
-                    ) : (
-                      <Badge variant="gray">—</Badge>
-                    )}
-                  </DataTableCell>
+                  <DataTableCell>{paymentBadge(student)}</DataTableCell>
                   <DataTableCell>{formatDate(student.enrolledAt)}</DataTableCell>
                   <DataTableCell>
                     <Badge variant={student.isActive ? 'green' : 'gray'}>
@@ -326,7 +417,12 @@ export default function StudentsPage() {
               <div className="space-y-1 text-sm text-slate-600">
                 <p>{student.phone ?? 'Телефон не указан'}</p>
                 <p>{formatCurrency(Number(student.monthlyFee))}</p>
-                <p>{debtorIds.has(student.id) ? 'Не оплачен' : 'Оплачен'}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">
+                    {selectedMonth.label}:
+                  </span>
+                  {paymentBadge(student)}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
