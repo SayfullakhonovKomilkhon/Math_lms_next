@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
   IconMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Archive, MoreVertical, Pencil, Plus } from 'lucide-react';
+import { Archive, ArchiveRestore, MoreVertical, Pencil, Plus } from 'lucide-react';
 import { GroupDetailPanel } from './GroupDetailPanel';
 
 const DAYS = [
@@ -223,6 +223,9 @@ export default function GroupsPage() {
     queryFn: () => api.get('/groups').then((r) => r.data.data as Group[]),
   });
 
+  const activeGroups = groups.filter((g) => g.isActive);
+  const archivedGroups = groups.filter((g) => !g.isActive);
+
   const { data: teachers = [] } = useQuery({
     queryKey: ['teachers'],
     queryFn: () => api.get('/teachers').then((r) => r.data.data as Teacher[]),
@@ -282,6 +285,15 @@ export default function GroupsPage() {
       toast('Группа архивирована');
     },
     onError: () => toast('Ошибка', 'error'),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/groups/${id}/restore`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] });
+      toast('Группа восстановлена');
+    },
+    onError: () => toast('Не удалось восстановить', 'error'),
   });
 
   function openEdit(group: Group) {
@@ -473,64 +485,145 @@ export default function GroupsPage() {
 
       <GroupDetailPanel group={detailGroup} onClose={() => setDetailGroup(null)} />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading && <p className="text-slate-400">Загрузка...</p>}
-        {groups.map((group) => (
-          <Card
-            key={group.id}
-            className="cursor-pointer p-5 transition-shadow hover:shadow-md"
-            onClick={() => setDetailGroup(group)}
-          >
-            <div className="mb-3 flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-slate-900">{group.name}</h3>
-                <p className="text-sm text-slate-500">{group.teacher?.fullName}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Badge variant={group.isActive ? 'green' : 'gray'}>
-                  {group.isActive ? 'Активна' : 'Архив'}
-                </Badge>
-                {group.isActive && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        accent="admin"
-                        aria-label="Действия с группой"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" accent="admin" className="min-w-[220px]">
-                      <IconMenuItem
-                        accent="admin"
-                        icon={Pencil}
-                        label="Редактировать"
-                        description="Изменить данные группы"
-                        iconClassName="border-slate-200 bg-slate-50 text-slate-600"
-                        onSelect={(e) => { e.stopPropagation(); openEdit(group); }}
-                      />
-                      <IconMenuItem
-                        accent="admin"
-                        icon={Archive}
-                        label="Архивировать"
-                        description="Группа станет неактивной"
-                        iconClassName="border-slate-200 bg-slate-50 text-slate-600"
-                        onSelect={(e) => { e.stopPropagation(); archiveMutation.mutate(group.id); }}
-                      />
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            </div>
-            <div className="text-sm text-slate-600">
-              Учеников: {group._count?.students ?? 0} / {group.maxStudents}
-            </div>
-          </Card>
-        ))}
-      </div>
+      {isLoading && <p className="text-slate-400">Загрузка...</p>}
+
+      {activeGroups.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {activeGroups.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              onOpen={() => setDetailGroup(group)}
+              onEdit={() => openEdit(group)}
+              onArchive={() => archiveMutation.mutate(group.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {archivedGroups.length > 0 && (
+        <section className="space-y-3 pt-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+            <Archive className="h-4 w-4" />
+            Архив ({archivedGroups.length})
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {archivedGroups.map((group) => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                archived
+                onOpen={() => setDetailGroup(group)}
+                onEdit={() => openEdit(group)}
+                onRestore={() =>
+                  restoreMutation.mutate(group.id)
+                }
+                restoring={
+                  restoreMutation.isPending && restoreMutation.variables === group.id
+                }
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isLoading && groups.length === 0 && (
+        <p className="text-slate-400">Группы пока не созданы.</p>
+      )}
     </div>
+  );
+}
+
+function GroupCard({
+  group,
+  archived,
+  onOpen,
+  onEdit,
+  onArchive,
+  onRestore,
+  restoring,
+}: {
+  group: Group;
+  archived?: boolean;
+  onOpen: () => void;
+  onEdit: () => void;
+  onArchive?: () => void;
+  onRestore?: () => void;
+  restoring?: boolean;
+}) {
+  return (
+    <Card
+      className={`cursor-pointer p-5 transition-shadow hover:shadow-md ${archived ? 'bg-slate-50/60' : ''}`}
+      onClick={onOpen}
+    >
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h3 className={`font-semibold ${archived ? 'text-slate-700' : 'text-slate-900'}`}>
+            {group.name}
+          </h3>
+          <p className="text-sm text-slate-500">{group.teacher?.fullName}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <Badge variant={archived ? 'gray' : 'green'}>
+            {archived ? 'Архив' : 'Активна'}
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                accent="admin"
+                aria-label="Действия с группой"
+                onClick={(e) => e.stopPropagation()}
+                loading={restoring}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" accent="admin" className="min-w-[220px]">
+              <IconMenuItem
+                accent="admin"
+                icon={Pencil}
+                label="Редактировать"
+                description="Изменить данные группы"
+                iconClassName="border-slate-200 bg-slate-50 text-slate-600"
+                onSelect={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+              />
+              {archived ? (
+                <IconMenuItem
+                  accent="admin"
+                  icon={ArchiveRestore}
+                  label="Восстановить"
+                  description="Сделать группу активной"
+                  iconClassName="border-emerald-200 bg-emerald-50 text-emerald-700"
+                  onSelect={(e) => {
+                    e.stopPropagation();
+                    onRestore?.();
+                  }}
+                />
+              ) : (
+                <IconMenuItem
+                  accent="admin"
+                  icon={Archive}
+                  label="Архивировать"
+                  description="Группа станет неактивной"
+                  iconClassName="border-slate-200 bg-slate-50 text-slate-600"
+                  onSelect={(e) => {
+                    e.stopPropagation();
+                    onArchive?.();
+                  }}
+                />
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      <div className="text-sm text-slate-600">
+        Учеников: {group._count?.students ?? 0} / {group.maxStudents}
+      </div>
+    </Card>
   );
 }
