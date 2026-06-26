@@ -1,36 +1,155 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+<img src="https://img.shields.io/badge/Next.js-16.x-000000?style=for-the-badge&logo=nextdotjs&logoColor=white"/>
+<img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black"/>
+<img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
+<img src="https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white"/>
+<img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white"/>
 
-First, run the development server:
+# 🎓 MathCenter Frontend
+
+### Современный веб-интерфейс платформы онлайн-обучения математике
+
+*Интерактивный LMS с дашбордом, управлением курсами, аналитикой и экспортом данных*
+
+[🌐 Живое демо](https://math-lms-next.vercel.app) • [Backend API](https://github.com/SayfullakhonovKomilkhon/Math_lms_nest.js) • [Сообщить об ошибке](https://github.com/SayfullakhonovKomilkhon/Math_lms_next/issues)
+
+</div>
+
+---
+
+## ✨ Возможности
+
+| Функция | Описание |
+|---|---|
+| 🏠 **Дашборд** | Сводная аналитика с интерактивными графиками (Recharts) |
+| 📚 **Управление курсами** | Создание, редактирование и публикация учебного контента |
+| 👥 **Управление студентами** | Реестр студентов, прогресс, посещаемость |
+| 📊 **Аналитика** | Визуализация данных в реальном времени |
+| 📄 **Экспорт** | Скачивание отчётов в PDF (jsPDF) и Excel (xlsx) |
+| 🎨 **Анимации** | Плавные переходы через Framer Motion |
+| 📱 **Адаптивный дизайн** | Корректное отображение на всех устройствах |
+| 🔔 **Уведомления** | Toast-уведомления через Sonner |
+| ⚡ **Виртуализация** | Быстрый рендер больших списков через TanStack Virtual |
+
+---
+
+## 🚀 Быстрый старт
+
+### Требования
+
+- Node.js >= 18
+- npm / yarn / pnpm
+- Запущенный [MathCenter Backend](https://github.com/SayfullakhonovKomilkhon/Math_lms_nest.js)
+
+### Установка
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Клонируйте репозиторий
+git clone https://github.com/SayfullakhonovKomilkhon/Math_lms_next.git
+cd Math_lms_next
+
+# 2. Установите зависимости
+npm install
+
+# 3. Настройте переменные окружения
+cp .env.example .env.local
+# Укажите URL вашего API бэкенда
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Запуск
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Режим разработки
+npm run dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Продакшн сборка
+npm run build
+npm run start
+```
 
-## Learn More
+Откройте [http://localhost:3000](http://localhost:3000)
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Технологический стек
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Категория | Технология |
+|---|---|
+| **Фреймворк** | Next.js 16.x (App Router) |
+| **UI-библиотека** | React 19 |
+| **Язык** | TypeScript 5 |
+| **Стили** | Tailwind CSS 4 |
+| **Компоненты** | Radix UI (Dialog, Select, Tabs, Toast…) |
+| **Состояние** | Zustand |
+| **Запросы к API** | TanStack Query v5 + Axios |
+| **Формы** | React Hook Form + Zod |
+| **Графики** | Recharts |
+| **Анимации** | Framer Motion |
+| **Экспорт** | jsPDF + xlsx |
+| **Дата/время** | date-fns |
+| **Деплой** | Vercel |
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🏗️ Структура проекта
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/             # Страницы аутентификации
+│   ├── (dashboard)/        # Защищённые страницы
+│   │   ├── courses/        # Управление курсами
+│   │   ├── students/       # Управление студентами
+│   │   ├── analytics/      # Аналитика и отчёты
+│   │   └── settings/       # Настройки
+│   └── layout.tsx
+├── components/
+│   ├── ui/                 # Базовые UI-компоненты
+│   ├── charts/             # Компоненты графиков
+│   └── forms/              # Формы с валидацией
+├── lib/
+│   ├── api/                # API-клиент (Axios)
+│   ├── hooks/              # Кастомные хуки
+│   └── utils/              # Утилиты
+└── store/                  # Zustand-сторы
+```
+
+---
+
+## 🌐 Деплой на Vercel
+
+```bash
+# Через Vercel CLI
+npm install -g vercel
+vercel --prod
+```
+
+Или подключите репозиторий напрямую в [vercel.com](https://vercel.com) — деплой произойдёт автоматически при каждом пуше в `main`.
+
+---
+
+## 🔑 Переменные окружения
+
+| Переменная | Описание |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | URL бэкенд API (NestJS) |
+| `NEXT_PUBLIC_APP_URL` | Базовый URL фронтенда |
+
+---
+
+## 🤝 Вклад в проект
+
+1. Fork репозитория
+2. Создайте ветку: `git checkout -b feature/your-feature`
+3. Сделайте коммит: `git commit -m 'feat: add your feature'`
+4. Запушьте: `git push origin feature/your-feature`
+5. Откройте Pull Request
+
+---
+
+<div align="center">
+
+Часть проекта **MathCenter LMS** · Frontend · Deployed on [Vercel](https://vercel.com)
+
+</div>
