@@ -10,7 +10,7 @@ export interface CenterBranding {
 }
 
 const FALLBACK: CenterBranding = {
-  centerName: 'MathCenter',
+  centerName: 'KhanovMath Academy',
   centerPhone: '',
   centerAddress: '',
 };

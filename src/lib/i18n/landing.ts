@@ -15,9 +15,9 @@ export const LOCALE_HOMES: Record<Locale, string> = {
 export const landingT = {
   ru: {
     htmlLang: 'ru',
-    metaTitle: 'Khanov Math Academy — онлайн академия математики',
+    metaTitle: 'Khanov Math Academy — учебный центр математики',
     metaDescription:
-      'Khanov Math Academy — онлайн академия математики для школьников. Уроки, домашние задания, рейтинги, олимпиадная подготовка и личный прогресс.',
+      'Khanov Math Academy — учебный центр математики. Подготовка к поступлению в лицеи и международные университеты, к Milliy сертификату и IQ-экзаменам.',
     nav: {
       programs: 'Программы',
       whyUs: 'Почему мы',
@@ -27,44 +27,37 @@ export const landingT = {
     },
     hero: {
       badge: 'Khanov Math Academy',
-      title: 'Онлайн академия математики',
+      title: 'Учебный центр математики',
       titleAccent: 'Khanov Math',
       subtitle:
-        'Учим школьников думать как математик. Уроки, домашние задания, рейтинг и индивидуальный прогресс — всё в одном личном кабинете ученика, родителя и преподавателя.',
-      ctaPrimary: 'Войти в кабинет',
+        'Готовим школьников к поступлению в ведущие лицеи, в том числе Westminster и International House, международные университеты, а также к Milliy sertifikat и IQ-экзаменам. Системная программа, сильная математика и результат на каждом этапе.',
+      ctaPrimary: 'Оставить заявку',
       ctaSecondary: 'Узнать о платформе',
-      microProof: 'Уже более 500 учеников учатся с нами',
     },
-    stats: [
-      { value: '500+', label: 'Учеников' },
-      { value: '12', label: 'Программ обучения' },
-      { value: '20+', label: 'Преподавателей' },
-      { value: '95%', label: 'Довольных родителей' },
-    ],
     programs: {
       title: 'Программы обучения',
       subtitle:
-        'Курсы математики для школьников всех уровней — от арифметики младших классов до олимпиадной подготовки.',
+        'Целевая подготовка к поступлению, международным экзаменам и сертификации.',
       list: [
         {
-          level: '1–4 класс',
-          title: 'Младшая школа',
-          desc: 'Арифметика, логика и базовые понятия. Учим считать быстро, думать структурно и любить математику.',
+          level: 'Лицеи',
+          title: 'Подготовка к топовым лицеям',
+          desc: 'Системная подготовка к вступительным экзаменам в ведущие лицеи, в том числе Westminster и International House.',
         },
         {
-          level: '5–9 класс',
-          title: 'Средняя школа',
-          desc: 'Алгебра, геометрия и подготовка к школьным экзаменам. Закрываем пробелы и формируем уверенность.',
+          level: 'Университеты',
+          title: 'Международные университеты',
+          desc: 'Углублённая математика и экзаменационная подготовка для поступления в ведущие международные университеты.',
         },
         {
-          level: '10–11 класс',
-          title: 'Старшая школа',
-          desc: 'Углублённая математика и подготовка к поступлению в университеты Узбекистана и зарубежья.',
+          level: 'Milliy sertifikat',
+          title: 'Подготовка к Milliy сертификату',
+          desc: 'Изучаем все разделы математики, разбираем формат экзамена и работаем над скоростью и точностью.',
         },
         {
-          level: 'Все классы',
-          title: 'Олимпиадная подготовка',
-          desc: 'Тренировки для участия в районных, городских и республиканских олимпиадах по математике.',
+          level: 'IQ',
+          title: 'Подготовка к IQ-экзаменам',
+          desc: 'Развиваем логику, аналитическое мышление и навыки решения задач для успешной сдачи IQ-экзаменов.',
         },
       ],
     },
@@ -88,10 +81,6 @@ export const landingT = {
         {
           title: 'Личные кабинеты',
           desc: 'Отдельные интерфейсы для учеников, родителей, преподавателей и администраторов.',
-        },
-        {
-          title: 'Олимпиадная подготовка',
-          desc: 'Системная программа для тех, кто хочет побеждать на школьных и районных олимпиадах.',
         },
         {
           title: 'Прозрачно для родителей',
@@ -130,19 +119,11 @@ export const landingT = {
         },
         {
           q: 'С какого класса можно учиться?',
-          a: 'Мы принимаем учеников с 1 по 11 классы. Программа подбирается индивидуально под уровень и цели каждого ребёнка.',
+          a: 'Мы принимаем учеников с 8 класса. Программа подбирается индивидуально под уровень и цели каждого ребёнка.',
         },
         {
           q: 'Сколько длится одно занятие?',
-          a: 'Стандартный урок — 60 минут. Расписание формируется так, чтобы ребёнку было комфортно совмещать с школой.',
-        },
-        {
-          q: 'Можно ли заниматься онлайн?',
-          a: 'Да, у нас есть как очные занятия, так и онлайн-формат. В любом случае ученик и родители получают доступ к личному кабинету с прогрессом.',
-        },
-        {
-          q: 'Готовите ли вы к олимпиадам?',
-          a: 'Да, у нас есть отдельная программа олимпиадной подготовки — от районного до республиканского уровня.',
+          a: 'Стандартный урок — 90 минут. Расписание формируется так, чтобы ребёнку было комфортно совмещать со школой.',
         },
         {
           q: 'Как родители контролируют обучение?',
@@ -153,13 +134,30 @@ export const landingT = {
     cta: {
       title: 'Готовы начать?',
       subtitle:
-        'Войдите в личный кабинет или свяжитесь с нами для записи на занятия.',
-      button: 'Войти в кабинет',
+        'Оставьте заявку, и мы свяжемся с вами, чтобы подобрать подходящую программу.',
+      button: 'Оставить заявку',
       secondary: 'Связаться с нами',
+    },
+    applicationForm: {
+      title: 'Оставить заявку',
+      subtitle: 'Заполните форму — мы свяжемся с вами и ответим на вопросы.',
+      name: 'Имя',
+      namePlaceholder: 'Ваше имя',
+      phone: 'Номер телефона',
+      phonePlaceholder: '+998 90 123 45 67',
+      age: 'Возраст ребёнка',
+      agePlaceholder: 'Например, 14',
+      submit: 'Отправить заявку',
+      submitting: 'Отправляем…',
+      successTitle: 'Заявка принята',
+      successText: 'Спасибо! Мы свяжемся с вами в ближайшее время.',
+      close: 'Закрыть',
+      requiredError: 'Заполните все поля корректно.',
+      submitError: 'Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.',
     },
     footer: {
       tagline:
-        'Khanov Math Academy — онлайн академия математики для школьников.',
+        'Khanov Math Academy — учебный центр математики.',
       navTitle: 'Навигация',
       contactTitle: 'Контакты',
       rights: 'Все права защищены.',
@@ -167,9 +165,9 @@ export const landingT = {
   },
   uz: {
     htmlLang: 'uz',
-    metaTitle: 'Khanov Math Academy — onlayn matematika akademiyasi',
+    metaTitle: "Khanov Math Academy — matematika o'quv markazi",
     metaDescription:
-      "Khanov Math Academy — maktab o'quvchilari uchun onlayn matematika akademiyasi. Darslar, uy vazifalari, reytinglar, olimpiada tayyorgarligi va shaxsiy taraqqiyot.",
+      "Khanov Math Academy — matematika o'quv markazi. Litseylar va xalqaro universitetlarga kirish, Milliy sertifikat va IQ imtihonlariga tayyorgarlik.",
     nav: {
       programs: 'Dasturlar',
       whyUs: 'Nima uchun biz',
@@ -179,44 +177,37 @@ export const landingT = {
     },
     hero: {
       badge: 'Khanov Math Academy',
-      title: 'Onlayn matematika akademiyasi',
+      title: "Matematika o'quv markazi",
       titleAccent: 'Khanov Math',
       subtitle:
-        "Maktab o'quvchilarini matematik kabi fikrlashga o'rgatamiz. Darslar, uy vazifalari, reytinglar va shaxsiy taraqqiyot — bularning barchasi o'quvchi, ota-ona va o'qituvchining bitta shaxsiy kabinetida.",
-      ctaPrimary: 'Kabinetga kirish',
+        "O'quvchilarni yetakchi litseylarga, jumladan Westminster va International House, xalqaro universitetlarga, shuningdek, Milliy sertifikat va IQ imtihonlariga tayyorlaymiz. Tizimli dastur, kuchli matematika va har bir bosqichda aniq natija.",
+      ctaPrimary: 'Ariza qoldirish',
       ctaSecondary: 'Platforma haqida',
-      microProof: "500 dan ortiq o'quvchi biz bilan o'qiyapti",
     },
-    stats: [
-      { value: '500+', label: "O'quvchilar" },
-      { value: '12', label: "Ta'lim dasturlari" },
-      { value: '20+', label: "O'qituvchilar" },
-      { value: '95%', label: 'Mamnun ota-onalar' },
-    ],
     programs: {
       title: "Ta'lim dasturlari",
       subtitle:
-        "Boshlang'ich sinflarning arifmetikasidan to olimpiada tayyorgarligigacha — barcha bosqichdagi maktab o'quvchilari uchun matematika kurslari.",
+        "O'qishga kirish, xalqaro imtihonlar va sertifikatlash uchun maqsadli tayyorgarlik.",
       list: [
         {
-          level: '1–4 sinf',
-          title: "Boshlang'ich sinflar",
-          desc: "Arifmetika, mantiq va asosiy tushunchalar. Tez hisoblashga, tuzilgan fikrlashga va matematikani sevishga o'rgatamiz.",
+          level: 'Litseylar',
+          title: 'Yetakchi litseylarga tayyorgarlik',
+          desc: 'Yetakchi litseylar, jumladan Westminster va International House kirish imtihonlariga tizimli tayyorgarlik.',
         },
         {
-          level: '5–9 sinf',
-          title: "O'rta sinflar",
-          desc: "Algebra, geometriya va maktab imtihonlariga tayyorgarlik. Bo'shliqlarni to'ldiramiz va ishonch hosil qilamiz.",
+          level: 'Universitetlar',
+          title: 'Xalqaro universitetlar',
+          desc: "Yetakchi xalqaro universitetlarga kirish uchun chuqurlashtirilgan matematika va imtihonlarga tayyorgarlik.",
         },
         {
-          level: '10–11 sinf',
-          title: 'Yuqori sinflar',
-          desc: "Chuqurlashtirilgan matematika va O'zbekiston hamda xorijiy universitetlariga tayyorgarlik.",
+          level: 'Milliy sertifikat',
+          title: 'Milliy sertifikatga tayyorgarlik',
+          desc: "Matematikaning barcha bo'limlarini o'rganamiz, imtihon formatini tahlil qilamiz hamda tezlik va aniqlik ustida ishlaymiz.",
         },
         {
-          level: 'Barcha sinflar',
-          title: 'Olimpiada tayyorgarligi',
-          desc: "Tuman, shahar va respublika matematika olimpiadalariga tayyorgarlik mashg'ulotlari.",
+          level: 'IQ',
+          title: 'IQ imtihonlariga tayyorgarlik',
+          desc: "IQ imtihonlarini muvaffaqiyatli topshirish uchun mantiq, tahliliy fikrlash va masala yechish ko'nikmalarini rivojlantiramiz.",
         },
       ],
     },
@@ -240,10 +231,6 @@ export const landingT = {
         {
           title: 'Shaxsiy kabinetlar',
           desc: "O'quvchilar, ota-onalar, o'qituvchilar va administratorlar uchun alohida interfeyslar.",
-        },
-        {
-          title: 'Olimpiada tayyorgarligi',
-          desc: "Maktab va tuman olimpiadalarida g'olib bo'lishni xohlovchilar uchun tizimli dastur.",
         },
         {
           title: 'Ota-onalar uchun shaffof',
@@ -283,19 +270,11 @@ export const landingT = {
         },
         {
           q: "Qaysi sinfdan o'qish mumkin?",
-          a: "1 sinfdan 11 sinfgacha o'quvchilarni qabul qilamiz. Dastur har bir bolaning darajasi va maqsadlariga moslab tanlanadi.",
+          a: "8-sinfdan boshlab o'quvchilarni qabul qilamiz. Dastur har bir bolaning darajasi va maqsadlariga moslab tanlanadi.",
         },
         {
           q: 'Bitta dars qancha davom etadi?',
-          a: "Standart dars — 60 daqiqa. Jadval bola maktab bilan birga olib borishi qulay bo'lishi uchun tuziladi.",
-        },
-        {
-          q: "Onlayn o'qish mumkinmi?",
-          a: "Ha, bizda ham o'quv markazida, ham onlayn formatda darslar mavjud. Har holatda o'quvchi va ota-onalar shaxsiy kabinetga kirish huquqiga ega bo'ladi.",
-        },
-        {
-          q: 'Olimpiadaga tayyorlaysizmi?',
-          a: "Ha, bizda alohida olimpiada tayyorgarlik dasturi mavjud — tumandan respublika darajasigacha.",
+          a: "Standart dars — 90 daqiqa. Jadval bola maktab bilan birga olib borishi qulay bo'lishi uchun tuziladi.",
         },
         {
           q: "Ota-onalar o'qishni qanday nazorat qiladi?",
@@ -306,13 +285,30 @@ export const landingT = {
     cta: {
       title: 'Boshlashga tayyormisiz?',
       subtitle:
-        "Shaxsiy kabinetga kiring yoki darslarga yozilish uchun biz bilan bog'laning.",
-      button: 'Kabinetga kirish',
+        "Ariza qoldiring — siz bilan bog'lanib, mos dasturni tanlashga yordam beramiz.",
+      button: 'Ariza qoldirish',
       secondary: "Biz bilan bog'lanish",
+    },
+    applicationForm: {
+      title: 'Ariza qoldirish',
+      subtitle: "Formani to'ldiring — siz bilan bog'lanib, savollaringizga javob beramiz.",
+      name: 'Ism',
+      namePlaceholder: 'Ismingiz',
+      phone: 'Telefon raqami',
+      phonePlaceholder: '+998 90 123 45 67',
+      age: 'Bolaning yoshi',
+      agePlaceholder: 'Masalan, 14',
+      submit: 'Arizani yuborish',
+      submitting: 'Yuborilmoqda…',
+      successTitle: 'Ariza qabul qilindi',
+      successText: "Rahmat! Tez orada siz bilan bog'lanamiz.",
+      close: 'Yopish',
+      requiredError: "Barcha maydonlarni to'g'ri to'ldiring.",
+      submitError: "Arizani yuborib bo'lmadi. Bizga qo'ng'iroq qiling yoki qayta urinib ko'ring.",
     },
     footer: {
       tagline:
-        "Khanov Math Academy — maktab o'quvchilari uchun onlayn matematika akademiyasi.",
+        "Khanov Math Academy — matematika o'quv markazi.",
       navTitle: 'Navigatsiya',
       contactTitle: 'Aloqa',
       rights: 'Barcha huquqlar himoyalangan.',

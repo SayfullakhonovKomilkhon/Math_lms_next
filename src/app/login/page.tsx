@@ -11,6 +11,7 @@ import { ROLE_HOME_PATHS } from '@/lib/auth-routing';
 import { Role } from '@/types';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 
 // Strip everything except digits and a leading "+", so "+998 90 962 51 46",
 // "90-962-51-46", or "(90) 962 51 46" all reduce to the same canonical form
@@ -37,7 +38,7 @@ type Portal = 'student' | 'staff';
 
 const PORTAL_ROLES: Record<Portal, Role[]> = {
   student: ['STUDENT', 'PARENT'],
-  staff: ['SUPER_ADMIN', 'ADMIN', 'TEACHER'],
+  staff: ['SUPER_ADMIN', 'ADMIN', 'SALES_MANAGER', 'TEACHER'],
 };
 
 const PORTAL_COPY: Record<Portal, { title: string; subtitle: string; placeholder: string; wrongRole: string }> = {
@@ -50,7 +51,7 @@ const PORTAL_COPY: Record<Portal, { title: string; subtitle: string; placeholder
   },
   staff: {
     title: 'Staff Login',
-    subtitle: 'Вход для учителей, администраторов и супер-администраторов',
+    subtitle: 'Вход для менеджера, учителей и администраторов',
     placeholder: '901234567',
     wrongRole:
       'Этот аккаунт не относится к сотрудникам. Вернитесь назад и выберите «Student».',
@@ -117,13 +118,10 @@ export default function LoginPage() {
         <div className="w-full max-w-[390px] mx-auto flex flex-col">
           {/* Top Logo */}
           <div className="flex flex-col items-start mb-12">
-            <div className="relative w-[36px] h-[36px] mb-[16px]">
-              <div className="absolute top-0 left-0 w-[24px] h-[24px] bg-[#ABDF00] rounded-[8px]" />
-              <div className="absolute bottom-0 right-0 w-[24px] h-[24px] bg-[#4C5E81] rounded-[8px] mix-blend-multiply" />
-            </div>
+            <BrandLogo className="mb-4 h-16 w-16 rounded-2xl shadow-md" priority />
             <div className="flex flex-col">
-              <span className="text-[#0E1541] font-extrabold text-[26px] leading-[1.1] tracking-[-0.03em]">khanovMath</span>
-              <span className="text-[#0E1541] font-bold text-[12px] uppercase tracking-[0.25em] leading-none opacity-50 ml-[2px]">academy</span>
+              <span className="font-brand text-[26px] font-extrabold leading-[1.1] tracking-[-0.055em] text-[#0E1541]">KhanovMath</span>
+              <span className="font-brand ml-[2px] text-[10px] font-bold uppercase leading-none tracking-[0.32em] text-[#0E1541] opacity-55">academy</span>
             </div>
           </div>
 

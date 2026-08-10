@@ -5,12 +5,12 @@ import './_theme/theme.css';
 export const metadata: Metadata = {
   title: {
     default: 'Панель ученика',
-    template: '%s | MathCenter',
+    template: '%s | KhanovMath Academy',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'MathCenter',
+    title: 'KhanovMath Academy',
   },
   other: {
     'mobile-web-app-capable': 'yes',

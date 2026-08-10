@@ -10,7 +10,7 @@ import {
   ChevronRight,
   ClipboardList,
   DollarSign,
-  GraduationCap,
+  Headphones,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -27,6 +27,7 @@ import { useCenterBranding } from '@/hooks/useCenterBranding';
 import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed';
 import { AccountSettingsDialog } from '@/components/account/AccountSettingsDialog';
 import { AnnouncementsBadge } from '@/components/announcements/AnnouncementsBadge';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 
 type NavItem = {
   href: string;
@@ -37,6 +38,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: '/superadmin/dashboard', label: 'Дашборд', icon: LayoutDashboard },
+  { href: '/superadmin/applications', label: 'Заявки', icon: Headphones },
   { href: '/superadmin/staff', label: 'Персонал', icon: UserCog },
   { href: '/superadmin/groups', label: 'Группы', icon: BookOpen },
   { href: '/superadmin/finance', label: 'Финансы', icon: DollarSign },
@@ -89,13 +91,11 @@ export function SuperAdminSidebar() {
         )}
       >
         <div className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
-            <GraduationCap className="h-6 w-6 text-white" />
-          </div>
+          <BrandLogo className="h-10 w-10 rounded-xl ring-1 ring-white/20" />
           {!collapsed && (
             <div className="min-w-0">
-              <span className="block truncate text-lg font-semibold tracking-tight">
-                {branding.centerName}
+              <span className="font-brand block whitespace-nowrap text-[15px] font-extrabold tracking-[-0.04em]">
+                {branding.centerName.replace(/\s+Academy$/i, '')}
               </span>
               <p className="text-xs font-medium text-white/80">Супер-Администратор</p>
             </div>

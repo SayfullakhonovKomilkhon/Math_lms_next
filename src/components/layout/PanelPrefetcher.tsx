@@ -10,7 +10,13 @@ import {
   SCHEDULE_STALE_TIME,
 } from '@/lib/query-options';
 
-type PanelPrefetchVariant = 'admin' | 'teacher' | 'student' | 'parent' | 'superadmin';
+type PanelPrefetchVariant =
+  | 'admin'
+  | 'manager'
+  | 'teacher'
+  | 'student'
+  | 'parent'
+  | 'superadmin';
 
 export function PanelPrefetcher({ variant }: { variant: PanelPrefetchVariant }) {
   const queryClient = useQueryClient();
@@ -79,6 +85,14 @@ export function PanelPrefetcher({ variant }: { variant: PanelPrefetchVariant }) 
       return;
     }
 
+    if (variant === 'manager') {
+      void queryClient.prefetchQuery({
+        queryKey: ['applications-summary'],
+        queryFn: () => api.get('/applications/summary').then((response) => response.data.data),
+      });
+      return;
+    }
+
     void queryClient.prefetchQuery({
       queryKey: ['sa-overview'],
       queryFn: () => api.get('/analytics/overview').then((response) => response.data.data),
@@ -88,4 +102,3 @@ export function PanelPrefetcher({ variant }: { variant: PanelPrefetchVariant }) 
 
   return null;
 }
-

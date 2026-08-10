@@ -21,12 +21,12 @@ import { MoreVertical } from 'lucide-react';
 import { EditStaffSheet, type EditStaffTarget } from './EditStaffSheet';
 
 interface AdminUser {
-  id: string; phone: string; role: string; isActive: boolean;
+  id: string; phone: string; fullName?: string | null; role: string; isActive: boolean;
   createdAt: string;
   teacher?: { id: string; fullName: string; phone?: string; ratePerStudent: number } | null;
 }
 
-type Tab = 'teachers' | 'admins';
+type Tab = 'teachers' | 'admins' | 'managers';
 
 export default function StaffPage() {
   const qc = useQueryClient();
@@ -46,6 +46,12 @@ export default function StaffPage() {
     enabled: tab === 'admins',
   });
 
+  const { data: managers = [], isLoading: managersLoading } = useQuery<AdminUser[]>({
+    queryKey: ['sa-sales-managers'],
+    queryFn: () => api.get('/users?role=SALES_MANAGER').then((r) => r.data.data),
+    enabled: tab === 'managers',
+  });
+
   const { data: teacherLoads = [] } = useQuery<{ teacherId: string; studentsCount: number; groupsCount: number; totalSalary: number }[]>({
     queryKey: ['sa-teachers-load'],
     queryFn: () => api.get('/analytics/teachers-load').then((r) => r.data.data),
@@ -59,7 +65,11 @@ export default function StaffPage() {
 
   const deactivateAdminMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/deactivate`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sa-admins'] }); toast('Пользователь деактивирован'); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sa-admins'] });
+      qc.invalidateQueries({ queryKey: ['sa-sales-managers'] });
+      toast('Пользователь деактивирован');
+    },
     onError: () => toast('Ошибка', 'error'),
   });
 
@@ -81,7 +91,7 @@ export default function StaffPage() {
     <div className="space-y-6">
       <PageHeader
         title="Персонал"
-        description="Управление учителями и администраторами"
+        description="Управление учителями, администраторами и менеджером по заявкам"
         actions={
           <Link href="/superadmin/staff/new">
             <Button className="bg-violet-600 hover:bg-violet-700">
@@ -98,6 +108,9 @@ export default function StaffPage() {
         </TabsBarButton>
         <TabsBarButton accent="admin" active={tab === 'admins'} onClick={() => setTab('admins')}>
           Администраторы
+        </TabsBarButton>
+        <TabsBarButton accent="admin" active={tab === 'managers'} onClick={() => setTab('managers')}>
+          Менеджер по заявкам
         </TabsBarButton>
       </TabsBar>
 
@@ -230,25 +243,28 @@ export default function StaffPage() {
         </Card>
       )}
 
-      {tab === 'admins' && (
+      {tab !== 'teachers' && (
         <Card>
-          {adminsLoading ? (
+          {(tab === 'admins' ? adminsLoading : managersLoading) ? (
             <CardContent className="py-10 text-center text-sm text-slate-400">Загрузка...</CardContent>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 text-xs text-slate-500">
-                    <th className="px-4 py-3 text-left font-medium">Телефон (логин)</th>
+                    <th className="px-4 py-3 text-left font-medium">Сотрудник</th>
                     <th className="px-4 py-3 text-center font-medium">Статус</th>
                     <th className="px-4 py-3 text-right font-medium">Дата создания</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {admins.map((u) => (
+                  {(tab === 'admins' ? admins : managers).map((u) => (
                     <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{u.phone}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-900">{u.fullName || u.phone}</p>
+                        {u.fullName ? <p className="text-xs text-slate-400">{u.phone}</p> : null}
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <Badge variant={u.isActive ? 'green' : 'gray'}>
                           {u.isActive ? 'Активен' : 'Неактивен'}
@@ -290,10 +306,10 @@ export default function StaffPage() {
                       </td>
                     </tr>
                   ))}
-                  {admins.length === 0 && (
+                  {(tab === 'admins' ? admins : managers).length === 0 && (
                     <tr>
                       <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
-                        Администраторов нет
+                        {tab === 'admins' ? 'Администраторов нет' : 'Менеджер ещё не создан'}
                       </td>
                     </tr>
                   )}

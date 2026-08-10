@@ -6,6 +6,7 @@ import { TelegramLinkPrompt } from '@/components/telegram/TelegramLinkPrompt';
 
 const accentByVariant = {
   admin: 'indigo',
+  manager: 'blue',
   teacher: 'emerald',
   student: 'orange',
   parent: 'blue',

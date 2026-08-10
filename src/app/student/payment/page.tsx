@@ -92,17 +92,17 @@ export default function StudentPaymentPage() {
         <div className={styles.payWay}>
           <div className={styles.payWayIcon}>💳</div>
           <div className={styles.payWayName}>Payme</div>
-          <div className={styles.payWayHint}>Поиск «MathCenter»</div>
+          <div className={styles.payWayHint}>Поиск «KhanovMath Academy»</div>
         </div>
         <div className={styles.payWay}>
           <div className={styles.payWayIcon}>🟢</div>
           <div className={styles.payWayName}>Click</div>
-          <div className={styles.payWayHint}>Поиск «MathCenter»</div>
+          <div className={styles.payWayHint}>Поиск «KhanovMath Academy»</div>
         </div>
         <div className={styles.payWay}>
           <div className={styles.payWayIcon}>🧡</div>
           <div className={styles.payWayName}>Apelsin</div>
-          <div className={styles.payWayHint}>Поиск «MathCenter»</div>
+          <div className={styles.payWayHint}>Поиск «KhanovMath Academy»</div>
         </div>
         <div className={styles.payWay}>
           <div className={styles.payWayIcon}>🏦</div>

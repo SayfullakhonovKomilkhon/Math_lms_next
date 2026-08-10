@@ -1,4 +1,10 @@
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
+export type Role =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'SALES_MANAGER'
+  | 'TEACHER'
+  | 'STUDENT'
+  | 'PARENT';
 export type Gender = 'MALE' | 'FEMALE';
 export type LessonType = 'REGULAR' | 'PRACTICE' | 'CONTROL' | 'TEST';
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE';
@@ -7,6 +13,7 @@ export type PaymentRecordStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED';
 export interface User {
   id: string;
   phone: string;
+  fullName?: string | null;
   role: Role;
   isActive: boolean;
 }

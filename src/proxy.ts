@@ -50,6 +50,7 @@ export function proxy(request: NextRequest) {
     const isProtectedPanel =
       pathname.startsWith('/superadmin') ||
       pathname.startsWith('/admin') ||
+      pathname.startsWith('/manager') ||
       pathname.startsWith('/teacher') ||
       pathname.startsWith('/student') ||
       pathname.startsWith('/parent');
@@ -65,4 +66,3 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)'],
 };
-

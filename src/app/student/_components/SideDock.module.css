@@ -25,18 +25,13 @@
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    background: var(--s-gradient-purple-pink);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    color: #fff;
     box-shadow: var(--s-neon-glow-purple);
   }
 
   .brandName {
     font-size: 18px;
     font-weight: 800;
+    font-family: var(--font-sora), "Avenir Next", sans-serif;
     letter-spacing: -0.01em;
     background: var(--s-gradient-title);
     background-clip: text;

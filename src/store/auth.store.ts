@@ -10,6 +10,7 @@ interface AuthState {
   user: {
     id: string;
     phone: string;
+    fullName?: string | null;
     role: Role;
     telegramChatId?: string | null;
   } | null;

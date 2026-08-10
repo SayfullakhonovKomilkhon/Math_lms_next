@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { StudentAvatar } from './StudentAvatar';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 import styles from './SideDock.module.css';
 
 const MAIN = [
@@ -57,9 +58,9 @@ export function SideDock({
   return (
     <aside className={styles.dock} aria-label="Навигация ученика">
       <div className={styles.brand}>
-        <div className={styles.brandLogo}>M</div>
+        <BrandLogo className={styles.brandLogo} />
         <div>
-          <div className={styles.brandName}>MathCenter</div>
+          <div className={styles.brandName}>Khanov Math</div>
           <div className={styles.brandSub}>Панель ученика</div>
         </div>
       </div>

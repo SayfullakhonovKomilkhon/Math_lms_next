@@ -7,6 +7,7 @@ import {
   Book,
   BookOpen,
   CalendarCheck2,
+  Headphones,
   CreditCard,
   Home,
   Megaphone,
@@ -16,7 +17,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type MobileNavVariant = 'admin' | 'teacher' | 'student' | 'parent' | 'superadmin';
+export type MobileNavVariant =
+  | 'admin'
+  | 'manager'
+  | 'teacher'
+  | 'student'
+  | 'parent'
+  | 'superadmin';
 
 type MobileNavItem = {
   href: string;
@@ -26,11 +33,17 @@ type MobileNavItem = {
 
 const NAV_ITEMS: Record<MobileNavVariant, MobileNavItem[]> = {
   admin: [
-    { href: '/admin', label: 'Главная', icon: Home },
+    { href: '/admin/applications', label: 'Заявки', icon: Headphones },
     { href: '/admin/students', label: 'Ученики', icon: Users },
     { href: '/admin/groups', label: 'Группы', icon: BookOpen },
     { href: '/admin/payments', label: 'Оплаты', icon: CreditCard },
     { href: '/admin/attendance', label: 'Учёт', icon: CalendarCheck2 },
+  ],
+  manager: [
+    { href: '/manager/dashboard', label: 'Главная', icon: Home },
+    { href: '/manager/applications', label: 'Заявки', icon: Headphones },
+    { href: '/manager/callbacks', label: 'Звонки', icon: CalendarCheck2 },
+    { href: '/manager/results', label: 'Результаты', icon: BarChart2 },
   ],
   teacher: [
     { href: '/teacher', label: 'Главная', icon: Home },
@@ -88,4 +101,3 @@ export function MobileNav({ variant }: { variant: MobileNavVariant }) {
     </nav>
   );
 }
-

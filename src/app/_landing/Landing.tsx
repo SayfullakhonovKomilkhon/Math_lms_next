@@ -1,13 +1,11 @@
 import Link from 'next/link';
 import {
-  ArrowRight,
   BookOpen,
   Trophy,
   Users,
   Sparkles,
   Target,
   ShieldCheck,
-  Sigma,
   GraduationCap,
   Brain,
   Award,
@@ -22,6 +20,8 @@ import {
   LOCALE_HOMES,
 } from '@/lib/i18n/landing';
 import { Faq } from './Faq';
+import { ApplicationFormModal } from './ApplicationFormModal';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 
 // Real contacts — single source of truth for the whole landing page.
 export const CONTACTS = {
@@ -73,11 +73,10 @@ const FEATURE_ICONS = [
   Target,
   Trophy,
   Users,
-  Award,
   ShieldCheck,
 ];
 
-const PROGRAM_ICONS = [Sigma, BookOpen, GraduationCap, Brain];
+const PROGRAM_ICONS = [GraduationCap, BookOpen, Award, Brain];
 
 export function Landing({ locale }: { locale: Locale }) {
   const t = landingT[locale];
@@ -107,15 +106,12 @@ export function Landing({ locale }: { locale: Locale }) {
             className="flex items-center gap-3"
             aria-label="Khanov Math Academy"
           >
-            <div className="relative h-9 w-9">
-              <div className="absolute left-0 top-0 h-6 w-6 rounded-[8px] bg-[#ABDF00]" />
-              <div className="absolute bottom-0 right-0 h-6 w-6 rounded-[8px] bg-[#4C5E81] mix-blend-multiply" />
-            </div>
+            <BrandLogo className="h-11 w-11 rounded-xl shadow-sm" priority />
             <div className="flex flex-col leading-none">
-              <span className="text-[20px] font-extrabold tracking-tight">
-                khanovMath
+              <span className="font-brand text-[20px] font-extrabold tracking-[-0.055em]">
+                KhanovMath
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] opacity-50">
+              <span className="font-brand text-[9px] font-bold uppercase tracking-[0.32em] opacity-55">
                 academy
               </span>
             </div>
@@ -199,13 +195,7 @@ export function Landing({ locale }: { locale: Locale }) {
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">
-              <Link
-                href="/login"
-                className="group inline-flex items-center gap-2 rounded-xl bg-[#0E1952] px-7 py-4 text-base font-semibold text-white shadow-[0_12px_30px_-12px_rgba(14,25,82,0.55)] transition hover:bg-[#15236b]"
-              >
-                {t.hero.ctaPrimary}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+              <ApplicationFormModal locale={locale} variant="hero" />
               <a
                 href="#features"
                 className="inline-flex items-center justify-center rounded-xl border border-[#0E1541]/15 bg-white px-7 py-4 text-base font-semibold text-[#0E1541] transition hover:border-[#0E1541]/30"
@@ -214,23 +204,6 @@ export function Landing({ locale }: { locale: Locale }) {
               </a>
             </div>
 
-            <div className="mt-10 flex items-center gap-3 text-sm text-[#0E1541]/60">
-              <div className="flex -space-x-2">
-                {[
-                  '#ABDF00',
-                  '#0E1541',
-                  '#4C5E81',
-                  '#FBBF24',
-                ].map((c, i) => (
-                  <span
-                    key={i}
-                    className="h-8 w-8 rounded-full border-2 border-white"
-                    style={{ background: c }}
-                  />
-                ))}
-              </div>
-              <span>{t.hero.microProof}</span>
-            </div>
           </div>
 
           {/* Hero visual */}
@@ -286,7 +259,7 @@ export function Landing({ locale }: { locale: Locale }) {
                 {[
                   locale === 'ru' ? 'Алгебра' : 'Algebra',
                   locale === 'ru' ? 'Геометрия' : 'Geometriya',
-                  locale === 'ru' ? 'Олимпиады' : 'Olimpiadalar',
+                  locale === 'ru' ? 'IQ и логика' : 'IQ va mantiq',
                 ].map((label, i) => (
                   <div key={label} className="flex items-center gap-2">
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ABDF00]/20">
@@ -319,27 +292,6 @@ export function Landing({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* ============ Stats ============ */}
-      <section className="relative -mt-4">
-        <div className="mx-auto max-w-7xl px-6 sm:px-8">
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-[#0E1541]/10 bg-[#0E1541]/10 shadow-[0_30px_60px_-30px_rgba(14,21,65,0.15)] lg:grid-cols-4">
-            {t.stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-white px-6 py-8 text-center transition hover:bg-[#fafbfd] sm:px-8"
-              >
-                <div className="bg-gradient-to-br from-[#0E1541] to-[#15236b] bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl">
-                  {stat.value}
-                </div>
-                <div className="mt-2 text-sm font-medium text-[#0E1541]/60">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ============ Programs ============ */}
       <section id="programs" className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
@@ -351,7 +303,7 @@ export function Landing({ locale }: { locale: Locale }) {
 
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {t.programs.list.map((p, i) => {
-              const Icon = PROGRAM_ICONS[i] ?? Sigma;
+              const Icon = PROGRAM_ICONS[i] ?? BookOpen;
               return (
                 <div
                   key={p.title}
@@ -488,13 +440,7 @@ export function Landing({ locale }: { locale: Locale }) {
                 {t.cta.subtitle}
               </p>
               <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                <Link
-                  href="/login"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-[#ABDF00] px-8 py-4 text-base font-bold text-[#0E1541] shadow-[0_10px_30px_-10px_rgba(171,223,0,0.6)] transition hover:bg-[#bef000]"
-                >
-                  {t.cta.button}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                <ApplicationFormModal locale={locale} />
                 <a
                   href={CONTACTS.phoneHref}
                   className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur transition hover:bg-white/10"
@@ -517,15 +463,12 @@ export function Landing({ locale }: { locale: Locale }) {
                 href={LOCALE_HOMES[locale]}
                 className="flex items-center gap-3"
               >
-                <div className="relative h-9 w-9">
-                  <div className="absolute left-0 top-0 h-6 w-6 rounded-[8px] bg-[#ABDF00]" />
-                  <div className="absolute bottom-0 right-0 h-6 w-6 rounded-[8px] bg-[#4C5E81] mix-blend-multiply" />
-                </div>
+                <BrandLogo className="h-11 w-11 rounded-xl shadow-sm" />
                 <div className="flex flex-col leading-none">
-                  <span className="text-[20px] font-extrabold tracking-tight">
-                    khanovMath
+                  <span className="font-brand text-[20px] font-extrabold tracking-[-0.055em]">
+                    KhanovMath
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.25em] opacity-50">
+                  <span className="font-brand text-[9px] font-bold uppercase tracking-[0.32em] opacity-55">
                     academy
                   </span>
                 </div>

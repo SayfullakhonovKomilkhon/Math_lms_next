@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MathCenter — Панель ученика',
-    short_name: 'MathCenter',
+    name: 'KhanovMath Academy — Панель ученика',
+    short_name: 'KhanovMath',
     description:
-      'Учебный центр MathCenter. Домашние задания, расписание, достижения и рейтинг.',
+      'Учебный центр KhanovMath Academy. Домашние задания, расписание, достижения и рейтинг.',
     start_url: '/student/dashboard',
     scope: '/student',
     display: 'standalone',

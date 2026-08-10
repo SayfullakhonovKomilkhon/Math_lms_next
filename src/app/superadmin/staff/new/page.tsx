@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { toast } from '@/components/ui/toast';
 
-type Role = 'TEACHER' | 'ADMIN';
+type Role = 'TEACHER' | 'ADMIN' | 'SALES_MANAGER';
 
 function generatePassword() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
@@ -46,7 +46,7 @@ export default function NewStaffPage() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (form.role === 'TEACHER' && !form.fullName.trim())
+    if (form.role !== 'ADMIN' && !form.fullName.trim())
       e.fullName = 'Обязательное поле';
     if (!form.phone.trim()) e.phone = 'Обязательное поле';
     else if (!/^\+?[0-9]{9,15}$/.test(form.phone.trim()))
@@ -65,7 +65,7 @@ export default function NewStaffPage() {
         phone: form.phone.trim(),
         password: form.password,
         role: form.role,
-        fullName: form.role === 'TEACHER' ? form.fullName : undefined,
+        fullName: form.role !== 'ADMIN' ? form.fullName : undefined,
       });
       toast('Сотрудник добавлен');
       router.push('/superadmin/staff');
@@ -85,7 +85,7 @@ export default function NewStaffPage() {
     <div className="space-y-6">
       <PageHeader
         title="Добавить сотрудника"
-        description="Создание учётной записи учителя или администратора"
+        description="Создание учётной записи учителя, администратора или менеджера"
       />
 
       <Link
@@ -110,10 +110,11 @@ export default function NewStaffPage() {
               >
                 <option value="TEACHER">Учитель</option>
                 <option value="ADMIN">Администратор</option>
+                <option value="SALES_MANAGER">Менеджер по заявкам</option>
               </SelectField>
             </Field>
 
-            {form.role === 'TEACHER' && (
+            {form.role !== 'ADMIN' && (
               <Field label="ФИО" error={errors.fullName}>
                 <InputField
                   accent="admin"

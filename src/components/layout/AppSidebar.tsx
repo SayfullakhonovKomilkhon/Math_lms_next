@@ -9,8 +9,8 @@ import {
   BookOpen,
   CreditCard,
   ClipboardList,
+  Headphones,
   LogOut,
-  GraduationCap,
   DollarSign,
   Home,
   Book,
@@ -30,8 +30,9 @@ import { useCenterBranding } from '@/hooks/useCenterBranding';
 import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed';
 import { AccountSettingsDialog } from '@/components/account/AccountSettingsDialog';
 import { AnnouncementsBadge } from '@/components/announcements/AnnouncementsBadge';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 
-export type PanelVariant = 'admin' | 'teacher' | 'student' | 'parent';
+export type PanelVariant = 'admin' | 'manager' | 'teacher' | 'student' | 'parent';
 
 type NavItem = {
   href: string;
@@ -41,6 +42,7 @@ type NavItem = {
 };
 
 const ADMIN_NAV: NavItem[] = [
+  { href: '/admin/applications', label: 'Заявки', icon: Headphones },
   { href: '/admin/students', label: 'Ученики', icon: Users },
   { href: '/admin/parents', label: 'Родители', icon: UsersRound },
   { href: '/admin/groups', label: 'Группы', icon: BookOpen },
@@ -48,6 +50,13 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/expenses', label: 'Расходы центра', icon: Wallet },
   { href: '/admin/attendance', label: 'Посещаемость', icon: ClipboardList },
   { href: '/admin/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
+];
+
+const MANAGER_NAV: NavItem[] = [
+  { href: '/manager/dashboard', label: 'Главная', icon: Home },
+  { href: '/manager/applications', label: 'Заявки', icon: Headphones },
+  { href: '/manager/callbacks', label: 'Повторные звонки', icon: Calendar },
+  { href: '/manager/results', label: 'Мои результаты', icon: BarChart2 },
 ];
 
 const TEACHER_NAV: NavItem[] = [
@@ -83,6 +92,12 @@ const styles = {
     iconActive: 'text-indigo-600',
     ring: 'focus-visible:ring-indigo-500',
   },
+  manager: {
+    header: 'from-cyan-600 to-sky-700',
+    active: 'border-cyan-600 bg-cyan-50 text-cyan-950',
+    iconActive: 'text-cyan-600',
+    ring: 'focus-visible:ring-cyan-500',
+  },
   teacher: {
     header: 'from-emerald-600 to-teal-700',
     active: 'border-emerald-600 bg-emerald-50 text-emerald-900',
@@ -105,6 +120,7 @@ const styles = {
 
 const dialogAccent = {
   admin: 'indigo',
+  manager: 'blue',
   teacher: 'emerald',
   student: 'orange',
   parent: 'blue',
@@ -119,12 +135,14 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
 
   const navItems = (() => {
     if (variant === 'admin') return ADMIN_NAV;
+    if (variant === 'manager') return MANAGER_NAV;
     return { teacher: TEACHER_NAV, student: STUDENT_NAV, parent: PARENT_NAV }[variant];
   })();
 
   const t = styles[variant];
   const subtitle = {
     admin: 'Панель администратора',
+    manager: 'Менеджер по заявкам',
     teacher: 'Панель учителя',
     student: 'Панель ученика',
     parent: 'Панель родителя',
@@ -173,13 +191,11 @@ export function AppSidebar({ variant }: { variant: PanelVariant }) {
             collapsed ? 'justify-center' : 'gap-3',
           )}
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
-            <GraduationCap className="h-6 w-6 text-white" />
-          </div>
+          <BrandLogo className="h-10 w-10 rounded-xl ring-1 ring-white/20" />
           {!collapsed && (
             <div className="min-w-0">
-              <span className="block truncate text-lg font-semibold tracking-tight">
-                {branding.centerName}
+              <span className="font-brand block whitespace-nowrap text-[15px] font-extrabold tracking-[-0.04em]">
+                {branding.centerName.replace(/\s+Academy$/i, '')}
               </span>
               <p className="text-xs font-medium text-white/80">{subtitle}</p>
             </div>
