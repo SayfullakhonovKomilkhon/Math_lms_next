@@ -35,21 +35,31 @@ export default function StaffPage() {
   const [editRateValue, setEditRateValue] = useState('');
   const [editTarget, setEditTarget] = useState<EditStaffTarget | null>(null);
 
-  const { data: teachers = [], isLoading: teachersLoading } = useQuery<Teacher[]>({
+  const {
+    data: teachers = [],
+    isLoading: teachersLoading,
+    isError: teachersError,
+  } = useQuery<Teacher[]>({
     queryKey: ['sa-teachers'],
     queryFn: () => api.get('/teachers').then((r) => r.data.data),
   });
 
-  const { data: admins = [], isLoading: adminsLoading } = useQuery<AdminUser[]>({
+  const {
+    data: admins = [],
+    isLoading: adminsLoading,
+    isError: adminsError,
+  } = useQuery<AdminUser[]>({
     queryKey: ['sa-admins'],
     queryFn: () => api.get('/users?role=ADMIN').then((r) => r.data.data),
-    enabled: tab === 'admins',
   });
 
-  const { data: managers = [], isLoading: managersLoading } = useQuery<AdminUser[]>({
+  const {
+    data: managers = [],
+    isLoading: managersLoading,
+    isError: managersError,
+  } = useQuery<AdminUser[]>({
     queryKey: ['sa-sales-managers'],
     queryFn: () => api.get('/users?role=SALES_MANAGER').then((r) => r.data.data),
-    enabled: tab === 'managers',
   });
 
   const { data: teacherLoads = [] } = useQuery<{ teacherId: string; studentsCount: number; groupsCount: number; totalSalary: number }[]>({
@@ -107,10 +117,10 @@ export default function StaffPage() {
           Учителя ({teachers.length})
         </TabsBarButton>
         <TabsBarButton accent="admin" active={tab === 'admins'} onClick={() => setTab('admins')}>
-          Администраторы
+          Администраторы ({admins.length})
         </TabsBarButton>
         <TabsBarButton accent="admin" active={tab === 'managers'} onClick={() => setTab('managers')}>
-          Менеджер по заявкам
+          Менеджеры по заявкам ({managers.length})
         </TabsBarButton>
       </TabsBar>
 
@@ -118,6 +128,10 @@ export default function StaffPage() {
         <Card>
           {teachersLoading ? (
             <CardContent className="py-10 text-center text-sm text-slate-400">Загрузка...</CardContent>
+          ) : teachersError ? (
+            <CardContent className="py-10 text-center text-sm text-red-500">
+              Не удалось загрузить список учителей. Обновите страницу.
+            </CardContent>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -247,6 +261,10 @@ export default function StaffPage() {
         <Card>
           {(tab === 'admins' ? adminsLoading : managersLoading) ? (
             <CardContent className="py-10 text-center text-sm text-slate-400">Загрузка...</CardContent>
+          ) : (tab === 'admins' ? adminsError : managersError) ? (
+            <CardContent className="py-10 text-center text-sm text-red-500">
+              Не удалось загрузить список сотрудников. Обновите страницу.
+            </CardContent>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
