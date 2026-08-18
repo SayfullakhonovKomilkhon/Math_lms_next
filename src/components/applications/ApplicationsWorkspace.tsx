@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,6 +9,7 @@ import {
   Headphones,
   MessageSquareText,
   Phone,
+  Plus,
   Search,
   UserCheck,
   X,
@@ -17,6 +18,7 @@ import api from '@/lib/api';
 import {
   AdmissionApplication,
   ApplicationsSummary,
+  ApplicationSource,
   ApplicationStatus,
 } from '@/types/applications';
 import { PageHeader } from '@/components/ui/page-header';
@@ -30,6 +32,29 @@ import {
 } from './application-status';
 
 type CallbackFilter = '' | 'today' | 'overdue';
+
+const APPLICATION_SOURCE_OPTIONS: Array<{
+  value: ApplicationSource;
+  label: string;
+}> = [
+  { value: 'WEBSITE', label: 'Сайт' },
+  { value: 'ADVERTISEMENT', label: 'Объявление / реклама' },
+  { value: 'INSTAGRAM', label: 'Instagram' },
+  { value: 'TELEGRAM', label: 'Telegram' },
+  { value: 'PHONE_CALL', label: 'Входящий звонок' },
+  { value: 'WALK_IN', label: 'Пришёл в учебный центр' },
+  { value: 'REFERRAL', label: 'Рекомендация' },
+  { value: 'OTHER', label: 'Другое' },
+];
+
+const APPLICATION_SOURCE_LABELS = Object.fromEntries(
+  APPLICATION_SOURCE_OPTIONS.map((source) => [source.value, source.label]),
+) as Record<ApplicationSource, string>;
+
+function applicationSourceLabel(application: AdmissionApplication) {
+  const label = APPLICATION_SOURCE_LABELS[application.source] || 'Сайт';
+  return application.sourceDetails ? `${label}: ${application.sourceDetails}` : label;
+}
 
 function formatDateTime(value?: string | null) {
   if (!value) return '—';
@@ -69,6 +94,254 @@ const summaryCards = [
     color: 'text-emerald-700 bg-emerald-50',
   },
 ] as const;
+
+function CreateApplicationDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (application: AdmissionApplication) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [childFullName, setChildFullName] = useState('');
+  const [childPhone, setChildPhone] = useState('+998');
+  const [childAge, setChildAge] = useState('');
+  const [parentFullName, setParentFullName] = useState('');
+  const [parentPhone, setParentPhone] = useState('+998');
+  const [source, setSource] = useState<ApplicationSource>('ADVERTISEMENT');
+  const [sourceDetails, setSourceDetails] = useState('');
+  const [note, setNote] = useState('');
+
+  const reset = () => {
+    setChildFullName('');
+    setChildPhone('+998');
+    setChildAge('');
+    setParentFullName('');
+    setParentPhone('+998');
+    setSource('ADVERTISEMENT');
+    setSourceDetails('');
+    setNote('');
+  };
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.post('/applications/manual', {
+        fullName: childFullName.trim(),
+        phone: childPhone,
+        childAge: Number(childAge),
+        parentFullName: parentFullName.trim(),
+        parentPhone,
+        source,
+        sourceDetails: sourceDetails.trim() || undefined,
+        note: note.trim() || undefined,
+      }),
+    onSuccess: (response) => {
+      const application = response.data.data as AdmissionApplication;
+      void queryClient.invalidateQueries({ queryKey: ['applications'] });
+      void queryClient.invalidateQueries({ queryKey: ['applications-summary'] });
+      toast('Новый лид добавлен');
+      reset();
+      onOpenChange(false);
+      onCreated(application);
+    },
+    onError: () => toast('Не удалось добавить лида. Проверьте данные.', 'error'),
+  });
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const age = Number(childAge);
+    if (childFullName.trim().length < 2) {
+      toast('Введите имя ребёнка', 'info');
+      return;
+    }
+    if (!/^\+?[0-9 ()-]{9,20}$/.test(childPhone)) {
+      toast('Введите корректный номер ребёнка', 'info');
+      return;
+    }
+    if (parentFullName.trim().length < 2) {
+      toast('Введите имя родителя', 'info');
+      return;
+    }
+    if (!/^\+?[0-9 ()-]{9,20}$/.test(parentPhone)) {
+      toast('Введите корректный номер родителя', 'info');
+      return;
+    }
+    if (!Number.isInteger(age) || age < 5 || age > 25) {
+      toast('Возраст ребёнка должен быть от 5 до 25 лет', 'info');
+      return;
+    }
+    createMutation.mutate();
+  };
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !createMutation.isPending) reset();
+        onOpenChange(nextOpen);
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl outline-none sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Dialog.Title className="text-xl font-semibold text-slate-950">
+                Добавить нового лида
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-slate-500">
+                Для обращений из рекламы, звонков, рекомендаций и офлайн-визитов.
+              </Dialog.Description>
+            </div>
+            <Dialog.Close className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+              <X className="h-5 w-5" />
+              <span className="sr-only">Закрыть</span>
+            </Dialog.Close>
+          </div>
+
+          <form onSubmit={submit} className="mt-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">
+                Данные ребёнка
+              </p>
+              <div className="h-px flex-1 bg-slate-100" />
+            </div>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">Имя ребёнка</span>
+              <input
+                autoFocus
+                value={childFullName}
+                onChange={(event) => setChildFullName(event.target.value)}
+                maxLength={120}
+                placeholder="Например, Алишер Каримов"
+                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              />
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Телефон ребёнка
+                </span>
+                <input
+                  value={childPhone}
+                  onChange={(event) => setChildPhone(event.target.value)}
+                  inputMode="tel"
+                  maxLength={20}
+                  placeholder="+998 90 123 45 67"
+                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">Возраст</span>
+                <input
+                  value={childAge}
+                  onChange={(event) => setChildAge(event.target.value)}
+                  type="number"
+                  min={5}
+                  max={25}
+                  placeholder="14"
+                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                Данные родителя
+              </p>
+              <div className="h-px flex-1 bg-slate-100" />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">Имя родителя</span>
+                <input
+                  value={parentFullName}
+                  onChange={(event) => setParentFullName(event.target.value)}
+                  maxLength={120}
+                  placeholder="Например, Малика Каримова"
+                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">Телефон родителя</span>
+                <input
+                  value={parentPhone}
+                  onChange={(event) => setParentPhone(event.target.value)}
+                  inputMode="tel"
+                  maxLength={20}
+                  placeholder="+998 90 123 45 68"
+                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">Источник</span>
+              <select
+                value={source}
+                onChange={(event) => setSource(event.target.value as ApplicationSource)}
+                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              >
+                {APPLICATION_SOURCE_OPTIONS.filter((option) => option.value !== 'WEBSITE').map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Уточнение источника <span className="font-normal text-slate-400">(необязательно)</span>
+              </span>
+              <input
+                value={sourceDetails}
+                onChange={(event) => setSourceDetails(event.target.value)}
+                maxLength={240}
+                placeholder="Например, реклама SAT в Instagram"
+                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Первый комментарий <span className="font-normal text-slate-400">(необязательно)</span>
+              </span>
+              <textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="Что уже известно о клиенте и его цели?"
+                className="w-full resize-none rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              />
+            </label>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Dialog.Close asChild>
+                <Button type="button" variant="outline">Отмена</Button>
+              </Dialog.Close>
+              <Button
+                type="submit"
+                loading={createMutation.isPending}
+                className="bg-cyan-600 hover:bg-cyan-700 focus:ring-cyan-500"
+              >
+                Добавить лида
+              </Button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
 
 function ApplicationDialog({
   preview,
@@ -117,6 +390,9 @@ function ApplicationDialog({
               <Dialog.Description className="mt-1 text-sm text-slate-500">
                 Ребёнку {application.childAge} лет · заявка {formatDateTime(application.createdAt)}
               </Dialog.Description>
+              <p className="mt-1 text-xs font-medium text-cyan-700">
+                Источник: {applicationSourceLabel(application)}
+              </p>
             </div>
             <Dialog.Close className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
               <X className="h-5 w-5" />
@@ -125,12 +401,31 @@ function ApplicationDialog({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Ребёнок</p>
+                <p className="mt-1 font-medium text-slate-900">{application.fullName}</p>
+                <a href={`tel:${application.phone}`} className="mt-1 block text-sm text-cyan-700 hover:underline">
+                  {application.phone}
+                </a>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-600">Родитель</p>
+                <p className="mt-1 font-medium text-slate-900">
+                  {application.parentFullName || 'Не указан'}
+                </p>
+                <p className="mt-1 text-sm text-emerald-700">
+                  {application.parentPhone || 'Телефон не указан'}
+                </p>
+              </div>
+            </div>
+
             <a
-              href={`tel:${application.phone}`}
-              className="flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white transition hover:bg-cyan-700"
+              href={`tel:${application.parentPhone || application.phone}`}
+              className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 py-3 font-semibold text-white transition hover:bg-cyan-700"
             >
               <Phone className="h-4 w-4" />
-              Позвонить {application.phone}
+              Позвонить {application.parentPhone ? 'родителю' : application.phone}
             </a>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -235,7 +530,7 @@ function ApplicationDialog({
 
 export function ApplicationsWorkspace({
   title = 'Заявки',
-  description = 'Обработка обращений с сайта и контроль повторных звонков',
+  description = 'Обработка обращений и контроль повторных звонков',
   initialCallback = '',
 }: {
   title?: string;
@@ -246,6 +541,7 @@ export function ApplicationsWorkspace({
   const [status, setStatus] = useState<ApplicationStatus | ''>('');
   const [callback, setCallback] = useState<CallbackFilter>(initialCallback);
   const [selected, setSelected] = useState<AdmissionApplication | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const [currentTime] = useState(() => Date.now());
 
   const { data: summary } = useQuery<ApplicationsSummary>({
@@ -269,7 +565,20 @@ export function ApplicationsWorkspace({
 
   return (
     <div className="space-y-6">
-      <PageHeader title={title} description={description} />
+      <PageHeader
+        title={title}
+        description={description}
+        actions={
+          <Button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="gap-2 bg-cyan-600 hover:bg-cyan-700 focus:ring-cyan-500"
+          >
+            <Plus className="h-4 w-4" />
+            Добавить лида
+          </Button>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map(({ key, label, icon: Icon, color }) => (
@@ -294,7 +603,7 @@ export function ApplicationsWorkspace({
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Поиск по имени или телефону"
+              placeholder="Поиск ребёнка или родителя"
               className="h-10 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
             />
           </label>
@@ -331,11 +640,13 @@ export function ApplicationsWorkspace({
           </CardContent>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-sm">
+            <table className="w-full min-w-[1180px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70 text-left text-xs text-slate-500">
-                  <th className="px-4 py-3 font-medium">Клиент</th>
+                  <th className="px-4 py-3 font-medium">Ребёнок</th>
+                  <th className="px-4 py-3 font-medium">Родитель</th>
                   <th className="px-4 py-3 font-medium">Возраст</th>
+                  <th className="px-4 py-3 font-medium">Источник</th>
                   <th className="px-4 py-3 font-medium">Статус</th>
                   <th className="px-4 py-3 font-medium">Следующий звонок</th>
                   <th className="px-4 py-3 font-medium">Ответственный</th>
@@ -357,7 +668,18 @@ export function ApplicationsWorkspace({
                         <p className="font-medium text-slate-900">{application.fullName}</p>
                         <p className="mt-0.5 text-xs text-slate-500">{application.phone}</p>
                       </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-800">
+                          {application.parentFullName || '—'}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {application.parentPhone || '—'}
+                        </p>
+                      </td>
                       <td className="px-4 py-3 text-slate-600">{application.childAge} лет</td>
+                      <td className="max-w-[200px] px-4 py-3 text-slate-600">
+                        <span className="line-clamp-2">{applicationSourceLabel(application)}</span>
+                      </td>
                       <td className="px-4 py-3">
                         <ApplicationStatusBadge status={application.status} />
                       </td>
@@ -382,6 +704,11 @@ export function ApplicationsWorkspace({
       {selected ? (
         <ApplicationDialog key={selected.id} preview={selected} onClose={() => setSelected(null)} />
       ) : null}
+      <CreateApplicationDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={setSelected}
+      />
     </div>
   );
 }

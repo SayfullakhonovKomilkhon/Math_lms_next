@@ -13,6 +13,16 @@ export type ApplicationActivityType =
   | 'CALLBACK'
   | 'ASSIGNMENT';
 
+export type ApplicationSource =
+  | 'WEBSITE'
+  | 'ADVERTISEMENT'
+  | 'INSTAGRAM'
+  | 'TELEGRAM'
+  | 'PHONE_CALL'
+  | 'WALK_IN'
+  | 'REFERRAL'
+  | 'OTHER';
+
 export interface ApplicationAssignee {
   id: string;
   fullName?: string | null;
@@ -36,6 +46,10 @@ export interface AdmissionApplication {
   fullName: string;
   phone: string;
   childAge: number;
+  parentFullName?: string | null;
+  parentPhone?: string | null;
+  source: ApplicationSource;
+  sourceDetails?: string | null;
   status: ApplicationStatus;
   assignedToId?: string | null;
   assignedTo?: ApplicationAssignee | null;

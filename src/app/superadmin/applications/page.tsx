@@ -3,7 +3,7 @@ import { ApplicationsWorkspace } from '@/components/applications/ApplicationsWor
 export default function SuperAdminApplicationsPage() {
   return (
     <ApplicationsWorkspace
-      title="Заявки с сайта"
+      title="Заявки"
       description="Полный контроль обращений, звонков и конверсии в учеников"
     />
   );

@@ -121,7 +121,7 @@ export function ManagerOverview({ resultsOnly = false }: { resultsOnly?: boolean
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-900">{application.fullName}</p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {application.phone} · {formatDateTime(application.createdAt)}
+                    {application.parentPhone || application.phone} · {formatDateTime(application.createdAt)}
                   </p>
                 </div>
                 <ApplicationStatusBadge status={application.status} />
