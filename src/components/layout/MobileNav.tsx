@@ -46,6 +46,7 @@ const NAV_ITEMS: Record<MobileNavVariant, MobileNavItem[]> = {
     { href: '/manager/results', label: 'Результаты', icon: BarChart2 },
   ],
   teacher: [
+    { href: '/teacher/support', label: 'Суппорт', icon: Headphones },
     { href: '/teacher', label: 'Главная', icon: Home },
     { href: '/teacher/groups', label: 'Группы', icon: Users },
     { href: '/teacher/salary', label: 'Зарплата', icon: CreditCard },
@@ -60,6 +61,7 @@ const NAV_ITEMS: Record<MobileNavVariant, MobileNavItem[]> = {
     { href: '/student/payment', label: 'Оплата', icon: CreditCard },
   ],
   parent: [
+    { href: '/parent/support', label: 'Помощь', icon: Headphones },
     { href: '/parent/dashboard', label: 'Главная', icon: Home },
     { href: '/parent/attendance', label: 'Учёт', icon: CalendarCheck2 },
     { href: '/parent/grades', label: 'Оценки', icon: BarChart2 },

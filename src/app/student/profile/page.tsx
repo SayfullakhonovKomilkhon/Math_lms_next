@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -52,6 +53,7 @@ export default function StudentProfilePage() {
         </div>
       </section>
 
+      <Link href="/student/support" className="my-4 block rounded-xl bg-white p-4 font-medium text-indigo-700 shadow-sm">Отзывы и дополнительные занятия →</Link>
       <ProfileForm
         key={formKey}
         initialFullName={profile?.fullName ?? ''}

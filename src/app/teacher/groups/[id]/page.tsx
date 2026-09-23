@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackTab } from '@/components/support/FeedbackTab';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -32,12 +33,13 @@ interface GroupStudent {
   user?: { phone: string };
 }
 
-type TabId = 'davomat' | 'homework' | 'practice' | 'online';
+type TabId = 'davomat' | 'homework' | 'practice' | 'online' | 'feedback';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'davomat', label: 'Посещаемость' },
   { id: 'homework', label: 'Домашние задания' },
   { id: 'practice', label: 'Практика' },
+  { id: 'feedback', label: 'Отзывы' },
   { id: 'online', label: 'Темы уроков' },
 ];
 
@@ -162,6 +164,7 @@ export default function TeacherGroupHubPage() {
               />
             )}
 
+            {activeTab === 'feedback' && <FeedbackTab groupId={groupId} students={students.filter(s => s.isActive)} />}
             {activeTab === 'homework' && <HomeworkTab groupId={groupId} />}
             {activeTab === 'practice' && <PracticeTab groupId={groupId} />}
             {activeTab === 'online' && <TopicsTab groupId={groupId} />}

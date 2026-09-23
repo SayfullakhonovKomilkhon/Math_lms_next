@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 interface Notification {
   id: string;
   type: string;
+  data?: { feature?: string };
   message: string;
   isRead: boolean;
   createdAt: string;
@@ -125,6 +126,7 @@ export function NotificationBell() {
                   <span className="mt-0.5 text-lg">{TYPE_ICONS[n.type] ?? '🔔'}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-slate-700">{n.message}</p>
+                    {n.data?.feature === 'support' && <Link href={`/${rolePrefix}/support`} onClick={() => setOpen(false)} className="text-xs font-medium text-emerald-700">Открыть отзывы и занятия →</Link>}
                     <p className="mt-0.5 text-xs text-slate-400">{relativeTime(n.createdAt)}</p>
                   </div>
                   {!n.isRead && (

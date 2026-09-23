@@ -60,12 +60,14 @@ const MANAGER_NAV: NavItem[] = [
 ];
 
 const TEACHER_NAV: NavItem[] = [
+  { href: '/teacher/support', label: 'Панель суппорта', icon: Headphones },
   { href: '/teacher/groups', label: 'Мои группы', icon: BookOpen },
   { href: '/teacher/salary', label: 'Зарплата', icon: DollarSign },
   { href: '/teacher/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },
 ];
 
 const STUDENT_NAV: NavItem[] = [
+  { href: '/student/support', label: 'Отзывы и помощь', icon: Headphones },
   { href: '/student/dashboard', label: 'Главная', icon: Home },
   { href: '/student/homework', label: 'Домашние задания', icon: Book },
   { href: '/student/grades', label: 'Оценки', icon: BarChart2 },
@@ -76,6 +78,7 @@ const STUDENT_NAV: NavItem[] = [
 ];
 
 const PARENT_NAV: NavItem[] = [
+  { href: '/parent/support', label: 'Отзывы и помощь', icon: Headphones },
   { href: '/parent/dashboard', label: 'Главная', icon: Home },
   { href: '/parent/attendance', label: 'Посещаемость', icon: ClipboardList },
   { href: '/parent/grades', label: 'Успеваемость', icon: BarChart2 },

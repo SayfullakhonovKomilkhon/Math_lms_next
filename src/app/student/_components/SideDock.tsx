@@ -26,6 +26,7 @@ const MAIN = [
 ];
 
 const SECONDARY = [
+  { href: '/student/support', label: 'Отзывы и помощь', icon: Book },
   { href: '/student/schedule', label: 'Расписание', icon: Calendar },
   { href: '/student/payment', label: 'Оплата', icon: CreditCard },
   { href: '/student/announcements', label: 'Объявления', icon: Megaphone },
