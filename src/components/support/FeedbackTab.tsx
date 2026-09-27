@@ -1,86 +1,10 @@
 "use client";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { BookingForm } from "./BookingForm";
-import {
-  Feedback,
-  Person,
-  Understanding,
-  button,
-  errorMessage,
-  field,
-  secondary,
-  today,
-  understandingLabels,
-} from "./support-api";
+import { Feedback, Person, button, errorMessage, field, secondary } from "./support-api";
+export { FeedbackStatistics as FeedbackTab } from "./FeedbackStatistics";
 
-export function FeedbackTab({
-  groupId,
-  students,
-}: {
-  groupId: string;
-  students: Person[];
-}) {
-  const [date, setDate] = useState(today());
-  const [booking, setBooking] = useState<Feedback | null>(null);
-  const query = useQuery({
-    queryKey: ["support", "feedback", groupId, date],
-    enabled: !!date,
-    queryFn: () =>
-      api
-        .get("/support/feedback", { params: { groupId, date } })
-        .then((r) => r.data.data as Feedback[]),
-  });
-  return (
-    <section className="space-y-4 p-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Обратная связь после урока</h2>
-          <p className="text-sm text-slate-500">
-            Оцените понимание темы и при необходимости запишите ученика к
-            суппорту.
-          </p>
-        </div>
-        <label className="text-sm">
-          Дата урока
-          <input
-            aria-label="Дата урока"
-            className={field}
-            type="date"
-            max={today()}
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </label>
-      </div>
-      {query.isLoading && <p>Загрузка отзывов…</p>}
-      {query.isError && (
-        <p role="alert" className="text-red-700">
-          {errorMessage(query.error)}
-        </p>
-      )}
-      {query.data &&
-        students.map((student) => {
-          const feedback = query.data.find((f) => f.studentId === student.id);
-          return (
-            <FeedbackRow
-              key={`${student.id}-${date}-${feedback?.updatedAt ?? "new"}`}
-              groupId={groupId}
-              date={date}
-              student={student}
-              feedback={feedback}
-              onBook={(f) => setBooking({ ...f, student })}
-            />
-          );
-        })}
-      {!students.length && <p>В группе пока нет учеников.</p>}
-      {booking && (
-        <BookingForm feedback={booking} onClose={() => setBooking(null)} />
-      )}
-    </section>
-  );
-}
 export function FeedbackRow({
   groupId,
   date,
@@ -88,7 +12,6 @@ export function FeedbackRow({
   feedback,
   onBook,
   defaultTopic = "",
-  defaultUnderstanding = "UNDERSTOOD",
   onSaved,
 }: {
   groupId: string;
@@ -97,16 +20,12 @@ export function FeedbackRow({
   feedback?: Feedback;
   onBook: (f: Feedback) => void;
   defaultTopic?: string;
-  defaultUnderstanding?: Understanding;
   onSaved?: () => void;
 }) {
   const client = useQueryClient();
-  const [understanding, setUnderstanding] = useState<Understanding>(
-    feedback?.understanding ?? defaultUnderstanding,
-  );
   const [topic, setTopic] = useState(feedback?.topic ?? defaultTopic);
   const [comment, setComment] = useState(feedback?.comment ?? "");
-  const [privateNote, setPrivateNote] = useState(feedback?.privateNote ?? "");
+  const privateNote = feedback?.privateNote ?? "";
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   async function save(book: boolean) {
@@ -117,7 +36,7 @@ export function FeedbackRow({
         groupId,
         studentId: student.id,
         date,
-        understanding,
+        understanding: "NEEDS_HELP",
         topic,
         comment,
         privateNote,
@@ -145,7 +64,7 @@ export function FeedbackRow({
           {feedback ? "Отзыв сохранён" : "Отзыва пока нет"}
         </span>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3">
         <label className="text-sm">
           Тема урока
           <input
@@ -156,52 +75,31 @@ export function FeedbackRow({
             onChange={(e) => setTopic(e.target.value)}
           />
         </label>
-        <label className="text-sm">
-          Как понял тему
-          <select
-            className={field}
-            value={understanding}
-            onChange={(e) => setUnderstanding(e.target.value as Understanding)}
-          >
-            {Object.entries(understandingLabels).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
       <label className="block text-sm">
-        Отзыв для ученика и родителей
+        Отзыв учителя
         <textarea
+          required
           maxLength={2000}
           className={field}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Что получилось и над чем поработать"
+          placeholder="Что ученик не понял и над чем нужно поработать"
         />
       </label>
-      <label className="block text-sm">
-        Внутренняя заметка для преподавателей
-        <textarea
-          maxLength={2000}
-          className={field}
-          value={privateNote}
-          onChange={(e) => setPrivateNote(e.target.value)}
-        />
-      </label>
+      <p className="text-xs text-slate-500">Отзыв доступен только преподавателям. Ученик появится в статистике как нуждающийся в помощи.</p>
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {error}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <button disabled={busy || !topic.trim()} className={button}>
+        <button disabled={busy || !topic.trim() || !comment.trim()} className={button}>
           {busy ? "Сохраняем…" : "Сохранить отзыв"}
         </button>
         <button
           type="button"
-          disabled={busy || !topic.trim()}
+          disabled={busy || !topic.trim() || !comment.trim()}
           className={secondary}
           onClick={() => void save(true)}
         >

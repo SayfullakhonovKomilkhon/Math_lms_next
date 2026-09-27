@@ -23,7 +23,6 @@ export function AttendanceLessonSupport({
   topic,
   mode,
   bookings,
-  absent,
   onClose,
 }: {
   groupId: string;
@@ -122,9 +121,6 @@ export function AttendanceLessonSupport({
           student={student}
           feedback={feedback}
           defaultTopic={topic}
-          defaultUnderstanding={
-            mode === "book" ? "NEEDS_HELP" : absent ? "ABSENT" : "UNDERSTOOD"
-          }
           onBook={(f) => setBooking({ ...f, student })}
           onSaved={() => setSaved(true)}
         />

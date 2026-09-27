@@ -39,7 +39,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'davomat', label: 'Посещаемость' },
   { id: 'homework', label: 'Домашние задания' },
   { id: 'practice', label: 'Практика' },
-  { id: 'feedback', label: 'Отзывы' },
+  { id: 'feedback', label: 'Статистика' },
   { id: 'online', label: 'Темы уроков' },
 ];
 
@@ -164,7 +164,7 @@ export default function TeacherGroupHubPage() {
               />
             )}
 
-            {activeTab === 'feedback' && <FeedbackTab groupId={groupId} students={students.filter(s => s.isActive)} />}
+            {activeTab === 'feedback' && <FeedbackTab groupId={groupId} />}
             {activeTab === 'homework' && <HomeworkTab groupId={groupId} />}
             {activeTab === 'practice' && <PracticeTab groupId={groupId} />}
             {activeTab === 'online' && <TopicsTab groupId={groupId} />}

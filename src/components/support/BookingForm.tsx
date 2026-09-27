@@ -26,7 +26,7 @@ export function BookingForm({
   const [teacherId, setTeacherId] = useState(booking?.session.teacherId ?? "");
   const [startAt, setStartAt] = useState("");
   const [task, setTask] = useState(
-    feedback.comment || `Разобрать тему: ${feedback.topic}`,
+    `Разобрать тему: ${feedback.topic}`,
   );
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);

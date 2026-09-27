@@ -1,4 +1,5 @@
 "use client";
+import { FeedbackStatistics } from "./FeedbackStatistics";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from '@/hooks/useAuth';
@@ -11,14 +12,12 @@ import {
   Feedback,
   Overview,
   button,
-  dateLabel,
   dateTime,
   errorMessage,
   field,
   secondary,
   statusLabels,
   today,
-  understandingLabels,
 } from "./support-api";
 
 export function SupportPage({ staff = false }: { staff?: boolean }) {
@@ -90,7 +89,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
       {staff && (
         <p className="rounded-xl bg-emerald-50 p-3 text-sm">
           {data?.isSupport ? 'Публикуйте свободное время, чтобы коллеги могли записывать учеников к вам.' : 'Вы можете направлять учеников к суппортам. Проводить новые дополнительные занятия можно после назначения администратором. Ранее назначенные вам занятия остаются доступны.'}
-          {' '}Отзыв и запись доступны из кружка посещаемости или вкладки «Отзывы» в группе.
+          {' '}Отзыв и запись доступны из кружка посещаемости или вкладки «Статистика» в группе.
         </p>
       )}
       <nav aria-label="Разделы помощи" className="flex flex-wrap gap-2">
@@ -99,7 +98,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
             ["today", "Сегодня"],
             ["upcoming", "Записи"],
             ["history", "История занятий"],
-            ["feedback", "Отзывы об уроках"],
+            ...(staff ? [["feedback", "Статистика"] as const] : []),
           ] as const
         ).map(([id, label]) => (
           <button
@@ -151,53 +150,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
           </button>
         </div>
       )}
-      {data && tab === "feedback" && (
-        <>
-          <p className="text-xs text-slate-500">Последние 100 отзывов</p>
-          {data.feedback
-            .filter((f) => !studentId || f.studentId === studentId)
-            .map((f) => (
-              <article
-                key={f.id}
-                className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4"
-              >
-                <div className="flex flex-wrap justify-between gap-2">
-                  <h2 className="font-semibold">
-                    {f.student?.fullName} · {f.topic}
-                  </h2>
-                  <span className="text-sm text-slate-500">
-                    {dateLabel(f.date)}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-500">
-                  {f.group?.name} · {f.teacher?.fullName}
-                </p>
-                <p className="text-sm font-medium text-emerald-800">
-                  {understandingLabels[f.understanding]}
-                </p>
-                {f.comment && (
-                  <p className="whitespace-pre-wrap text-sm">{f.comment}</p>
-                )}
-                {staff && f.privateNote && (
-                  <p className="whitespace-pre-wrap rounded-lg bg-amber-50 p-2 text-sm">
-                    Внутренняя заметка: {f.privateNote}
-                  </p>
-                )}
-                {staff && (
-                  <button
-                    className={secondary}
-                    onClick={() => setBookingForm({ feedback: f })}
-                  >
-                    Записать к суппорту
-                  </button>
-                )}
-              </article>
-            ))}
-          {!data.feedback.length && (
-            <Empty text="Отзывов пока нет. Здесь появится обратная связь после уроков." />
-          )}
-        </>
-      )}
+      {staff && tab === "feedback" && <FeedbackStatistics />}
       {data && tab !== "feedback" && (
         <>
           {tab === "history" && (
