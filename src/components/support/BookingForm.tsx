@@ -116,8 +116,7 @@ export function BookingForm({
         {teachers.isError && <p role="alert">{errorMessage(teachers.error)}</p>}
         {teachers.data?.length === 0 && (
           <p>
-            Преподаватели пока не опубликовали доступность. Это можно сделать в
-            панели суппорта.
+            Нет доступных суппортов. Администратор должен назначить суппорта, а суппорт — опубликовать свободное время.
           </p>
         )}
         {teacherId && (

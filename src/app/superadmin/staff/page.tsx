@@ -1,5 +1,7 @@
 'use client';
 
+import { SupportEligibilityToggle } from '@/components/support/SupportEligibilityToggle';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -154,6 +156,7 @@ export default function StaffPage() {
                       <tr key={t.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                         <td className="px-4 py-3">
                           <p className="font-medium text-slate-900">{t.fullName}</p>
+                          <SupportEligibilityToggle teacherId={t.id} name={t.fullName} enabled={t.isSupport} />
                           <p className="text-xs text-slate-400">{t.user?.phone ?? t.phone ?? '—'}</p>
                         </td>
                         <td className="px-4 py-3 text-slate-500">

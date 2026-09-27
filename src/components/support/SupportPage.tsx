@@ -26,7 +26,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
   const [tab, setTab] = useState<"today" | "upcoming" | "history" | "feedback">(
     staff ? "today" : "upcoming",
   );
-  const [onlyMine, setOnlyMine] = useState(true);
+  const [onlyMine, setOnlyMine] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [availability, setAvailability] = useState(false);
   const [bookingForm, setBookingForm] = useState<{
@@ -75,13 +75,13 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">
-            {staff ? "Панель суппорта" : "Отзывы и помощь"}
+            {staff ? (data?.isSupport ? "Панель суппорта" : "Отзывы и направления") : "Отзывы и помощь"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Бесплатные дополнительные занятия · время Ташкента
           </p>
         </div>
-        {staff && data && (
+        {staff && data?.isSupport && (
           <button className={button} onClick={() => setAvailability(true)}>
             Моя доступность
           </button>
@@ -89,9 +89,8 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
       </header>
       {staff && (
         <p className="rounded-xl bg-emerald-50 p-3 text-sm">
-          Публикуйте свободное время, чтобы коллеги могли записывать учеников к
-          вам. Отзывы после основных уроков находятся в разделе «Мои группы» →
-          «Отзывы».
+          {data?.isSupport ? 'Публикуйте свободное время, чтобы коллеги могли записывать учеников к вам.' : 'Вы можете направлять учеников к суппортам. Проводить новые дополнительные занятия можно после назначения администратором. Ранее назначенные вам занятия остаются доступны.'}
+          {' '}Отзыв и запись доступны из кружка посещаемости или вкладки «Отзывы» в группе.
         </p>
       )}
       <nav aria-label="Разделы помощи" className="flex flex-wrap gap-2">
@@ -314,7 +313,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
           )}
         </>
       )}
-      {availability && data && (
+      {availability && data?.isSupport && (
         <AvailabilityEditor
           data={data}
           onClose={() => setAvailability(false)}

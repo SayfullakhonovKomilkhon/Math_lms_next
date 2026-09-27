@@ -81,24 +81,30 @@ export function FeedbackTab({
     </section>
   );
 }
-function FeedbackRow({
+export function FeedbackRow({
   groupId,
   date,
   student,
   feedback,
   onBook,
+  defaultTopic = "",
+  defaultUnderstanding = "UNDERSTOOD",
+  onSaved,
 }: {
   groupId: string;
   date: string;
   student: Person;
   feedback?: Feedback;
   onBook: (f: Feedback) => void;
+  defaultTopic?: string;
+  defaultUnderstanding?: Understanding;
+  onSaved?: () => void;
 }) {
   const client = useQueryClient();
   const [understanding, setUnderstanding] = useState<Understanding>(
-    feedback?.understanding ?? "UNDERSTOOD",
+    feedback?.understanding ?? defaultUnderstanding,
   );
-  const [topic, setTopic] = useState(feedback?.topic ?? "");
+  const [topic, setTopic] = useState(feedback?.topic ?? defaultTopic);
   const [comment, setComment] = useState(feedback?.comment ?? "");
   const [privateNote, setPrivateNote] = useState(feedback?.privateNote ?? "");
   const [busy, setBusy] = useState(false),
@@ -118,6 +124,7 @@ function FeedbackRow({
       });
       await client.invalidateQueries({ queryKey: ["support"] });
       if (book) onBook(result.data.data as Feedback);
+      else onSaved?.();
     } catch (e) {
       setError(errorMessage(e));
     } finally {

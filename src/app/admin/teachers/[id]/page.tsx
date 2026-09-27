@@ -1,5 +1,7 @@
 'use client';
 
+import { SupportEligibilityToggle } from '@/components/support/SupportEligibilityToggle';
+
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -107,6 +109,7 @@ export default function EditTeacherPage() {
           <h2 className="font-semibold text-slate-900">Основные данные</h2>
         </CardHeader>
         <CardContent className="space-y-4">
+          <SupportEligibilityToggle teacherId={teacher.id} name={teacher.fullName} enabled={teacher.isSupport} />
           <Field label="ФИО">
             <InputField
               accent="admin"

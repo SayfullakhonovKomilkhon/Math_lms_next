@@ -1,5 +1,7 @@
 'use client';
 
+import { SupportEligibilityToggle } from '@/components/support/SupportEligibilityToggle';
+
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -74,6 +76,7 @@ export default function AdminTeachersPage() {
                 <p className="mt-3 text-xs text-slate-500">
                   Ставка за ученика: {Number(t.ratePerStudent).toLocaleString('ru-RU')} сум
                 </p>
+                <SupportEligibilityToggle teacherId={t.id} name={t.fullName} enabled={t.isSupport} />
                 {isSuperAdmin ? (
                   <div className="mt-4">
                     <Link href={`/admin/teachers/${t.id}`}>

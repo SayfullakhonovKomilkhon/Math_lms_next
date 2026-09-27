@@ -56,6 +56,7 @@ export interface Student {
 }
 
 export interface Teacher {
+  isSupport: boolean;
   id: string;
   fullName: string;
   phone?: string;

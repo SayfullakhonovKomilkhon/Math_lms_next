@@ -69,6 +69,7 @@ export type Booking = {
   changeReason: string;
 };
 export type Overview = {
+  isSupport: boolean;
   teacherId?: string;
   feedback: Feedback[];
   bookings: Booking[];

@@ -42,6 +42,7 @@ type NavItem = {
 };
 
 const ADMIN_NAV: NavItem[] = [
+  { href: '/admin/teachers', label: 'Учителя', icon: Users },
   { href: '/admin/applications', label: 'Заявки', icon: Headphones },
   { href: '/admin/students', label: 'Ученики', icon: Users },
   { href: '/admin/parents', label: 'Родители', icon: UsersRound },
@@ -60,7 +61,7 @@ const MANAGER_NAV: NavItem[] = [
 ];
 
 const TEACHER_NAV: NavItem[] = [
-  { href: '/teacher/support', label: 'Панель суппорта', icon: Headphones },
+  { href: '/teacher/support', label: 'Отзывы и суппорт', icon: Headphones },
   { href: '/teacher/groups', label: 'Мои группы', icon: BookOpen },
   { href: '/teacher/salary', label: 'Зарплата', icon: DollarSign },
   { href: '/teacher/announcements', label: 'Объявления', icon: Megaphone, badge: 'announcements' },

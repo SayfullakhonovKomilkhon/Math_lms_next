@@ -23,8 +23,11 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Check, ChevronDown, Clock3, Plus, Search, UserRound, UserX } from 'lucide-react';
+import { Check, ChevronDown, Clock3, Headphones, MessageSquare, Plus, Search, UserRound, UserX } from 'lucide-react';
 import api from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
+import { AttendanceLessonSupport } from '@/components/support/AttendanceLessonSupport';
+import type { Booking, Feedback } from '@/components/support/support-api';
 import {
   AttendanceRecord,
   AttendanceStatus,
@@ -74,6 +77,8 @@ interface Props {
 
 export function AttendanceTab({ groupId, students, schedule, studentsLoading }: Props) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const [supportCell, setSupportCell] = useState<{ student: AttendanceTabStudent; date: string; mode: 'feedback' | 'book' | 'details'; absent: boolean; topic: string } | null>(null);
   const today = useMemo(() => new Date(), []);
   const todayStart = useMemo(() => startOfDay(today), [today]);
   const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(today));
@@ -84,6 +89,20 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
 
   const monthStart = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
   const monthEnd = useMemo(() => endOfMonth(currentMonth), [currentMonth]);
+
+  const supportContext = useQuery({
+    queryKey: ['support', 'group-context', user?.id, groupId, format(monthStart, 'yyyy-MM-dd')],
+    enabled: !!groupId && !!user,
+    queryFn: () => api.get('/support/group-context', { params: { groupId, from: format(monthStart, 'yyyy-MM-dd'), to: format(monthEnd, 'yyyy-MM-dd') } }).then(r => r.data.data as { feedback: Feedback[]; bookings: Booking[] }),
+  });
+  const supportByCell = useMemo(() => {
+    const map = new Map<string, Booking[]>();
+    for (const b of supportContext.data?.bookings ?? []) {
+      const key = `${b.student.id}__${b.feedback.date.slice(0, 10)}`;
+      map.set(key, [...(map.get(key) ?? []), b]);
+    }
+    return map;
+  }, [supportContext.data]);
 
   // Take every weekday the group meets — supports both the legacy single-slot
   // shape (`schedule.days`) and the new multi-slot shape (`schedule.slots`).
@@ -710,6 +729,9 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                       >
                         <AttendanceCell
                           status={status}
+                          label={`${student.fullName}, ${format(day, 'dd.MM.yyyy')}`}
+                          supportBookings={supportByCell.get(`${student.id}__${dateStr}`) ?? []}
+                          onSupport={(mode) => setSupportCell({ student, date: dateStr, mode, absent: status === 'ABSENT', topic: topicByDate.get(dateStr) ?? (selectedDate === dateStr ? topicInput : '') })}
                           disabled={isFuture}
                           onSelect={(next) => setCellStatus(student.id, day, next)}
                           isExam={isExam}
@@ -733,6 +755,8 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
         )}
       </div>
 
+      {supportContext.isError && <p role="alert" className="text-xs text-amber-800">Не удалось загрузить отметки суппорта. <button type="button" className="underline" onClick={() => void supportContext.refetch()}>Повторить</button></p>}
+      {supportCell && <AttendanceLessonSupport {...supportCell} groupId={groupId} bookings={supportByCell.get(`${supportCell.student.id}__${supportCell.date}`) ?? []} onClose={() => setSupportCell(null)} />}
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
         <LegendItem color="bg-emerald-500" label="Был на уроке" />
@@ -742,7 +766,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
           <span className="font-semibold">Экзамен</span>
           <span className="text-amber-600/80">— в день экзамена в окне отметки появится поле «Балл»</span>
         </span>
-        <span className="text-slate-400">Нажмите на кружок — выберите статус. Изменения сохраняются автоматически.</span>
+        <span className="text-slate-400">Нажмите на кружок — отметьте посещение, оставьте отзыв или запишите к суппорту. Наушники рядом — записи по этому уроку.</span>
       </div>
     </div>
   );
@@ -793,6 +817,9 @@ function cellAriaLabel(status: UiStatus | null, disabled?: boolean): string {
 }
 
 function AttendanceCell({
+  label,
+  supportBookings,
+  onSupport,
   status,
   disabled,
   onSelect,
@@ -802,6 +829,9 @@ function AttendanceCell({
   onSaveScore,
   onSaveMaxScore,
 }: {
+  label: string;
+  supportBookings: Booking[];
+  onSupport: (mode: 'feedback' | 'book' | 'details') => void;
   status: UiStatus | null;
   disabled?: boolean;
   onSelect: (next: UiStatus) => void;
@@ -817,7 +847,7 @@ function AttendanceCell({
     <button
       type="button"
       disabled={disabled}
-      aria-label={cellAriaLabel(status, disabled)}
+      aria-label={`${label}. ${cellAriaLabel(status, disabled)}`}
       className={cn(
         'relative inline-flex h-7 w-7 items-center justify-center rounded-full border transition-transform',
         'focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1',
@@ -849,6 +879,7 @@ function AttendanceCell({
   if (disabled) return trigger;
 
   return (
+    <span className="relative inline-flex">
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="center" accent="teacher" className="min-w-[240px]">
@@ -864,6 +895,9 @@ function AttendanceCell({
             onSelect={() => onSelect(o.value)}
           />
         ))}
+        <div className="my-1 border-t border-slate-100" />
+        <IconMenuItem accent="teacher" icon={MessageSquare} label="Оставить отзыв за урок" description="Как ученик понял тему" onSelect={() => onSupport('feedback')} />
+        <IconMenuItem accent="teacher" icon={Headphones} label="Записать к суппорту" description="Выбрать преподавателя и свободное время" onSelect={() => onSupport('book')} />
         {isExam ? (
           <ExamScoreInput
             disabled={status === 'ABSENT' || status == null}
@@ -875,6 +909,8 @@ function AttendanceCell({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+    {supportBookings.length > 0 && <button type="button" onClick={() => onSupport('details')} aria-label={`${label}. Открыть записи к суппорту: ${supportBookings.length}`} title="Записи к суппорту и результаты" className={cn('absolute -bottom-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white focus:outline-none focus:ring-indigo-400', supportBookings.some(b => b.status === 'BOOKED') ? 'bg-indigo-600 text-white' : supportBookings.some(b => b.status === 'COMPLETED') ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600')}><Headphones className="h-3 w-3" /></button>}
+    </span>
   );
 }
 
@@ -895,17 +931,17 @@ function ExamScoreInput({
   const [maxValue, setMaxValue] = useState<string>(String(maxScore));
 
   // Resync if the prop score updates from elsewhere.
-  const lastScoreRef = useRef<number | null>(score);
-  if (lastScoreRef.current !== score) {
-    lastScoreRef.current = score;
+  const [lastScore, setLastScore] = useState<number | null>(score);
+  if (lastScore !== score) {
+    setLastScore(score);
     setValue(score == null ? '' : String(score));
   }
 
   // Resync the max input when the parent's max changes (e.g. another
   // teacher action updated it, or another date is opened).
-  const lastMaxRef = useRef<number>(maxScore);
-  if (lastMaxRef.current !== maxScore) {
-    lastMaxRef.current = maxScore;
+  const [lastMax, setLastMax] = useState<number>(maxScore);
+  if (lastMax !== maxScore) {
+    setLastMax(maxScore);
     setMaxValue(String(maxScore));
   }
 
