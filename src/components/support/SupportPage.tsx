@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from '@/hooks/useAuth';
 import api from "@/lib/api";
-import { AvailabilityEditor } from "./AvailabilityEditor";
+import { DirectionsPanel } from "./DirectionsPanel";
 import { BookingForm } from "./BookingForm";
 import { SupportModal } from "./SupportModal";
 import {
@@ -22,12 +22,11 @@ import {
 
 export function SupportPage({ staff = false }: { staff?: boolean }) {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"today" | "upcoming" | "history" | "feedback">(
-    staff ? "today" : "upcoming",
+  const [tab, setTab] = useState<"directions" | "today" | "upcoming" | "history" | "feedback">(
+    staff ? "directions" : "upcoming",
   );
   const [onlyMine, setOnlyMine] = useState(false);
   const [studentId, setStudentId] = useState("");
-  const [availability, setAvailability] = useState(false);
   const [bookingForm, setBookingForm] = useState<{
     feedback: Feedback;
     booking?: Booking;
@@ -77,27 +76,21 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
             {staff ? (data?.isSupport ? "Панель суппорта" : "Отзывы и направления") : "Отзывы и помощь"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Бесплатные дополнительные занятия · время Ташкента
+            Помощь ученикам и результаты работы
           </p>
         </div>
-        {staff && data?.isSupport && (
-          <button className={button} onClick={() => setAvailability(true)}>
-            Моя доступность
-          </button>
-        )}
       </header>
       {staff && (
         <p className="rounded-xl bg-emerald-50 p-3 text-sm">
-          {data?.isSupport ? 'Публикуйте свободное время, чтобы коллеги могли записывать учеников к вам.' : 'Вы можете направлять учеников к суппортам. Проводить новые дополнительные занятия можно после назначения администратором. Ранее назначенные вам занятия остаются доступны.'}
-          {' '}Отзыв и запись доступны из кружка посещаемости или вкладки «Статистика» в группе.
+          Направляйте учеников с темой и отзывом. Суппорт сам организует дальнейшую работу и отмечает результат.
+          {' '}Отзыв и направление доступны из кружка посещаемости или вкладки «Статистика» в группе.
         </p>
       )}
       <nav aria-label="Разделы помощи" className="flex flex-wrap gap-2">
         {(
           [
-            ["today", "Сегодня"],
-            ["upcoming", "Записи"],
-            ["history", "История занятий"],
+            ...(staff ? [["directions", "Направления"] as const] : []),
+            ...(!staff || (data?.bookings.length ?? 0) > 0 ? [["today", "Сегодня"], ["upcoming", "Прежние записи"], ["history", "История занятий"]] as const : []),
             ...(staff ? [["feedback", "Статистика"] as const] : []),
           ] as const
         ).map(([id, label]) => (
@@ -111,7 +104,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
           </button>
         ))}
       </nav>
-      {staff && tab !== "feedback" && (
+      {staff && tab !== "feedback" && tab !== "directions" && (
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -121,7 +114,7 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
           Только занятия, которые провожу я
         </label>
       )}
-      {students.length > 1 && (
+      {tab !== "directions" && students.length > 1 && (
         <label className="block max-w-sm text-sm">
           Ученик
           <select
@@ -150,8 +143,9 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
           </button>
         </div>
       )}
+      {staff && data && tab === "directions" && <DirectionsPanel directions={data.directions ?? []} teacherId={data.teacherId} />}
       {staff && tab === "feedback" && <FeedbackStatistics />}
-      {data && tab !== "feedback" && (
+      {data && tab !== "feedback" && tab !== "directions" && (
         <>
           {tab === "history" && (
             <p className="text-xs text-slate-500">
@@ -265,12 +259,6 @@ export function SupportPage({ staff = false }: { staff?: boolean }) {
             />
           )}
         </>
-      )}
-      {availability && data?.isSupport && (
-        <AvailabilityEditor
-          data={data}
-          onClose={() => setAvailability(false)}
-        />
       )}
       {bookingForm && (
         <BookingForm {...bookingForm} onClose={() => setBookingForm(null)} />

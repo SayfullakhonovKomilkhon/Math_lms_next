@@ -103,7 +103,7 @@ export function FeedbackRow({
           className={secondary}
           onClick={() => void save(true)}
         >
-          Сохранить и записать к суппорту
+          Сохранить и направить к суппорту
         </button>
       </div>
     </form>

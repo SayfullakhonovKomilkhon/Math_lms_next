@@ -53,7 +53,7 @@ function StudentHistory({ student, groupId, onClose }: { student: Person; groupI
       {f.comment && <p className="whitespace-pre-wrap text-sm">{f.comment}</p>}
       {f.privateNote && <p className="whitespace-pre-wrap rounded-lg bg-amber-50 p-2 text-sm">Ранее сохранённая заметка: {f.privateNote}</p>}
       {!f.comment && !f.privateNote && <p className="text-sm text-slate-500">Без текста отзыва</p>}
-      <button className={secondary} onClick={() => setBooking({ ...f, student })}>Записать к суппорту</button>
+      <button className={secondary} onClick={() => setBooking({ ...f, student })}>Направить к суппорту</button>
     </article>)}</div>
     {history.hasNextPage && <button className={`${secondary} mt-4`} disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>{history.isFetchingNextPage ? "Загрузка…" : "Показать ещё отзывы"}</button>}
   </SupportModal>;

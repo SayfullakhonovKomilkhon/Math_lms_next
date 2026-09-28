@@ -27,7 +27,7 @@ import { Check, ChevronDown, Clock3, Headphones, MessageSquare, Plus, Search, Us
 import api from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { AttendanceLessonSupport } from '@/components/support/AttendanceLessonSupport';
-import type { Booking, Feedback } from '@/components/support/support-api';
+import type { Booking, Feedback, Direction } from '@/components/support/support-api';
 import {
   AttendanceRecord,
   AttendanceStatus,
@@ -93,8 +93,16 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
   const supportContext = useQuery({
     queryKey: ['support', 'group-context', user?.id, groupId, format(monthStart, 'yyyy-MM-dd')],
     enabled: !!groupId && !!user,
-    queryFn: () => api.get('/support/group-context', { params: { groupId, from: format(monthStart, 'yyyy-MM-dd'), to: format(monthEnd, 'yyyy-MM-dd') } }).then(r => r.data.data as { feedback: Feedback[]; bookings: Booking[] }),
+    queryFn: () => api.get('/support/group-context', { params: { groupId, from: format(monthStart, 'yyyy-MM-dd'), to: format(monthEnd, 'yyyy-MM-dd') } }).then(r => r.data.data as { feedback: Feedback[]; bookings: Booking[]; directions: Direction[] }),
   });
+  const directionsByCell = useMemo(() => {
+    const map = new Map<string, Direction[]>();
+    for (const d of supportContext.data?.directions ?? []) {
+      const key = `${d.feedback.studentId}__${d.feedback.date.slice(0,10)}`;
+      map.set(key, [...(map.get(key) ?? []), d]);
+    }
+    return map;
+  }, [supportContext.data]);
   const supportByCell = useMemo(() => {
     const map = new Map<string, Booking[]>();
     for (const b of supportContext.data?.bookings ?? []) {
@@ -730,7 +738,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
                         <AttendanceCell
                           status={status}
                           label={`${student.fullName}, ${format(day, 'dd.MM.yyyy')}`}
-                          supportBookings={supportByCell.get(`${student.id}__${dateStr}`) ?? []}
+                          supportBookings={[...(supportByCell.get(`${student.id}__${dateStr}`) ?? []), ...(directionsByCell.get(`${student.id}__${dateStr}`) ?? []).map(d => ({status: d.status === 'NEW' || d.status === 'IN_PROGRESS' ? 'BOOKED' : d.status}))]}
                           onSupport={(mode) => setSupportCell({ student, date: dateStr, mode, absent: status === 'ABSENT', topic: topicByDate.get(dateStr) ?? (selectedDate === dateStr ? topicInput : '') })}
                           disabled={isFuture}
                           onSelect={(next) => setCellStatus(student.id, day, next)}
@@ -756,7 +764,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
       </div>
 
       {supportContext.isError && <p role="alert" className="text-xs text-amber-800">Не удалось загрузить отметки суппорта. <button type="button" className="underline" onClick={() => void supportContext.refetch()}>Повторить</button></p>}
-      {supportCell && <AttendanceLessonSupport {...supportCell} groupId={groupId} bookings={supportByCell.get(`${supportCell.student.id}__${supportCell.date}`) ?? []} onClose={() => setSupportCell(null)} />}
+      {supportCell && <AttendanceLessonSupport {...supportCell} directions={directionsByCell.get(`${supportCell.student.id}__${supportCell.date}`) ?? []} groupId={groupId} bookings={supportByCell.get(`${supportCell.student.id}__${supportCell.date}`) ?? []} onClose={() => setSupportCell(null)} />}
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
         <LegendItem color="bg-emerald-500" label="Был на уроке" />
@@ -766,7 +774,7 @@ export function AttendanceTab({ groupId, students, schedule, studentsLoading }: 
           <span className="font-semibold">Экзамен</span>
           <span className="text-amber-600/80">— в день экзамена в окне отметки появится поле «Балл»</span>
         </span>
-        <span className="text-slate-400">Нажмите на кружок — отметьте посещение, оставьте отзыв или запишите к суппорту. Наушники рядом — записи по этому уроку.</span>
+        <span className="text-slate-400">Нажмите на кружок — отметьте посещение, оставьте отзыв или направьте к суппорту. Наушники рядом — записи по этому уроку.</span>
       </div>
     </div>
   );
@@ -830,7 +838,7 @@ function AttendanceCell({
   onSaveMaxScore,
 }: {
   label: string;
-  supportBookings: Booking[];
+  supportBookings: { status: string }[];
   onSupport: (mode: 'feedback' | 'book' | 'details') => void;
   status: UiStatus | null;
   disabled?: boolean;
@@ -897,7 +905,7 @@ function AttendanceCell({
         ))}
         <div className="my-1 border-t border-slate-100" />
         <IconMenuItem accent="teacher" icon={MessageSquare} label="Оставить отзыв за урок" description="Как ученик понял тему" onSelect={() => onSupport('feedback')} />
-        <IconMenuItem accent="teacher" icon={Headphones} label="Записать к суппорту" description="Выбрать преподавателя и свободное время" onSelect={() => onSupport('book')} />
+        <IconMenuItem accent="teacher" icon={Headphones} label="Направить к суппорту" description="Выбрать суппорта для помощи ученику" onSelect={() => onSupport('book')} />
         {isExam ? (
           <ExamScoreInput
             disabled={status === 'ABSENT' || status == null}

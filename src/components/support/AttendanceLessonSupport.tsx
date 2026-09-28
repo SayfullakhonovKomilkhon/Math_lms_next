@@ -6,6 +6,8 @@ import { SupportModal } from "./SupportModal";
 import { FeedbackRow } from "./FeedbackTab";
 import { BookingForm } from "./BookingForm";
 import {
+  Direction,
+  directionLabels,
   Booking,
   Feedback,
   Person,
@@ -23,6 +25,7 @@ export function AttendanceLessonSupport({
   topic,
   mode,
   bookings,
+  directions = [],
   onClose,
 }: {
   groupId: string;
@@ -31,6 +34,7 @@ export function AttendanceLessonSupport({
   topic: string;
   mode: "feedback" | "book" | "details";
   bookings: Booking[];
+  directions?: Direction[];
   absent: boolean;
   onClose: () => void;
 }) {
@@ -50,7 +54,7 @@ export function AttendanceLessonSupport({
     <SupportModal
       title={
         mode === "details"
-          ? "Дополнительные занятия"
+          ? "Направления и занятия"
           : mode === "book"
             ? "Направить к суппорту"
             : "Отзыв за урок"
@@ -62,10 +66,11 @@ export function AttendanceLessonSupport({
       </p>
       {mode === "book" && (
         <p className="mb-3 rounded-xl bg-emerald-50 p-3 text-sm">
-          Сохраните тему и отзыв, затем выберите суппорта и свободное время.
+          Сохраните тему и отзыв, затем выберите суппорта.
           Посещаемость не изменится.
         </p>
       )}
+      {directions.map(d => <article key={d.id} className="mb-3 space-y-1 rounded-xl border p-3 text-sm"><p className="font-medium">{directionLabels[d.status]} · {d.teacher.fullName}</p>{d.result && <p className="whitespace-pre-wrap">Результат: {d.result}</p>}</article>)}
       {bookings.length > 0 && (
         <div className="mb-4 space-y-2">
           <h3 className="text-sm font-semibold">Записи по этому уроку</h3>
